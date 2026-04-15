@@ -1,6 +1,6 @@
 # OneShort - 專為遊戲玩家打造的即時組隊媒合系統
 
-![OneShort Hero](assets/hero.png)
+![OneShort Logo](assets/logo.png)
 
 OneShort 是一個高效、即時且現代化的遊戲組隊平台。無論你是要攻略高難度副本，還是尋找輕鬆練功的夥伴，OneShort 都能幫你快速成團。不再需要在大廳或DC刷頻，我們提供最直觀的介面，讓你一鍵掌握當前所有隊伍動態。
 
