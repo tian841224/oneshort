@@ -3,3 +3,32 @@
 !assets
 !assets/
 !assets/**
+
+# Agent / AI governance files
+!AGENTS.md
+!.agent/
+!.agent/rules/
+!.agent/rules/**
+!.agent/skills/
+!.agent/skills/**
+!.codex/
+!.codex/skills/
+!.codex/skills/**
+!.omx/
+!.omx/plans/
+!.omx/plans/*.md
+!docs/
+!docs/standards/
+!docs/standards/workflow.md
+!docs/TROUBLESHOOTING.md
+
+# Local secrets, runtime state, and generated caches stay untracked.
+.codex/auth.json
+.omx/context/
+.omx/logs/
+.omx/state/
+.omx/*.json
+.agent/skills/**/__pycache__/
+.agent/skills/**/*.pyc
+.codex/skills/**/__pycache__/
+.codex/skills/**/*.pyc
