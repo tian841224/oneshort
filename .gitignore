@@ -18,9 +18,7 @@
 !.omx/plans/
 !.omx/plans/*.md
 !docs/
-!docs/standards/
-!docs/standards/workflow.md
-!docs/TROUBLESHOOTING.md
+!docs/**
 
 # Local secrets, runtime state, and generated caches stay untracked.
 .codex/auth.json

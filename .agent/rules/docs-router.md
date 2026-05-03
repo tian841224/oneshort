@@ -23,7 +23,7 @@ trigger: always_on
 ## 開發流程
 | 任務類型 | 關鍵文件 | 目的 |
 |---|---|---|
-| Git 操作 / Branch / Worktree | [docs/standards/workflow.md](../../docs/standards/workflow.md) | 遵循 Git Flow 與任務清理流程 |
+| Git 操作 / Branch / Worktree | [.agent/rules/core.md](core.md) | 遵循 Git Flow 與任務清理流程 |
 | 新增功能模組 | [docs/features/](../../docs/features/) | 查閱特定功能的詳細設計規格 |
 
 > [!IMPORTANT]
