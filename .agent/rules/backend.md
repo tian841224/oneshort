@@ -14,6 +14,7 @@ trigger:
   - `handler`：HTTP 路由、DTO 轉換與請求回應處理。
 - **依賴注入**：跨 domain 協作以 interface 注入為準，禁止直接依賴其他 domain 實作層。
 - **邊界保護**：不得為了方便而將業務邏輯洩漏至 handler 或 repository。
+- **非同步事件 (Outbox)**：發布任何系統事件 (如 WebSocket 通知) 時，必須遵守 Transactional Outbox Pattern，禁止在 Usecase 中直接操作 Redis 廣播，需將事件隨 DB Tx 一起寫入 Outbox 介面。
 
 ## 2. 資料庫與 Migration
 

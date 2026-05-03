@@ -8,9 +8,8 @@
 本節涵蓋了從環境建立、修改前確認 `BRANCH` / `WORKTREE` 的 Git 開發流程，到前後端整體技術架構的定義。
 
 - **[開發流程與 Git 開發模式 (Core Rules)](../.agent/rules/core.md)**：修改前確認 `BRANCH` / `WORKTREE`、分支命名規範、建立方式與清理流程。
-- **[疑難排解與最佳實務 (Troubleshooting)](./TROUBLESHOOTING.md)**：記錄已知的踩坑點與解決方案。
 - **後端開發規範**：詳見 [.agent/rules/backend.md](../.agent/rules/backend.md)（架構、測試、DB 規範）與 [backend/docs/AGENTS.md](../backend/docs/AGENTS.md)。
-- **前端開發規範**：詳見 [frontend/docs/agent/05-conventions.md](../frontend/docs/agent/05-conventions.md) 與 [frontend/docs/AGENTS.md](../frontend/docs/AGENTS.md)。
+- **前端開發規範**：詳見 [05-core-conventions.md](../frontend/docs/agent/05-core-conventions.md) (核心/API)、[06-ui-architecture.md](../frontend/docs/agent/06-ui-architecture.md) (UI/渲染) 與 [frontend/docs/AGENTS.md](../frontend/docs/AGENTS.md)。
 
 ## ⚙️ 2. 資料流程與狀態管理 (Data Flow & State)
 深入了解資料如何在系統不同層次間流動，包含 REST API 生命週期、前端狀態管理與即時通知。
@@ -30,10 +29,6 @@
 
 ## 🛠️ 4. 系統改善與開發規劃 (Maintenance & Planning)
 對未來的技術優化與功能擴展進行整理與規劃。若新增 roadmap 或 refactor plan，請先建立對應文件再加入本索引，避免索引指向不存在的路徑。
-
-- **[訪客模式開發計畫 (Guest Mode Plan)](./features/guest-mode-plan.md)**：Guest Mode v1 的實作規劃與狀態。
-- **[UI/UX 最佳化計畫 (UI/UX Optimization Plan)](./ui-ux-plan.md)**：全頁面的 UI/UX 一致性與可達性改善計畫。
-- **[手機版重設計畫 (Mobile Redesign Plan)](./mobile-redesign-plan.md)**：行動裝置的專屬版面與互動設計規範。
 
 ---
 
