@@ -31,6 +31,10 @@
 ## 🛠️ 4. 系統改善與開發規劃 (Maintenance & Planning)
 對未來的技術優化與功能擴展進行整理與規劃。若新增 roadmap 或 refactor plan，請先建立對應文件再加入本索引，避免索引指向不存在的路徑。
 
+- **[訪客模式開發計畫 (Guest Mode Plan)](./features/guest-mode-plan.md)**：Guest Mode v1 的實作規劃與狀態。
+- **[UI/UX 最佳化計畫 (UI/UX Optimization Plan)](./ui-ux-plan.md)**：全頁面的 UI/UX 一致性與可達性改善計畫。
+- **[手機版重設計畫 (Mobile Redesign Plan)](./mobile-redesign-plan.md)**：行動裝置的專屬版面與互動設計規範。
+
 ---
 
 ## 📖 5. 系統完整文件 (Comprehensive System Docs)
