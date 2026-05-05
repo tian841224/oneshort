@@ -59,3 +59,20 @@ Checks:
   an old local migration file was applied before the file contents changed.
 - Repair drift with a new idempotent migration version rather than editing an
   already-applied migration in place.
+
+## WebSocket chat round trip flakes in CI
+
+`TestHandleWebSocket_ChatRoundTrip` depends on the Redis stream consumer seeing
+new `ws_events` entries. If a test starts `StreamConsumer.Start` in a goroutine
+and publishes chat immediately, CI can publish before the consumer group exists.
+Because the consumer group starts at `$`, that early event is skipped and the
+test times out waiting for the `chat` WebSocket message.
+
+Checks:
+
+- Create or wait for the Redis stream consumer group before publishing test
+  events.
+- Treat `actions/cache` `tar: Cannot open: File exists` restore warnings as
+  noise unless the cache step itself fails.
+- Confirm the actual failing step is `go test -tags unit ./...` and identify the
+  package/test name before changing CI configuration.
