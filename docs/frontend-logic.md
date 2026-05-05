@@ -99,6 +99,7 @@ Quick Login：
 2. 呼叫 `GET /api/v1/auth/quick-login/check`
 3. 若 API 服務無法連線，快速登入表單維持開啟並在提交按鈕上方顯示錯誤，同步顯示錯誤 toast，不可只在 console 顯示 `ERR_CONNECTION_REFUSED`
 4. `available`：前端展開 `display_name`、`job_class_id`、`level` 欄位，再呼叫 `POST /api/v1/auth/quick-login`
+   - `job_class_id=0` 是合法的「初心者」，前端驗證需以 `null/undefined` 判斷未選職業，不可用 truthy/falsy 判斷
 5. `requires_pin`：直接以 `character_code + pin` 呼叫 `POST /api/v1/auth/quick-login`
 6. `discord_only`：阻止 quick login，提示改用 Discord
 7. 成功後寫入 `{ actor, current_character }`，導回首頁
@@ -114,6 +115,7 @@ Quick Login：
 
 `/me` 顯示：
 - 角色管理：顯示 actor 的完整角色清單，可新增角色、編輯角色資料、刪除角色，並啟用或停用角色
+- 角色建立與更新需接受 `job_class=0` 的「初心者」；只有 `null/undefined` 代表未選職業
 - 登入方式狀態卡：Quick Login / Discord 依 `actor.linked_providers` 顯示
 - 已啟用或已綁定的登入方式使用綠色狀態卡，未啟用使用灰色狀態卡
 - Discord 未綁定時，整張 Discord 狀態卡就是綁定入口，點擊後發起 Discord 綁定流程

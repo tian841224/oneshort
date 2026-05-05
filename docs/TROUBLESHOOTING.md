@@ -29,6 +29,9 @@ Checks:
   `uni_characters_game_name` to `409 game_name_taken`.
 - Verify unsupported `job_class` values return `400 invalid_job_class` before
   attempting the insert.
+- Verify frontend forms treat `job_class=0` / `job_class_id=0` as a valid
+  Beginner value; only `null`, `undefined`, or an empty select value should mean
+  no job class was selected.
 
 ## Guild preferences return `failed to get preferences`
 
