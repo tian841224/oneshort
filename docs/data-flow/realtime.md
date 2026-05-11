@@ -48,7 +48,7 @@ OneShort 針對「隊伍加入」、「成員變動」等高頻率變更，採�
     3. **Action**:
       - `auth_success` → 前端訂閱 `parties:global`，並重送目前仍有 listener 的 `party:{id}` room subscriptions；個人房間由 server 在握手成功後自動加入
       - `party.created`（來自 `parties:global`）→ 觸發 `queryClient.invalidateQueries(['parties'])`
-      - `party.updated`（來自 `parties:global` 或 `party:{id}`）→ 刷新列表、隊伍詳情與進行中活動快取
+      - `party.updated`（來自 `parties:global`、`party:{id}` 或 quick-party 審核結果送到申請者 `actor:{id}` personal room）→ 刷新列表、隊伍詳情與進行中活動快取
       - `character.updated`（來自 `actor:{id}` 或 `party:{id}`）→ 刷新角色/通知/申請快取，且在隊伍房間內重新抓聊天室歷史
       - 進入中的 `party:{id}` 事件 → 觸發 `queryClient.invalidateQueries(['party', partyId])`
     4. **UI**: UI 偵測到失效並重新背景獲取資料，實現「即時自動重整」。
