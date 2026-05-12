@@ -1509,7 +1509,7 @@ PUT 補充說明：
 ### GET /api/v1/bug-reports
 列出 Bug 回報 **[公開]**
 
-回傳最新 50 筆、所有狀態的公開摘要，依 `created_at` 由新到舊排序。此公開端點不得回傳 `user_id`、`contact`、`description` 或 `developer_reply`；完整內容與開發者回覆只允許授權後台流程讀取。
+回傳最新 50 筆、所有狀態的公開摘要，依 `created_at` 由新到舊排序。公開列表會回傳 `description` 與 `developer_reply`，讓使用者能查看問題內容與開發者回覆；此公開端點不得回傳 `user_id` 或 `contact`。
 
 `status` 可能值：
 - `open`
@@ -1522,7 +1522,9 @@ PUT 補充說明：
   {
     "id": "uuid",
     "title": "無法送出申請",
+    "description": "點擊申請後畫面停在載入中",
     "status": "open",
+    "developer_reply": "已修正，會在下一次部署後生效。",
     "created_at": "2026-04-16T03:00:00Z",
     "updated_at": "2026-04-16T03:00:00Z"
   }
