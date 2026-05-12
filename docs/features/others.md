@@ -22,8 +22,10 @@
 
 - **業務功能**:
     - `POST /api/v1/bug-reports` 為公開端點，目前不要求登入。
+    - `GET /api/v1/bug-reports` 回傳所有狀態的回報，依建立時間由新到舊排序。
     - Request 欄位為 `title`、`description`、選填 `contact`。
     - Response 以 `{ data: BugReport }` 回傳新建資料。
+    - `status` 可能值為 `open`、`in_progress`、`completed`。
 - **後端 (Backend)**:
     - **Domain**: `backend/internal/bugreport/domain.go`.
     - **Handler**: `backend/internal/bugreport/handler.go`.

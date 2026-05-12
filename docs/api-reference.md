@@ -1504,6 +1504,33 @@ PUT 補充說明：
 - `description` 必填，最多 2000 字元。
 - `contact` 選填，最多 128 字元。
 
+### GET /api/v1/bug-reports
+列出 Bug 回報 **[公開]**
+
+回傳所有狀態的回報，依 `created_at` 由新到舊排序。
+
+`status` 可能值：
+- `open`
+- `in_progress`
+- `completed`
+
+**Response 200:**
+```json
+[
+  {
+    "id": "uuid",
+    "user_id": "uuid",
+    "title": "無法送出申請",
+    "description": "點擊申請後畫面停在載入中",
+    "contact": "discord:player",
+    "status": "open",
+    "developer_reply": null,
+    "created_at": "2026-04-16T03:00:00Z",
+    "updated_at": "2026-04-16T03:00:00Z"
+  }
+]
+```
+
 ---
 
 ## 十三、公會 (Guilds)
