@@ -308,6 +308,7 @@ UpdateCharacter / UpdateCurrentCharacter:
   1. 嘗試不帶密碼 → 若 403 → 提示輸入密碼
   2. 正確密碼儲存在前端 `partyPasswordStore`（localStorage）
 - **Channel 欄位**: 非成員/非隊長無法看到 `channel`（遊戲頻道資訊）
+  - 快速隊伍例外：開放房間可在進入聊天室前查看頻道；尋找大廳卡片在 `show_channel_on_card=true` 時可顯示頻道。密碼房或審核房若未公開頻道仍維持遮罩。
 
 ### 2.9 閒置警告與自動關閉
 
