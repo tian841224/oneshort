@@ -22,9 +22,10 @@
 
 - **業務功能**:
     - `POST /api/v1/bug-reports` 為公開端點，目前不要求登入。
-    - `GET /api/v1/bug-reports` 回傳所有狀態的回報，依建立時間由新到舊排序。
+    - `GET /api/v1/bug-reports` 回傳最新 50 筆、所有狀態的公開摘要，依建立時間由新到舊排序；不得公開 `user_id`、`contact`、`description` 或 `developer_reply`。
+    - `PATCH /api/v1/admin/bug-reports/{id}` 為管理員端點，用於更新 `status` 與 `developer_reply`。
     - Request 欄位為 `title`、`description`、選填 `contact`。
-    - Response 以 `{ data: BugReport }` 回傳新建資料。
+    - 建立回應以 `{ data: SubmittedBugReport }` 回傳新建資料，不包含 `user_id` 或 `developer_reply`。
     - `status` 可能值為 `open`、`in_progress`、`completed`。
 - **後端 (Backend)**:
     - **Domain**: `backend/internal/bugreport/domain.go`.

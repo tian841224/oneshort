@@ -1494,7 +1494,9 @@ PUT 補充說明：
     "title": "無法送出申請",
     "description": "點擊申請後畫面停在載入中",
     "contact": "discord:player",
-    "created_at": "2026-04-16T03:00:00Z"
+    "status": "open",
+    "created_at": "2026-04-16T03:00:00Z",
+    "updated_at": "2026-04-16T03:00:00Z"
   }
 }
 ```
@@ -1507,7 +1509,7 @@ PUT 補充說明：
 ### GET /api/v1/bug-reports
 列出 Bug 回報 **[公開]**
 
-回傳所有狀態的回報，依 `created_at` 由新到舊排序。
+回傳最新 50 筆、所有狀態的公開摘要，依 `created_at` 由新到舊排序。此公開端點不得回傳 `user_id`、`contact`、`description` 或 `developer_reply`；完整內容與開發者回覆只允許授權後台流程讀取。
 
 `status` 可能值：
 - `open`
@@ -1519,16 +1521,40 @@ PUT 補充說明：
 [
   {
     "id": "uuid",
-    "user_id": "uuid",
     "title": "無法送出申請",
-    "description": "點擊申請後畫面停在載入中",
-    "contact": "discord:player",
     "status": "open",
-    "developer_reply": null,
     "created_at": "2026-04-16T03:00:00Z",
     "updated_at": "2026-04-16T03:00:00Z"
   }
 ]
+```
+
+### PATCH /api/v1/admin/bug-reports/{id}
+更新 Bug 回報狀態與開發者回覆 **[需要管理員]**
+
+**Request Body:**
+```json
+{
+  "status": "completed",
+  "developer_reply": "已修正，會在下一次部署後生效。"
+}
+```
+
+至少需提供 `status` 或 `developer_reply` 其中一個欄位。`developer_reply` 最多 2000 字元。
+
+**Response 200:**
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "title": "無法送出申請",
+  "description": "點擊申請後畫面停在載入中",
+  "contact": "discord:player",
+  "status": "completed",
+  "developer_reply": "已修正，會在下一次部署後生效。",
+  "created_at": "2026-04-16T03:00:00Z",
+  "updated_at": "2026-04-16T04:00:00Z"
+}
 ```
 
 ---
