@@ -204,7 +204,7 @@ Navbar 缺少當前路徑視覺指示。在 Navbar 加入 `usePathname()` → �
 - 在 `components/ui/Skeleton.tsx` 建立 base 元件（Tailwind `animate-pulse bg-muted/40 rounded-md`）
 
 ### P3.2 動畫尊重 `prefers-reduced-motion`
-[globals.css:300-307](frontend/src/app/globals.css#L300-L307) 已有全域 reduced-motion 規則 ✓。額外確認 `announcement-marquee` 在 reduced-motion 下停止滾動（目前 hover 才暫停）。
+[globals.css:300-307](frontend/src/app/globals.css#L300-L307) 已有全域 reduced-motion 規則 ✓。額外確認 `notice-marquee` 在 reduced-motion 下停止滾動（目前 hover 才暫停）。
 
 ### P3.3 通知 Bell badge 數字 99+
 NotificationBell 顯示具體數字，超過 99 顯示 `99+`（小細節，避免 badge 撐開）。

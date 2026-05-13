@@ -10,6 +10,8 @@
 - 將 footer 按鈕改為「公告」與「回報 Bug」。
 - 公告視窗改為與 Bug 回報相同的共用 modal shell。
 - 公告內容使用 DB 最新一筆 active announcement，並以 Markdown / GFM 顯示。
+- 頁面 NoticeBar 跑馬燈使用獨立 notice 資源，不讀取 announcement，也不直接顯示 Markdown `content`。
+- 後台建立公告時，Markdown `content` 的前後空白、換行與縮排必須保留到 API/DB。
 - 自動公告彈窗使用 DB 公告 freshness 作為 seen-state，不再使用硬編碼前端版本。
 
 ## 非目標
@@ -28,11 +30,13 @@
 ## 功能需求
 
 - `GET /api/v1/announcement` 回傳最新一筆 `is_active = true` 的公告，排序為 `created_at DESC, id DESC`。
+- `GET /api/v1/notice` 回傳最新一筆 `is_active = true` 的 NoticeBar 內容，排序為 `created_at DESC, id DESC`。
+- 公告回應只承載 modal Markdown `content`；NoticeBar 回應只承載跑馬燈純文字 `content`。
 - 前端公告 modal 需支援 Markdown / GFM 表格、連結、程式碼、列表與標題。
 - 公告 modal 的空狀態、載入狀態與錯誤狀態需可讀且可關閉。
 - `#report-bug` 連結仍可導向 / 開啟 bug 回報 modal。
 - `AnnouncementManager` seen token 使用公告 `id` 與 `updated_at`，DB 最新公告改變時自動重新顯示。
-- Navbar 公告列和 modal 詳情必須使用同一筆 `/api/v1/announcement` 資料，且 singular announcement query 需定期刷新以支援長時間停留頁面。
+- Navbar NoticeBar 必須使用 `/api/v1/notice` 資料，不可 fallback 到 announcement `content`；notice query 需定期刷新以支援長時間停留頁面。
 
 ## 驗收標準
 
@@ -40,4 +44,5 @@
 - Announcement modal 測試證明 Markdown 表格可以顯示。
 - AnnouncementManager 測試證明 seen token 未命中時會 open announcement，命中時不會重複 open。
 - Backend repository / handler / usecase 測試鎖定 singular endpoint 的 latest active 語意。
+- Notice repository / handler / usecase 測試鎖定獨立 `/notice` 生命週期。
 - 文件不再描述 singular announcement 是 priority-first。

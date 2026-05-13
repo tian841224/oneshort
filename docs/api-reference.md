@@ -1260,6 +1260,26 @@ PUT 補充說明：
 
 ---
 
+### GET /api/v1/notice
+取得 NoticeBar 跑馬燈內容 **[公開]**
+
+**Response 200:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "content": "NoticeBar 文字",
+    "is_active": true,
+    "created_by": "actor_uuid",
+    "updated_by": "actor_uuid",
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+---
+
 ## 九、組隊選項
 
 ### GET /api/v1/raid-boss-options?type=BOSS|GROUP
@@ -1412,6 +1432,34 @@ PUT 補充說明：
 
 ### DELETE /api/v1/admin/announcement
 清除公告 **[需認證，管理員]**
+
+**Response 204:** No Content
+
+---
+
+### GET /api/v1/admin/notice
+取得管理員 NoticeBar 內容 **[需認證，管理員]**
+
+**Response 200:** 同公開 NoticeBar 格式。
+
+---
+
+### PUT /api/v1/admin/notice
+覆寫 NoticeBar 內容 **[需認證，管理員]**
+
+**Request Body:**
+```json
+{
+  "content": "NoticeBar 文字"
+}
+```
+
+**Response 200:** `{ "data": { /* Notice */ } }`
+
+---
+
+### DELETE /api/v1/admin/notice
+清除 NoticeBar 內容 **[需認證，管理員]**
 
 **Response 204:** No Content
 

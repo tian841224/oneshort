@@ -1,5 +1,23 @@
 # Troubleshooting
 
+## Frontend dev logs `WebSocket error [object Event]`
+
+The frontend derives the WebSocket URL from `NEXT_PUBLIC_WS_URL` or
+`NEXT_PUBLIC_API_URL`; with the local default it connects to
+`ws://localhost:8080/ws`. If `next dev` logs `WebSocket error [object Event]`,
+verify the backend API listener before changing frontend websocket code.
+
+Checks:
+
+- Confirm `frontend/.env.local` points `NEXT_PUBLIC_API_URL` at
+  `http://localhost:8080/api/v1`, or set `NEXT_PUBLIC_WS_URL` explicitly.
+- Run `Test-NetConnection -ComputerName 'localhost' -Port 8080`.
+- Run `Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8080/health'`.
+- If 8080 or `/health` is down, start the API from `backend/` with
+  `docker compose up -d api`.
+- Confirm a guest websocket can open; `/api/v1/actors/me` returning `401` is
+  normal for an unauthenticated browser session.
+
 ## Frontend worktree verification finds fake or missing CLI tools
 
 Fresh frontend worktrees do not share `node_modules` with the main checkout. If

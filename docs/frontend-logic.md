@@ -34,6 +34,7 @@
 | `['filterOptions']` | 隊伍篩選選項 | 地圖 / BOSS / GROUP 目標資料更新 |
 | `['admin', 'announcement']` / `['admin', 'announcements']` | 管理公告 | 管理員新增/刪除/覆寫公告 |
 | `['system', 'announcement']` / `['system', 'announcements']` | 公開公告 | 管理員新增/刪除/覆寫公告 |
+| `['admin', 'notice']` / `['system', 'notice']` | NoticeBar 跑馬燈 | 管理員更新/清除獨立 NoticeBar 內容 |
 | `['stats', 'online']` | 在線人數 | `system.online_count` 事件 |
 | `['guilds']` / `['guilds', 'current', actorId]` | 公會清單與目前公會 | 公會建立、加入、離開、解散、成員異動 |
 | `['guilds', guildId, 'members']` | 公會成員 | 成員加入/離開、角色更新、職位異動 |
@@ -156,13 +157,15 @@ PartyHome 載入策略:
 ### 3.1A 系統公告列與公告視窗
 
 ```
-AnnouncementBar / AnnouncementModal:
-  - 當 `useSystemAnnouncement` 取得最新一則公告時，Navbar 下方顯示公告列
-  - 公告列顯示同一筆 DB 最新公告摘要；點擊後開啟共用公告視窗
-  - Footer「公告」、Navbar 公告列、自動彈窗共用 `openModal('announcement')` 與同一個公告視窗
+NoticeBar / AnnouncementModal:
+  - 當 `useSystemNotice` 取得最新一則 notice 時，Navbar 下方顯示 NoticeBar
+  - NoticeBar 只顯示 `/api/v1/notice` 的獨立純文字 `content`，不可 fallback 顯示 announcement Markdown `content`
+  - notice content 留空時 Navbar 不顯示 NoticeBar；Footer 與自動彈窗仍可顯示最新公告 modal
+  - Footer「公告」與自動彈窗共用 `openModal('announcement')` 與同一個公告視窗；NoticeBar 不開啟公告 modal
   - 公告視窗使用 `/api/v1/announcement` 的 DB 最新 active 公告，不可讀取 `public/docs/announcement.md`
-  - `useSystemAnnouncement` 需與公告列同樣定期刷新，讓長時間停留的使用者能看到新公告並重新評估 seen token
+  - `useSystemAnnouncement` 需定期刷新，讓長時間停留的使用者能看到新公告並重新評估 seen token；`useSystemNotice` 需獨立刷新跑馬燈內容
   - 公告視窗使用 shared `Modal` shell，內容必須以 Markdown + GFM 渲染，不可直接輸出原始字串
+  - 後台送出公告時只能用 trim 判斷 content 是否為空，寫入 API/DB 的 content 必須保留原始空白與縮排
   - 需正確支援表格、清單、標題、粗體、引用與程式碼區塊
   - 表格內容需保留欄列結構，必要時允許橫向捲動，不可把 pipe 語法串成單一段落
   - 自動彈窗 seen state 使用公告 `id + updated_at` token，不使用前端硬編碼版本字串

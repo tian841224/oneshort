@@ -17,6 +17,11 @@
    - When usecase 回傳公告、nil、錯誤。
    - Then 維持成功 / 空值 / 500 行為，並使用 latest announcement 方法。
 
+4. Notice endpoint
+   - Given 獨立 active notice。
+   - When 呼叫 `GET /notice` 或 `PUT /admin/notice`。
+   - Then 回傳或更新 `admin_notices`，不讀寫 `admin_announcements`。
+
 ## 前端測試
 
 1. Footer buttons
@@ -37,10 +42,22 @@
    - Given localStorage token 已等於 latest announcement。
    - Then 不重複 open。
 
-4. AnnouncementBar
-   - Given latest public announcement。
-   - Then bar 顯示同一筆最新公告摘要。
-   - Click bar 會開啟共用 announcement modal，而不是 local custom overlay。
+4. NoticeBar
+   - Given latest public notice 有純文字 `content`。
+   - Then bar 只顯示 notice content，不可顯示 announcement Markdown。
+   - Given latest public notice 沒有內容。
+   - Then Navbar 不顯示跑馬燈。
+   - NoticeBar 不開啟 announcement modal。
+
+5. AdminPage announcement form
+   - Given 公告 `content` 含前後空白、換行與 Markdown 縮排。
+   - When 新增公告。
+   - Then mutation payload 保留原始 `content`，且不包含 notice。
+
+6. AdminPage NoticeBar form
+   - Given 獨立 notice 文字。
+   - When 更新 NoticeBar。
+   - Then mutation 呼叫獨立 notice API，不送 announcement API。
 
 ## 驗證命令
 
@@ -49,5 +66,5 @@
 
 ## 手動檢查
 
-- Footer 公告按鈕、navbar 公告列、自動彈窗都顯示同一個 modal shell。
+- Footer 公告按鈕與自動彈窗顯示同一個 modal shell；NoticeBar 顯示獨立跑馬燈內容。
 - 小視窗高度下 modal 仍可滾動與關閉。

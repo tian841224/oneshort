@@ -23,6 +23,7 @@ GET  /api/v1/raid-boss-options        → 取得 BOSS / GROUP 目標選項
 GET  /api/v1/stats/online             → 取得在線人數
 GET  /api/v1/announcement             → 取得主要系統公告
 GET  /api/v1/announcements            → 取得公告列表
+GET  /api/v1/notice                   → 取得 NoticeBar 跑馬燈內容
 POST /api/v1/bug-reports              → 提交 Bug 回報
 GET  /api/v1/docs/*                   → API 文件
 
@@ -86,6 +87,9 @@ POST /api/v1/admin/announcement      → 新增公告
 PUT  /api/v1/admin/announcement      → 覆寫主要公告
 DELETE /api/v1/admin/announcement/:id → 刪除指定公告
 DELETE /api/v1/admin/announcement    → 清除公告
+GET  /api/v1/admin/notice            → 管理 NoticeBar 內容
+PUT  /api/v1/admin/notice            → 覆寫 NoticeBar 內容
+DELETE /api/v1/admin/notice          → 清除 NoticeBar 內容
 ```
 
 ### 1.2 中間件執行順序
