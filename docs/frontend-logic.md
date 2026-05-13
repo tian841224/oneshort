@@ -157,11 +157,15 @@ PartyHome 載入策略:
 
 ```
 AnnouncementBar / AnnouncementModal:
-  - 當 `useSystemAnnouncements` 取得至少一則公告時，Navbar 下方顯示公告列
-  - 公告列僅顯示合併後的摘要文字；點擊後開啟完整公告視窗
-  - 公告視窗內容必須以 Markdown + GFM 渲染，不可直接輸出原始字串
+  - 當 `useSystemAnnouncement` 取得最新一則公告時，Navbar 下方顯示公告列
+  - 公告列顯示同一筆 DB 最新公告摘要；點擊後開啟共用公告視窗
+  - Footer「公告」、Navbar 公告列、自動彈窗共用 `openModal('announcement')` 與同一個公告視窗
+  - 公告視窗使用 `/api/v1/announcement` 的 DB 最新 active 公告，不可讀取 `public/docs/announcement.md`
+  - `useSystemAnnouncement` 需與公告列同樣定期刷新，讓長時間停留的使用者能看到新公告並重新評估 seen token
+  - 公告視窗使用 shared `Modal` shell，內容必須以 Markdown + GFM 渲染，不可直接輸出原始字串
   - 需正確支援表格、清單、標題、粗體、引用與程式碼區塊
   - 表格內容需保留欄列結構，必要時允許橫向捲動，不可把 pipe 語法串成單一段落
+  - 自動彈窗 seen state 使用公告 `id + updated_at` token，不使用前端硬編碼版本字串
 ```
 
 ### 3.2 Tab 切換邏輯
@@ -170,9 +174,13 @@ URL 參數 `?tab=` 控制顯示模式：
 
 | Tab 值 | 顯示內容 |
 |--------|---------|
-| `ALL` (預設) | 公開隊伍清單 |
-| `MY_PARTY` | 我的隊伍（我是隊長的） |
-| `MY_APP` | 我申請中的隊伍 |
+| `FIND_QUICK` (預設) | 快速組隊列表與建立隊伍卡片 |
+| `FIND_PARTY` | 公開組隊活動清單 |
+| `FIND_BOSS` | BOSS 討伐清單 |
+| `FIND_TRAINING` | 練功地圖清單 |
+| `MY_PARTY` | 我的隊伍 |
+| `MY_APPLICATIONS` | 我的申請 |
+| `CREATE_PARTY` | 建立一般隊伍 |
 
 ### 3.3 PartyCard 顯示邏輯
 
@@ -227,9 +235,25 @@ handleQuickApply(partyId, slotId, charId?, requiresPassword?):
 8. 送出時必須帶 `character_id`；Quick Login actor 使用目前角色或使用者選擇的角色
 ```
 
+### 3.4A 快速組隊流程
+
+```
+QuickPartyDetailView:
+  - `FIND_QUICK` 列表/房間是快速隊伍專用情境，不載入一般隊伍篩選、職業、角色清單或進行中活動查詢；只有切到一般隊伍或指定一般隊伍詳情時才啟用這些 query。
+  - 房間資訊區顯示「分享房間連結」按鈕，點擊後複製 `/parties/{partyId}` 深連結到剪貼簿。
+  - 進入聊天室 (`quick-enter`) 與申請/加入隊伍 (`quick-join`) 是兩個獨立動作。
+  - 使用者點選房間後，不需要先進入聊天室才能點選空位申請或加入隊伍。
+  - 可加入的空位控制留在成員格子內；點選綠色空位直接送出 `quick-join`。
+  - 若快速隊伍角色名稱尚未設定，當前房間畫面彈出角色名稱輸入視窗，儲存後繼續原本動作，不要求返回列表。
+  - 密碼房的流程為：角色名稱缺失時先補角色名稱，再顯示密碼視窗，最後送出 `quick-join`。
+```
+
 ### 3.5 隊伍資訊面板 (PartyDetailView)
 
 ```
+通用操作:
+  - 隊伍資訊卡顯示「分享房間連結」按鈕，點擊後複製 `/parties/{partyId}` 深連結到剪貼簿。
+
 身份判斷:
   - `PartyDetailView`、`PartyEditView`、`usePartyPasswordGuard` 共用 `usePartyMembership` / selector helper，避免各畫面各自判斷
   isLeader:
@@ -271,6 +295,7 @@ handleQuickApply(partyId, slotId, charId?, requiresPassword?):
 [隊長 (isLeader)]:
   - 所有成員功能
   - 編輯頁頂部右側同樣顯示房間狀態（招募中 / 滿員 / 隱藏 / 關閉）與更新時間；狀態標籤在上、更新時間在下，且狀態那一行需和「隊伍資訊」標題維持同一水平
+  - 編輯頁頂部操作區顯示「分享房間連結」按鈕，點擊後複製 `/parties/{partyId}` 深連結到剪貼簿
   - 編輯頁標題區需預留足夠底部空間，讓下方表單與聊天室整體往下，不可與右上操作列重疊
   - 踢出成員按鈕（僅顯示在非隊長本人槽位）
   - 隊長在編輯頁踢出隊員時，成員槽位需先做本地即時清空，再由後續 refetch 對齊正式資料
@@ -755,11 +780,10 @@ Toast 類型:
 ```
 Footer 顯示規則:
   - 顯示 © 2025 OneShort
-  - 提供「開發計畫」「已知問題」「回報 Bug」三個捷徑
-  - 開發計畫 / 已知問題 → 開啟對應 Markdown Modal
-  - Markdown Modal 內容需支援 Markdown + GFM 表格，表格欄位需有明確間距與邊界，不可視覺上黏成同一段文字
+  - 提供「公告」「回報 Bug」兩個捷徑
+  - 公告 → 開啟 DB 最新公告 modal，不讀取前端靜態 Markdown 檔
   - 回報 Bug → 開啟 Bug 回報表單
-  - 手機版（< sm）三個捷徑僅顯示 icon，桌面版顯示 icon + 文字
+  - 手機版（< sm）捷徑僅顯示 icon，桌面版顯示 icon + 文字
   - 滑鼠移入或鍵盤 focus 到捷徑 icon 時，會在上方顯示功能提示文字
   - 不再顯示獨立 GitHub icon 快捷入口
   - 保留 GitHub Repo stars 外部連結
