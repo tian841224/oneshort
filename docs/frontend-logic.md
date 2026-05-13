@@ -202,6 +202,7 @@ PartyCard 顯示規則:
   - 審核圖示（join_requires_approval=true）
   - `allow_quick_login_players=false` 顯示「限綁 Discord」限制 badge
   - 狀態標籤（公開清單僅會出現 RECRUITING/ACTIVE）
+  - 房間備註必須以 `whitespace-pre-wrap` 顯示，保留使用者輸入的空行與連續空格
 
 快速申請按鈕 (QuickApply):
   - 顯示條件：
@@ -244,6 +245,7 @@ handleQuickApply(partyId, slotId, charId?, requiresPassword?):
 QuickPartyDetailView:
   - `FIND_QUICK` 列表/房間是快速隊伍專用情境，不載入一般隊伍篩選、職業、角色清單或進行中活動查詢；只有切到一般隊伍或指定一般隊伍詳情時才啟用這些 query。
   - 房間資訊區顯示「分享房間連結」按鈕，點擊後複製 `/parties/{partyId}` 深連結到剪貼簿。
+  - 房間備註提交與顯示都保留使用者輸入的空行與連續空格；空字串才視為未填寫。
   - 進入聊天室 (`quick-enter`) 與申請/加入隊伍 (`quick-join`) 是兩個獨立動作。
   - 使用者點選房間後，不需要先進入聊天室才能點選空位申請或加入隊伍。
   - 可加入的空位控制留在成員格子內；點選綠色空位直接送出 `quick-join`。
@@ -256,6 +258,7 @@ QuickPartyDetailView:
 ```
 通用操作:
   - 隊伍資訊卡顯示「分享房間連結」按鈕，點擊後複製 `/parties/{partyId}` 深連結到剪貼簿。
+  - 隊伍備註提交與顯示都保留使用者輸入的空行與連續空格；空字串才視為未填寫。
 
 身份判斷:
   - `PartyDetailView`、`PartyEditView`、`usePartyPasswordGuard` 共用 `usePartyMembership` / selector helper，避免各畫面各自判斷

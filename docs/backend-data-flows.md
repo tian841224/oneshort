@@ -815,6 +815,7 @@ middleware/sanitize.go:
 party usecase 層額外 sanitize:
   - sanitizeCreatePartyInput()
   - sanitizeUpdatePartyInput()
+  - 房間 `note` 使用保留空白版本的 sanitize：移除 HTML/control characters，但不 trim 開頭/結尾空格或空行。
 ```
 
 ---

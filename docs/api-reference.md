@@ -436,6 +436,7 @@ PIN 僅允許 4-6 位數字。
 - `target_name` 為 API 顯示名稱；後端會依資料來源解析，不直接回傳 DB 內部儲存的參照 ID。
 - `target_option_id` 會出現在 `BOSS` / `GROUP` 隊伍。
 - `target_map_id` 會出現在 `TRAINING` 隊伍。
+- `note` 為房間備註；後端會移除 HTML/control characters，但保留使用者輸入的空行、開頭/結尾空格與連續空格。
 - `leader_user_id` 與 `filled_by_user_id` 都是 actor id，用於個人 room 與權限判斷。
 - 舊版 Guest snapshot 欄位不再出現在正式 API。
 
