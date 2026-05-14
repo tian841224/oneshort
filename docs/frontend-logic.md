@@ -490,18 +490,18 @@ PartyEditView 自己角色預先指派 UI:
 ```
 useWebSocket hook:
 
-1. isAuthenticated=true → useWebSocket 建立 WS 連線並管理 socket lifecycle
+1. 所有瀏覽器情境（包含未登入 guest）→ useWebSocket 建立 WS 連線並管理 socket lifecycle
    - 若設定 `NEXT_PUBLIC_WS_URL`，優先連到該位址（支援獨立 `ws-gateway`）
    - 否則回退為從 `NEXT_PUBLIC_API_URL` 推導同 host 的 `/ws`
 2. ws.onopen → 發送 { type: 'auth' }
-3. auth_success → 前端訂閱 `actor:{actor.id}` personal room 與 `parties:global`，並重送目前仍有 listener 的 `party:{id}` room 訂閱
+3. auth_success → 前端訂閱 `parties:global`，使用登入 actor 的 `actor:{actor.id}` 或 `payload.room_id`（未登入 quick guest）作為 personal room，並重送目前仍有 listener 的 `party:{id}` room 訂閱
    - 個人房間 `actor:{actorId}` 由 server 在握手成功時自動加入
    - reconnect 後必須重送 active room subscriptions，避免隊伍詳情與聊天室事件停止更新
 4. useWebSocketEventHandler 負責解析 onmessage、emit 事件與 Query invalidation
    - handler 只依賴穩定的 `identityId` / `personalRoom`，不可在 options 內傳入每次 render 都重建的新物件，避免一般 re-render 觸發 socket teardown / reconnect
-5. party 的互動式閒置提醒由 idleWarnings handler 統一處理
+5. party 的互動式閒置提醒由 idleWarnings handler 統一處理；`payload.is_quick=true` 時，「我還在 / 已解散」必須改打 quick 專用 endpoint
 6. 斷線 → useWebSocketReconnect 以指數退避加 jitter 重連（約 1s, 2s, 4s... 最大 30s，並加 0-1s 隨機延遲避免同時重連）
-7. isAuthenticated=false → 停止重連、關閉 socket；在線人數由 `['stats', 'online']` query cache 管理
+7. isAuthenticated=false → 仍保留 WS 連線，用於在線人數、公開事件與 quick guest personal-room 通知；沒有 quick guest token 時只會收到 public/global 類事件
 ```
 
 ### 6.2 事件處理矩陣
@@ -521,8 +521,8 @@ useWebSocket hook:
 | `party.member_joined` | ✓ | ℹ️ "有成員加入" | parties, party:{id} | - |
 | `party.status_changed` | ✓ | - | parties, party:{id} | 同步 RECRUITING / ACTIVE / HIDDEN / CLOSED |
 | `party.expired` | ✓ | - | parties, myOngoing, party:{id}, notifications | - |
-| `party.idle_warning` | ✓ | 互動式提醒 | parties, myOngoing, party:{id}, notifications | `warning_stage=initial` 時代表已先自動轉為 `HIDDEN`；`warning_stage=final` 時代表 5 分鐘後將自動關閉 |
-| `chat` | - | - | - | emit → 局部訂閱者 (usePartyChat) |
+| `party.idle_warning` | ✓ | 互動式提醒 | parties, myOngoing, party:{id}, notifications | `warning_stage=initial` 時代表已先自動轉為 `HIDDEN`；`warning_stage=final` 時代表 5 分鐘後將自動關閉；快速隊伍只會提醒建立者，payload 會帶 `is_quick=true` |
+| `chat` | quick personal room 時 ✓ | quick personal room 且不在該房間頁面時顯示房外 toast | - | party room → 局部訂閱者 (usePartyChat)；quick personal room → 房外通知 |
 | `guild.chat` | guild room | Header 公會 icon 未讀 | guild chat | emit → 公會聊天室；畫面不顯示 `guild:{id}` |
 | `guild.announcement.created` | guild room | Header 公會 icon 未讀 | guild announcements | 入口導向公會首頁/公告 |
 | `guild.match.completed` | guild room | Header 公會 icon 未讀 | guild parties, match history | 顯示生成隊伍數，不顯示隊伍 UUID |
@@ -546,7 +546,8 @@ useWebSocket hook:
 - `wsStore` 會維護 `room_id` 的訂閱計數；多個元件同時訂閱同一房間時，前端只會向伺服器送出一次 `subscribe`，最後一個訂閱者離開時才送出 `unsubscribe`。
 - `PartyChat` 與 `GlobalChatNotifier` 可同時訂閱同一個 `party:{id}` 房間；實際送往伺服器的訂閱仍只有一份。
 - `GlobalChatNotifier` 以「進行中的活動」隊伍清單為來源；即使該清單缺少 `slots` 或 `chat.timestamp` 異常，仍需用隊伍標題 fallback 顯示跳窗通知並累加活動未讀數。
-- `chat` payload 採統一 sender 結構：`{ sender: { kind, id, display_name, character_code, job_class_id, level }, content }`。Quick Login 與 Discord actor 使用同一套 sender 契約。
+- `chat` payload 採統一 sender 結構：`{ party_id, sender: { kind, id, display_name, character_code, job_class_id, level }, content }`。Quick Login 與 Discord actor 使用同一套 sender 契約。
+- 快速隊伍的 chat 會額外送到 quick participant personal room；`useWebSocketEventHandler` 只在目前不在該 `party` 房間且 sender 不是自己時顯示 toast。
 - 若目前正在瀏覽同一個 `party` 房間，聊天室新訊息只更新房內內容，不顯示全域跳窗、不播放提示音，也不累加該房間未讀。
 - 進入房間的切頁過渡期也視為「正在進房」：一旦使用者點擊該隊伍入口，即使 URL 尚未完成切換，同房間的新訊息仍不可跳出全域提醒。
 - `GlobalChatNotifier` 必須跟 `party` query 參數同步清除 `openingPartyRoom` 狀態：進房成功後立即解除暫存抑制，離開房間後也要同步清除，避免同房新訊息在房外仍被誤判成「正在進房」而漏掉全域提醒與活動未讀數。
@@ -572,6 +573,7 @@ NotificationBell:
   - Quick Login 與 Discord 共用同一個 API 契約；通知由後端 `notifications` 表提供
   - `party.idle_warning` / `party.expired` 標題優先顯示 `party_title`（隊伍名稱），不以 `party_name`（目標）覆蓋
   - `party.idle_warning` 會依 `warning_stage` 顯示不同文案：`initial` 顯示「已閒置 1 小時並暫時隱藏」，`final` 顯示「已閒置 1 小時 55 分，5 分鐘後自動關閉」
+  - `party.idle_warning` 若 content 帶 `is_quick=true`，通知中心的「還在 / 解散」動作需使用 `POST /parties/:id/quick-liveness` 與 `POST /parties/:id/quick-close`
   - "全部標記已讀" 按鈕
   - 不提供單筆刪除或「刪除所有已讀」按鈕
   - `party.idle_warning` 在使用者點選「還在 / 解散 / 離開」後，會先 optimistic remove，避免重複點選
@@ -603,6 +605,7 @@ WebSocket 觸發通知更新:
                        → `warning_stage=final` 顯示「已閒置 1 小時 55 分，若 5 分鐘內仍無回應將自動關閉」
                        → 收到事件時先同步刷新隊伍與 myOngoing 查詢
                        → "我還在" 會清除初次與最後提醒標記並重置閒置計時；若目前是系統自動隱藏的 `HIDDEN`，會重新顯示
+                       → `is_quick=true` 代表快速隊伍建立者提醒；"我還在" 使用 `quick-liveness`，"已解散" 使用 `quick-close`
                        → action 成功或 stale no-op 時才會 invalidate；若正在該隊伍詳情，會移除 URL 的 `party` 參數回列表，不做整頁 reload
                        → 使用者在彈跳提示點選任一動作後，不顯示成功/失敗 toast，避免隊伍狀態已過期時干擾操作
   - party.expired     → 顯示 "隊伍已閒置兩小時沒有活動，已由系統自動關閉"

@@ -930,6 +930,24 @@ PUT 補充說明：
 
 ---
 
+### POST /api/v1/parties/:id/quick-liveness
+確認快速隊伍仍活躍 **[快速隊伍建立者 cookie]**
+
+**說明:**
+- 快速隊伍沿用一般隊伍閒置流程：1 小時自動隱藏並提醒、1 小時 55 分最後提醒、2 小時自動關閉。
+- 此 endpoint 只允許快速隊伍建立者（HOST participant）確認存續。
+- 會更新 `updated_at` 並清除 `last_idle_notified_at` / `last_idle_final_notified_at`。
+- 若快速隊伍因閒置提醒被自動隱藏，會同步重新顯示為 `RECRUITING / ACTIVE`。
+
+**Response 200:** `{ "status": "confirmed" }`
+
+**Error Codes:**
+- `403` - `{ "code": "PARTY_IDLE_ACTION_NOT_PARTICIPANT" }` 呼叫者不是快速隊伍建立者
+- `404` - `{ "code": "PARTY_IDLE_ACTION_NOT_FOUND" }` 隊伍已不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_IDLE_ACTION_ALREADY_CLOSED" }` 隊伍已關閉（stale no-op）
+
+---
+
 ### GET /api/v1/parties/:id/chat
 取得隊伍聊天室歷史 **[需認證，隊伍成員]**
 
@@ -2122,6 +2140,7 @@ PUT 補充說明：
   "type": "chat",
   "room_id": "party:uuid",
   "payload": {
+    "party_id": "uuid",
     "sender": {
       "kind": "actor",
       "id": "character_uuid",
@@ -2143,7 +2162,8 @@ PUT 補充說明：
 }
 ```
 
-`auth_success` 後 server 已自動加入 `actor:{actorId}` personal room；client 需訂閱 `parties:global`，並在 reconnect 後重送仍有 listener 的 `party:{partyId}` 訂閱。
+`auth_success` 後 server 已自動加入當前 identity 的 personal room；登入 actor 會是 `actor:{actorId}`，未登入 quick guest 則以 `payload.room_id` 回傳 deterministic personal room。client 需訂閱 `parties:global` 與該 personal room，並在 reconnect 後重送仍有 listener 的 `party:{partyId}` 訂閱。
+快速隊伍聊天仍以 `party:{partyId}` 作為房內主事件；後端會另外把同一個 `chat` payload 鏡射到可讀取聊天的 quick participant personal room，用於房外 toast，不會重複寫入聊天歷史。
 
 ---
 

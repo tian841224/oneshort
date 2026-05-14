@@ -321,10 +321,13 @@ Worker 生命週期:
    - scheduled 隊伍：scheduled_at 與 updated_at 都超過 1 小時未更新
    → status = HIDDEN
    → last_idle_notified_at = now
-   → 發送 party.idle_warning 給全隊
+   → 一般隊伍發送 party.idle_warning 給隊長、成員與隊伍房間
+   → 快速隊伍只提醒建立者（QuickParticipant HOST）的 personal room，payload 帶 `is_quick=true`
+   → 快速隊伍若找不到建立者 personal room（host participant 不存在或 token 無效），不送提醒，直接 CLOSED 並發送 party.expired
 
 2. 確認仍活躍：
    - 任一現有成員 POST /parties/:id/liveness
+   - 快速隊伍建立者使用 POST /parties/:id/quick-liveness
    - 若為閒置自動隱藏的 HIDDEN → 恢復為 RECRUITING / ACTIVE
    - 若為隊長手動隱藏的 HIDDEN → 維持 HIDDEN
    → 清除 last_idle_notified_at / last_idle_final_notified_at，重置 updated_at
@@ -344,6 +347,7 @@ Worker 生命週期:
    → payload.warning_stage = "final"
    → payload.close_in_minutes = 5
    → 記錄 last_idle_final_notified_at
+   → 快速隊伍最後提醒仍只送給建立者；若此時建立者已找不到，同樣直接 CLOSED
 
 4. 最終關閉：
    - status = HIDDEN
@@ -429,6 +433,8 @@ ReplaceParty (`PUT /parties/:id`):
 | `party.member_kicked` | 被踢者 | `/?tab=MY_PARTY&party={id}` |
 | `party.disbanded` | 全體成員 | `/?tab=MY_PARTY&party={id}` |
 | `party.status_changed` | 全體成員 | `/?tab=MY_PARTY&party={id}` |
+
+快速隊伍的未登入 guest 沒有持久化 actor row；其 personal-room 事件用於 WebSocket 即時 toast / cache refresh，不保證寫入 `notifications` 表。
 
 ### 4.2 通知生命週期
 

@@ -530,6 +530,17 @@ stale/no-op 契約：
   - 前端 idle warning action 應將這些情境視為 silent no-op，而非真正錯誤
 ```
 
+### 2.7A POST /api/v1/parties/:id/quick-liveness（快速隊伍重置閒置）
+
+```
+1. 透過 quick_guest_token 解析目前 quick viewer
+2. 驗證 viewer 是快速隊伍 HOST participant
+3. 呼叫 ConfirmPartyLiveness，同步清除 last_idle_notified_at / last_idle_final_notified_at 並刷新 updated_at
+4. 若隊伍是因閒置提醒而自動變成 `HIDDEN`，恢復為 `RECRUITING` / `ACTIVE`
+5. 更新 quick immediate Redis snapshot、刷新招募快取、發布 `party.updated`
+6. stale/no-op code 與一般 `/liveness` 相同；非 HOST 會回 `PARTY_IDLE_ACTION_NOT_PARTICIPANT`
+```
+
 ---
 
 ## 三、事件發布與傳遞流程
@@ -629,6 +640,13 @@ party.idle_warning              → 隊長與成員 personal room + party:{party
 system.online_count             → public:broadcast
 ```
 
+快速隊伍補充：
+- quick participant token 為 `actor:{id}` 時 personal room 直接對應該登入 actor；未登入 guest token 會轉成 deterministic quick guest `actor:{id}` personal room。
+- `party.updated` 會送到 `party:{partyID}` 與所有 quick participant personal room，確保登入 actor 與未登入 guest 都會刷新快速隊伍狀態。
+- `party.application_created` 會送到 `party:{partyID}` 與 HOST personal room；`party.application_accepted` / `party.application_rejected` 會送到申請者 personal room。
+- `party.member_joined` 會送到 `party:{partyID}` 與 HOST personal room，維持與一般隊伍的隊長通知語義一致。
+- `chat` 仍寫入一次 `chat:party:{id}` 歷史並推送 `party:{partyID}`；快速隊伍會額外鏡射同一 payload 到可讀聊天的 quick participant personal room，供房外 toast 使用。
+
 ---
 
 ## 四、Worker 機制
@@ -678,6 +696,10 @@ idle party worker:
     1. 設定 status='HIDDEN'、last_idle_notified_at = NOW()
     2. 發送 `party.idle_warning` 給隊長、成員與隊伍房間
     3. 若 immediate 索引缺失，讀取 fallback 會掃描 `party:data:*` 並修補 `party:list:immediate*`
+  - 快速隊伍：
+    - 沿用同一個 1 小時門檻
+    - 只發送 `party.idle_warning` 給 HOST participant 的 personal room，payload 帶 `is_quick=true`
+    - 若找不到 HOST participant personal room，直接呼叫 ExpireParties 關閉房間，不送 idle warning
 
 第二階段：最後提醒
   - 條件：
@@ -688,6 +710,7 @@ idle party worker:
     1. 設定 `last_idle_final_notified_at = NOW()`
     2. 再送一次 `party.idle_warning`
     3. payload 會帶 `warning_stage=final`、`close_in_minutes=5`
+    4. 快速隊伍最後提醒仍只送給建立者；建立者找不到時直接關閉
 
 第三階段：自動關閉
   - 條件：
@@ -846,12 +869,13 @@ WebSocket Chat（非持久化，Redis 快取）:
   1. 客戶端透過 WS 發送 { action: 'chat', room_id: 'party:{id}', content: '...' }
 2. API Server / WS Gateway 依 JWT identity 驗證發送者仍是隊伍成員
      - 以 `actor_id` 與目前角色驗證 leader / filled slot 關係
-3. Gateway 產生 payload { sender, content } 與 emitted_at timestamp
+3. Gateway 產生 payload { party_id, sender, content } 與 emitted_at timestamp
      - sender = { kind, id, display_name, character_code, job_class_id, level }
      - sender.id = 當前在隊伍中的 `character_id`
   4. XADD "ws_events" * { room_id, event_type='chat', payload, emitted_at }
   5. WS Stream Consumer 將 chat event 轉譯成 { type:'chat', room_id, payload, timestamp } 並廣播到 party room
   6. 同步 RPush "chat:party:{id}" 保留最近 500 則歷史訊息
+  7. 若為快速隊伍，另外 XADD 同一 chat payload 到可讀聊天的 quick participant personal room；這一步不追加聊天歷史，避免重複訊息
 
 讀取歷史:
   1. 前端呼叫 GET /api/v1/parties/{id}/chat，可用 `limit` 指定最近 1-500 筆（預設 500）
