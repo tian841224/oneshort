@@ -39,6 +39,7 @@ OneShort 的核心模組，提供靈活且即時的遊戲組隊體驗。
 - **閒置隊伍生命週期**:
     - 閒置 1 小時先自動改為 `HIDDEN`，並發送 `party.idle_warning`。
     - 若持續閒置到 1 小時 55 分，會再送一次 `party.idle_warning` 最後提醒，告知 5 分鐘後將自動關閉。
+    - 排程每輪會補掃 DB-backed immediate parties 與 Redis immediate index，避免舊資料或 Redis snapshot / index 缺失時漏掉未關閉隊伍。
     - 隊長可手動把隊伍切換為 `HIDDEN`，讓隊伍從公開搜尋移除，之後可重新顯示。
     - `ConfirmLiveness` 可由任何現有成員執行，會清除 `last_idle_notified_at` / `last_idle_final_notified_at`、重置閒置計時；若是系統自動隱藏的隊伍，會同步重新顯示。
     - idle warning 的 `not found / already closed / not participant` code 只用於真實 stale/no-op；若是 repository/DB 讀取失敗，仍回 500 讓客戶端可重試。

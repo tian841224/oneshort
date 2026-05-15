@@ -319,9 +319,10 @@ Worker 生命週期:
    - status in (RECRUITING, ACTIVE)
    - immediate 隊伍：updated_at 超過 1 小時未更新
    - scheduled 隊伍：scheduled_at 與 updated_at 都超過 1 小時未更新
+   - 排程每輪都會補掃 DB-backed immediate parties 與 Redis immediate index，避免舊資料或 Redis snapshot / index 缺失時漏掉未關閉隊伍
    → status = HIDDEN
    → last_idle_notified_at = now
-   → 一般隊伍發送 party.idle_warning 給隊長、成員與隊伍房間
+   → 一般隊伍發送 party.idle_warning 給隊長、成員與隊伍房間；隊長個人通知查詢失敗時仍會發送成員與隊伍房間通知並標記已提醒，避免同一批資料每輪重複卡住
    → 快速隊伍只提醒建立者（QuickParticipant HOST）的 personal room，payload 帶 `is_quick=true`
    → 快速隊伍若找不到建立者 personal room（host participant 不存在或 token 無效），不送提醒，直接 CLOSED 並發送 party.expired
 
@@ -340,6 +341,7 @@ Worker 生命週期:
    - 前端收到這些 code 時應靜默完成 UI 收尾；只有非 allowlist 的失敗才算真正異常
 
 3. 最後提醒：
+   - 排程會從 DB hidden scheduled/immediate rows 與 Redis immediate cache 補掃候選
    - status = HIDDEN
    - last_idle_notified_at 超過 55 分鐘
    - last_idle_final_notified_at 尚未設定
@@ -350,6 +352,7 @@ Worker 生命週期:
    → 快速隊伍最後提醒仍只送給建立者；若此時建立者已找不到，同樣直接 CLOSED
 
 4. 最終關閉：
+   - 排程會從 DB hidden scheduled/immediate rows 與 Redis immediate cache 補掃候選
    - status = HIDDEN
    - last_idle_final_notified_at 超過 5 分鐘
    → status = CLOSED

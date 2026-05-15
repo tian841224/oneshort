@@ -121,6 +121,7 @@
 - 閒置 1 小時後，系統先將隊伍改為 `HIDDEN`
 - 任一現有成員可透過 `POST /parties/:id/liveness` 重新顯示 `HIDDEN`
 - 若在關閉門檻內仍未被重新顯示，系統再將隊伍改為 `CLOSED`
+- idle worker 每輪會補掃 DB-backed immediate parties 與 Redis immediate index，避免舊資料或 Redis snapshot / index 缺失時漏掉未關閉隊伍
 - `CLOSED` 不可再修改、不可重新顯示、不可解散
 
 ---

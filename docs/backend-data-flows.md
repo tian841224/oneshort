@@ -691,17 +691,20 @@ idle party worker:
   - 條件：status IN ('RECRUITING', 'ACTIVE') 且更新時間超過 1 小時
   - 來源：
     - 預約隊伍：DB 查詢 scheduled_at / updated_at 雙門檻
-    - 立即隊伍：透過 Redis immediate index 批次讀取 `party:data:*`
+    - 立即隊伍：DB-backed immediate rows + Redis immediate index 批次讀取 `party:data:*`
+    - 排程每輪都會補掃 DB 與 Redis 的未關閉候選，避免 Redis snapshot / index 缺失時漏掉舊資料
   - 動作：
     1. 設定 status='HIDDEN'、last_idle_notified_at = NOW()
     2. 發送 `party.idle_warning` 給隊長、成員與隊伍房間
-    3. 若 immediate 索引缺失，讀取 fallback 會掃描 `party:data:*` 並修補 `party:list:immediate*`
+    3. 若隊長個人通知目標查詢失敗，仍發送成員與隊伍房間通知並標記已提醒，避免同一筆 stale party 每輪重複卡住
+    4. 若 immediate 索引缺失，讀取 fallback 會掃描 `party:data:*` 並修補 `party:list:immediate*`
   - 快速隊伍：
     - 沿用同一個 1 小時門檻
     - 只發送 `party.idle_warning` 給 HOST participant 的 personal room，payload 帶 `is_quick=true`
     - 若找不到 HOST participant personal room，直接呼叫 ExpireParties 關閉房間，不送 idle warning
 
 第二階段：最後提醒
+  - 來源：DB hidden scheduled/immediate rows + Redis immediate cache
   - 條件：
     - `status = 'HIDDEN'`
     - `last_idle_notified_at + 55m <= NOW()`
@@ -713,6 +716,7 @@ idle party worker:
     4. 快速隊伍最後提醒仍只送給建立者；建立者找不到時直接關閉
 
 第三階段：自動關閉
+  - 來源：DB hidden scheduled/immediate rows + Redis immediate cache
   - 條件：
     - `status = 'HIDDEN'`
     - `last_idle_final_notified_at + 5m <= NOW()`
