@@ -81,7 +81,7 @@ Discord 登入：
 4. Discord 回調 → `/auth/discord/callback?code=...`
 5. 前端先驗證 `state`，再依 OAuth intent 決定是登入或綁定
 6. 成功後寫入 `{ actor, current_character }` 到 `authStore`
-7. 登入導回首頁；綁定導回 `/me`
+7. 登入優先導回開啟登入視窗前的站內畫面（例如隊伍詳情），無記錄時導回首頁；綁定導回 `/me`
 8. 若 Discord callback 因 session 失效回 `401`，callback 頁需直接顯示單一錯誤訊息「登入已過期，請重新登入後再試。」；不可再額外觸發全域登入過期 toast 或首頁跳轉
 9. 若 Discord 綁定流程回 `409 discord_merge_required`，callback 頁需切到 merge confirmation state，而不是回 `/me`
 10. merge confirmation state 需直接顯示：
@@ -103,7 +103,7 @@ Quick Login：
    - `job_class_id=0` 是合法的「初心者」，前端驗證需以 `null/undefined` 判斷未選職業，不可用 truthy/falsy 判斷
 5. `requires_pin`：直接以 `character_code + pin` 呼叫 `POST /api/v1/auth/quick-login`
 6. `discord_only`：阻止 quick login，提示改用 Discord
-7. 成功後寫入 `{ actor, current_character }`，導回首頁
+7. 成功後寫入 `{ actor, current_character }`，優先導回開啟登入視窗前的站內畫面，無記錄時導回首頁
 
 ### 2.3 登出
 
