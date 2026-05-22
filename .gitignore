@@ -9,8 +9,6 @@
 !.agent/
 !.agent/rules/
 !.agent/rules/**
-!.agent/skills/
-!.agent/skills/**
 !.codex/
 !.codex/skills/
 !.codex/skills/**
@@ -26,7 +24,5 @@
 .omx/logs/
 .omx/state/
 .omx/*.json
-.agent/skills/**/__pycache__/
-.agent/skills/**/*.pyc
 .codex/skills/**/__pycache__/
 .codex/skills/**/*.pyc

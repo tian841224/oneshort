@@ -18,8 +18,8 @@ trigger:
 
 - 頁面負責組裝，元件負責呈現，業務邏輯收斂於 hooks / service-style abstraction。
 - 若現有結構不適合新需求，應先提出重構，不以單點特判為手段。
-- UI/UX 邏輯、按鈕行為、通知系統、WebSocket 呈現請參考 `docs/frontend-logic.md`。
-- **禁止假契約**：禁止使用假資料或後端不存在的格式；缺少後端能力時先補後端。
+- UI/UX 邏輯、按鈕行為、通知系統、WebSocket 呈現請參考 [docs/frontend-logic.md](../../docs/frontend-logic.md)。
+- API 契約、型別一致與禁止假資料規範以 [core.md §4](core.md#4-前後端同步) 為準。
 
 ## 3. 型別檢查
 

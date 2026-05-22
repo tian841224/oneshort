@@ -24,6 +24,30 @@ trigger: always_on
 - 商業邏輯或 API 行為異動時，程式碼與文件必須同步更新。
 - 若現有架構不適合新需求，應先提出重構方案，不持續堆疊例外。
 
+### 3.1 修正方案評估準則
+
+> [!IMPORTANT]
+> **禁止以「最小範圍修正」作為預設策略**。任何修正（bugfix、refactor、新功能、規格調整）前，必須先列舉並比較可行方案，採取最佳解。
+
+**評估流程**
+
+1. **列舉至少兩個方案**：包含「就地修補」與「抽出共用 / 重構邊界」兩個極端；必要時加入第三方案（如「換掉錯誤抽象」、「下推/上移責任」）。
+2. **以三大前提逐項評估**（同時權衡；衝突時優先順序為 **安全性 > 維護性 > 效能**）：
+   - **維護性**：單一責任、邊界清晰、命名與型別一致；是否增加重複碼、例外堆疊或隱性耦合。
+   - **效能**：熱路徑、DB 查詢、I/O、前端渲染與 Bundle 大小影響；避免 N+1 與冗餘運算。
+   - **安全性**：輸入信任邊界、權限與授權、注入 / XSS / CSRF / SSRF、敏感資料外洩風險。
+3. **決策落地**：選定方案的「理由與被拒方案」必須記入 PR 描述、commit body 或 `.omx/plans/` 對應規格文件，禁止只留下程式碼差異。
+
+**例外條款**
+
+- 僅限「生產緊急事故 hotfix」或「使用者明確指示 minimal patch」時，可暫採局部修正。
+- 須同步建立 follow-up 任務（PR 描述、commit body、`.omx/plans/` 或 issue tracker），於下一個迭代完成完整重構，不得無限期延後。
+
+**驗證義務**
+
+- 缺乏對應層級驗證（單元 / 整合 / E2E / 安全掃描）的「最佳方案」視同無效。
+- Schema、API、安全邊界變動，必須附自動化測試並同步更新型別契約。
+
 ## 4. 前後端同步
 
 - **後端優先**：API 結構變動時，必須同步更新前端 `lib/api`、types 與錯誤處理。
@@ -63,11 +87,21 @@ git -C frontend worktree add ..\oneshort-frontend-worktrees\feature-party-search
 
 ## 9. Commit Message（Conventional Commits）
 
+> [!IMPORTANT]
+> 本專案已導入 **Semantic Release**。團隊成員 **必須** 嚴格遵守 Conventional Commits 規範，否則自動化版本號更迭與變更日誌將無法運作。
+
 ```
 <type>(<scope>): <簡短描述>
 ```
 
-常用 type：`feat`、`fix`、`refactor`、`docs`、`test`、`chore`
+**規範要求：**
+- **`feat`**: 新增功能
+- **`fix`**: 修復錯誤
+- **`refactor`**: 程式碼重構（不影響功能）。
+- **`docs`**: 文件更新。
+- **`test`**: 測試用例更新。
+- **`chore`**: 瑣事、建置流程或輔助工具異動
+- **BREAKING CHANGE**: 若在描述中包含此字串，會觸發 Major 版本號升級。
 
 ## 10. Workflow 觸發
 
@@ -88,5 +122,6 @@ git -C frontend worktree add ..\oneshort-frontend-worktrees\feature-party-search
 
 出現編譯失敗、測試不過或執行異常時：
 1. 找出根因，不僅修表面症狀。
-2. 記錄避免方式到 [TROUBLESHOOTING.md](../../docs/TROUBLESHOOTING.md)。
-3. 確保未來不重複同樣錯誤。
+2. 依 [§3.1 修正方案評估準則](#31-修正方案評估準則) 比較可行方案後選定最佳解，禁止以最小修補繞過根因。
+3. 將避免方式記錄在本次 PR / commit / plan / issue；只有前後端程式錯誤需要長期追蹤時，才另外更新 troubleshooting 文件。
+4. 確保未來不重複同樣錯誤。

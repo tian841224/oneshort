@@ -6,6 +6,15 @@ description: UI/UX design intelligence with searchable database
 
 Comprehensive design guide for web and mobile applications. Contains 67 styles, 96 color palettes, 57 font pairings, 99 UX guidelines, and 25 chart types across 13 technology stacks. Searchable database with priority-based recommendations.
 
+## OneShort Project Override
+
+When working inside the OneShort repository, `.agent/rules/style.md` is the product design source of truth.
+
+- Read `.agent/rules/style.md` before modifying frontend UI/UX, visual styling, interaction copy, layout, responsive behavior, or design assets.
+- Use this skill only as a targeted supplement when `style.md` does not answer the design question or the user explicitly asks for broad UI/UX exploration.
+- Do not run broad design-system generation for routine OneShort UI changes; keep searches narrow and tied to the current component/page.
+- Do not replace OneShort's warm neutral design language with generic results from the skill database.
+
 ## Prerequisites
 
 Check if Python is installed:
