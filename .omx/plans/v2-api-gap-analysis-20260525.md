@@ -29,9 +29,9 @@
 | ~~A5~~ | ~~`MatchSection` → `MatchRunPanel`~~ | ~~`GUILD_BOSS_MEMBER_SETTINGS`~~ | ~~`GET /guilds/:id/match/member-settings?boss_id=X`~~ | ~~`useGuildBossMemberSettings(id, bossId)`~~ | ✅ 完成 |
 | ~~A6~~ | ~~`MatchSection` → `MyPreferencesPanel`~~ | ~~`GUILD_MY_PREFERENCES`~~ | ~~`GET /guilds/:id/me/preferences`~~ | ~~`useGuildPreferences(id)`~~ | ✅ 完成 |
 | ~~A7~~ | ~~`MatchSection` → `HistoryPanel`~~ | ~~`GUILD_MATCH_HISTORY`~~ | ~~`GET /guilds/:id/me/match-history`~~ | ~~`useGuildMatchHistory(id)`~~ | ✅ 完成 |
-| A8 | `GuildsClient` (公會列表) | `SAMPLE_GUILDS` | `GET /guilds` | `useGuildList()` | 依賴 B2 補足欄位後才能完整顯示 |
-| A9 | `GuildDetailClient` (公會詳情) | `SAMPLE_GUILDS` | `GET /guilds/:id` | `useGuildDetail(id)` | 依賴 B2 補足欄位 |
-| A10 | `SettingsSection` (儲存/離開/解散按鈕) | 按鈕目前無 onClick | `PUT /guilds/:id` / `DELETE /guilds/:id/me` / `DELETE /guilds/:id` | `useUpdateGuildMutation` / `useLeaveGuildMutation` / `useDisbandGuildMutation` | 按鈕 UI 存在，只需加 onClick 與 loading 狀態 |
+| ~~A8~~ | ~~`GuildsClient` (公會列表)~~ | — | — | — | ✅ 完成：已用 `useGuildList()`；C4 補 `s.min_level ?? 0`；`GuildListCard`/`GuildPreview` 均顯示 `guild.minLv` |
+| ~~A9~~ | ~~`GuildDetailClient` (公會詳情)~~ | — | — | — | ✅ 完成：已用 `useGuildDetail()`；`GuildDetail extends GuildSummary` 繼承 `min_level` |
+| ~~A10~~ | ~~`SettingsSection` (儲存/離開/解散按鈕)~~ | — | — | — | ✅ 完成：三個 mutation 均已接好；補入 `min_level` 至 form init、save payload、reset |
 
 ---
 
@@ -137,7 +137,7 @@ migration `0043_add_min_level_to_guilds`、`domain.go` (`MinLevel *int16`)、`re
 
 | 類型 | 數量 | 工作量 |
 |------|------|--------|
-| A — 有 API，尚未串接 | **3 項待辦**（A8/A9/A10；A13/A20 跳過） | B2 已完成，A8/A9/A10 可執行 |
+| A — 有 API，尚未串接 | **0 項待辦** ✅ A8/A9/A10 全部完成（A13/A20 跳過） | — |
 | B — 有相近 API，需修改 | **0 項待辦** ✅ B2/B3/B4/B5/B6 全部完成 | — |
 | C — 無 API，需開發 | **0 項待辦** ✅ C1–C5 全部完成或移除 | — |
 
@@ -152,4 +152,4 @@ migration `0043_add_min_level_to_guilds`、`domain.go` (`MinLevel *int16`)、`re
 | ~~**Batch 2**~~ | ~~B2（後端：min_level 欄位）~~ | — | — | ✅ DONE |
 | ~~**Batch 3**~~ | ~~A14–A19（帳號頁按鈕與表單）~~ | — | — | ✅ DONE |
 | ~~**Batch 4**~~ | ~~A2–A7、A3、A21、B3、B4/B5、C2、C3、C4、C5、B6~~ | — | — | ✅ DONE |
-| **Batch 5** | A8/A9/A10（GuildsClient + GuildDetailClient + Settings） | B2 ✅ | ✅ 可執行 | 🟡 中（下一批次） |
+| ~~**Batch 5**~~ | ~~A8/A9/A10（GuildsClient + GuildDetailClient + Settings）~~ | — | — | ✅ DONE |
