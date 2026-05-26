@@ -33,6 +33,7 @@
 | `['jobClasses']` | 職業清單 | 靜態資料 |
 | `['filterOptions']` | 隊伍篩選選項 | 地圖 / BOSS / GROUP 目標資料更新 |
 | `['admin', 'announcement']` / `['admin', 'announcements']` | 管理公告 | 管理員新增/刪除/覆寫公告 |
+| `['admin', 'members', filter]` / `['admin', 'members', actorId]` | 管理員會員清單與會員明細 | 管理員重設 PIN、清除 Discord 綁定、啟用/停用帳號、修改/刪除角色 |
 | `['system', 'announcement']` / `['system', 'announcements']` | 公開公告 | 管理員新增/刪除/覆寫公告 |
 | `['admin', 'notice']` / `['system', 'notice']` | NoticeBar 跑馬燈 | 管理員更新/清除獨立 NoticeBar 內容 |
 | `['stats', 'online']` | 在線人數 | `system.online_count` 事件 |
@@ -42,6 +43,14 @@
 | `['guilds', guildId, 'parties']` | 公會隊伍 | 公會隊伍建立、自動配對完成、隊伍成員事件 |
 | `['guilds', guildId, 'calendar', actorId]` | 我的公會行事曆 | 自動配對完成、公會隊伍建立、角色/隊伍成員事件 |
 | `['guilds', guildId, 'chat']` | 公會聊天室 | 送出訊息、聊天室歷史重抓 |
+| `['partyGuide', partyId]` | 隊伍攻略與 widget 狀態 | 攻略載入、`party.guide_state.updated`、玩家操作攻略工具 |
+
+### 1.3 隊伍攻略小工具狀態
+
+- `answer_lookup` 會直接顯示題目與答案，不再用點擊展開答案。
+- 隊員點選 `answer_lookup` 題目時，widget state 以 `assignments: { questionId: memberId[] }` 記錄隊員抽到的題目；同一隊員切換題目時會從原題目移到新題目，避免一人同時標記多題。
+- 題目列需顯示已標記隊員的攻略顏色 chip，顏色來源為 `party_member_colors` 保留 widget state，並透過 `party.guide_state.updated` 即時同步給同房隊員。
+- `jump_box_sync` 依 `stage_count` 與 `boxes_per_stage` 產生跳箱格子，前台直接以獨立操作視窗顯示網格，避免隊伍攻略頁面需要上下捲動；隊員點格子時以 `assignments: { cellId: memberId[] }` 記錄，格子直接呈現對應隊員攻略顏色且不顯示角色名稱，同一隊員再點同格會取消標記。
 
 ---
 
@@ -108,9 +117,14 @@ Quick Login：
 ### 2.3 登出
 
 1. 點擊「登出」按鈕
-2. 呼叫 `POST /api/v1/auth/logout`
-3. 清除 Cookie → 更新 authStore → 重導向至登入頁
-4. 本地 authStore 清空後不得永久標記 session 已檢查；下一次 auth bootstrap 必須能重新呼叫 `/actors/me`
+2. 前端同步清空 `authStore.actor`、`currentCharacter`、`isAuthenticated` 與帳號相關 modal / wizard 狀態；使用者留在目前頁面，不自動導向 `/login`
+3. 背景呼叫 `POST /api/v1/auth/logout`；即使 API 失敗，也維持本地登出狀態，避免舊帳號資訊繼續顯示
+4. 登出期間不得重新觸發 `/actors/me` bootstrap；任何登出前已送出的 `/actors/me` 回應都必須以 session/version guard 忽略，不可覆寫登出後狀態
+5. auth 從登入變未登入、或 actor id 切換時，需取消並清空 React Query cache，清除 party password cache、post-login redirect 等帳號相關 session storage
+6. 未登入仍可瀏覽公開隊伍與公開公會列表/詳情，也可建立快速隊伍；公開隊伍詳情 `/parties/[id]` 不可因未登入直接顯示「找不到此隊伍」，只有 detail API 明確回 404 才顯示不存在；個人頁、我的申請、組隊紀錄、我的隊伍、我的公會、建立一般隊伍、申請加入、隊伍/公會聊天室發言、角色切換、公會工具、BOSS 配對與設定需隱藏或顯示「登入後開始使用」類型提示
+7. 登出時需重置聊天室草稿、角色身分選擇、picker/modal、live message 的「我」標示與會員工具本地狀態；保留非帳號個資的純 UI 偏好，例如靜音、側欄寬度與聊天面板寬度
+8. auth bootstrap 判定為未登入時，使用清除本地 auth state 的路徑；使用者主動登出時，使用明確的 user-logout 清除路徑，避免 stale cookie 在 API 尚未完成前把舊帳號塞回 store
+9. 未登入瀏覽尋找隊伍時，大廳聊天仍啟用 `lobby:chat` 訂閱、載入 lobby chat history API，且發言者名稱一律顯示「遊客」；登出後需清掉帳號特定的聊天室草稿/角色選擇/「我」標示，但保留公開大廳聊天可用。
 
 ### 2.4 `/me` 帳號設定頁
 
@@ -177,13 +191,15 @@ URL 參數 `?tab=` 控制顯示模式：
 
 | Tab 值 | 顯示內容 |
 |--------|---------|
-| `FIND_QUICK` (預設) | 快速組隊列表與建立隊伍卡片 |
+| `FIND_QUICK` (預設) | 快速組隊列表與建立隊伍卡片；未登入訪客可使用快速建立 |
 | `FIND_PARTY` | 公開組隊活動清單 |
 | `FIND_BOSS` | BOSS 討伐清單 |
 | `FIND_TRAINING` | 練功地圖清單 |
 | `MY_PARTY` | 我的隊伍 |
 | `MY_APPLICATIONS` | 我的申請 |
-| `CREATE_PARTY` | 建立一般隊伍 |
+| `CREATE_PARTY` | 建立一般隊伍；需要登入 |
+
+一般隊伍與快速隊伍建立流程的頻道欄位皆為必填，前端輸入層只允許 1~4 位數字，送出前需符合 `1~9999`，不得用 `CH. 01` 類顯示字串轉換成 API payload。
 
 ### 3.3 PartyCard 顯示邏輯
 
@@ -251,6 +267,8 @@ QuickPartyDetailView:
   - 可加入的空位控制留在成員格子內；點選綠色空位直接送出 `quick-join`。
   - 若快速隊伍角色名稱尚未設定，當前房間畫面彈出角色名稱輸入視窗，儲存後繼續原本動作，不要求返回列表。
   - 密碼房的流程為：角色名稱缺失時先補角色名稱，再顯示密碼視窗，最後送出 `quick-join`。
+  - 未登入建立的快速房間，建立者憑 quick guest cookie 與 `viewer_capabilities.is_host` 可在房間詳情編輯快速隊伍設定與解散房間。
+  - 非建立者或未帶有效 host capability 的訪客不得看到編輯/解散等房主設定元件。
 ```
 
 ### 3.5 隊伍資訊面板 (PartyDetailView)
@@ -676,6 +694,10 @@ WebSocket 觸發通知更新:
   - 統計數字（`GET /api/v1/admin/stats` 回傳的總用戶與目前進行中隊伍）
   - 用戶管理（搜尋/封禁）
   - 隊伍管理（查看所有狀態包含 HIDDEN / CLOSED）
+  - 會員管理入口（`/admin/members`）
+  - `/admin/members`：可搜尋 actor、Discord 與角色，列表顯示帳號狀態、PIN/DC 綁定、角色數、開房數與入隊數
+  - `/admin/members/{actorId}`：顯示帳號、角色清單、開房紀錄、入隊歷史，並提供重設 PIN、清除 DC 綁定、啟用/停用帳號、角色啟用/停用/刪除/資料修改
+  - 清除 DC 綁定按鈕需遵守後端 fallback guard；沒有 PIN 時先重設 PIN，不讓 Discord-only 帳號被鎖住
 ```
 
 ---

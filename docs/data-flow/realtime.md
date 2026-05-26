@@ -22,11 +22,11 @@ OneShort 針對「隊伍加入」、「成員變動」等高頻率變更，採�
 ### **資料流向圖**
 `Redis Streams` → `WS Gateway / API Server` → `WebSocket Client (Browser)`
 
-- **Gateway 職責**: 消費 `ws_events` stream，根據 `room_id` 將訊息轉發給對應連線，並在 `chat` action 時使用 cache Redis + DB 檢查 party membership。
+- **Gateway 職責**: 消費 `ws_events` stream，根據 `room_id` 將訊息轉發給對應連線；`chat` action 若是 `party:{id}` 會使用 cache Redis + DB 檢查 party membership，若是 `lobby:chat` 則走公開大廳聊天並以未登入 guest 名稱「遊客」發送。
 - **Consumer Group**: 預設使用 instance-scoped group（`ws_gateway_{hostname}`），每個 gateway instance 都會各自收到 outbox-backed event，並廣播給本機 in-memory hub；新 group 從 stream 的 `$` 建立，不回放既有 `ws_events` 歷史 backlog。
 - **Outbox Dedupe**: `notify:outbox:seen:{outbox_id}` 只用來避免 DB notification、chat cleanup、internal character processor 等全域副作用重複執行。即使 outbox ID 已被其他 instance 標記處理過，本 instance 仍會先完成本機 `hub.Deliver` 與 `parties:global` mirror，再 ack 該 stream message。`notify:outbox:delivered:{group}:{outbox_id}` 則用來避免同一 consumer group 因 XACK 失敗或 pending message reclaim 對本機 WebSocket 連線重送同一事件。
 - **認證 (Auth)**: WebSocket 握手時會驗證 JWT；建立連線後，server 會自動把連線加入 `public:broadcast` 與當前 identity 的 personal room（`actor:{id}`）。未登入 quick guest 若帶有效 `quick_guest_token`，當前 identity 會是 quick guest 對應的 personal room，因此可收到快速隊伍建立者專屬事件。
-- **訂閱授權**: 客戶端額外發出的 `subscribe` 只允許 `parties:global`、自己的 personal room，以及通過成員驗證的 `party:{id}`；其他人的 `actor:*` 房間會直接回 error，不會加入 subscription。
+- **訂閱授權**: 客戶端額外發出的 `subscribe` 只允許 `parties:global`、公開 `lobby:chat`、自己的 personal room，以及通過成員驗證的 `party:{id}`；其他人的 `actor:*` 房間會直接回 error，不會加入 subscription。
 
 ### **角色更新同步事件**
 - `PATCH /characters/:id` 會先寫入 internal `character.updated` 到 `system:character:{characterID}`。
@@ -50,6 +50,8 @@ OneShort 針對「隊伍加入」、「成員變動」等高頻率變更，採�
       - `party.created`（來自 `parties:global`）→ 觸發 `queryClient.invalidateQueries(['parties'])`
       - `party.updated`（來自 `parties:global`、`party:{id}`，或 quick-party 發送到各 quick participant personal room）→ 刷新列表、隊伍詳情與進行中活動快取
       - `chat`（來自 `party:{id}`）→ 房內聊天室更新；快速隊伍額外鏡射到 quick participant personal room 時，若不在該房間頁面則顯示房外 toast
+      - `lobby.chat`（來自 `lobby:chat`）→ 尋找隊伍的大廳聊天室追加公開訊息；未登入也會載入 `GET /api/v1/lobby/chat` 並可 `POST /api/v1/lobby/chat`
+      - `party.guide_state.updated`（來自 `party:{id}`）→ 更新本地 guide state store 並失效 `['partyGuide', partyId]`；`GuideTab` 會在攻略分頁開啟時獨立訂閱 `party:{id}`，不依賴聊天室元件是否掛載
       - `character.updated`（來自 `actor:{id}` 或 `party:{id}`）→ 刷新角色/通知/申請快取，且在隊伍房間內重新抓聊天室歷史
       - 進入中的 `party:{id}` 事件 → 觸發 `queryClient.invalidateQueries(['party', partyId])`
     4. **UI**: UI 偵測到失效並重新背景獲取資料，實現「即時自動重整」。
