@@ -121,7 +121,7 @@ Quick Login：
 3. 背景呼叫 `POST /api/v1/auth/logout`；即使 API 失敗，也維持本地登出狀態，避免舊帳號資訊繼續顯示
 4. 登出期間不得重新觸發 `/actors/me` bootstrap；任何登出前已送出的 `/actors/me` 回應都必須以 session/version guard 忽略，不可覆寫登出後狀態
 5. auth 從登入變未登入、或 actor id 切換時，需取消並清空 React Query cache，清除 party password cache、post-login redirect 等帳號相關 session storage
-6. 未登入仍可瀏覽公開隊伍與公開公會列表/詳情，也可建立快速隊伍；公開隊伍詳情 `/parties/[id]` 不可因未登入直接顯示「找不到此隊伍」，只有 detail API 明確回 404 才顯示不存在；個人頁、我的申請、組隊紀錄、我的隊伍、我的公會、建立一般隊伍、申請加入、隊伍/公會聊天室發言、角色切換、公會工具、BOSS 配對與設定需隱藏或顯示「登入後開始使用」類型提示
+6. 未登入仍可瀏覽公開隊伍與公開公會列表/詳情，也可建立快速隊伍；公開隊伍詳情 `/parties/[id]` 不可因未登入直接顯示「找不到此隊伍」，只有 detail API 明確回 404 才顯示不存在；個人頁、我的申請、組隊紀錄、我的隊伍、我的公會、建立一般隊伍、申請加入、一般隊伍/公會聊天室發言、角色切換、公會工具、BOSS 配對與設定需隱藏或顯示「登入後開始使用」類型提示
 7. 登出時需重置聊天室草稿、角色身分選擇、picker/modal、live message 的「我」標示與會員工具本地狀態；保留非帳號個資的純 UI 偏好，例如靜音、側欄寬度與聊天面板寬度
 8. auth bootstrap 判定為未登入時，使用清除本地 auth state 的路徑；使用者主動登出時，使用明確的 user-logout 清除路徑，避免 stale cookie 在 API 尚未完成前把舊帳號塞回 store
 9. 未登入瀏覽尋找隊伍時，大廳聊天仍啟用 `lobby:chat` 訂閱、載入 lobby chat history API，且發言者名稱一律顯示「遊客」；登出後需清掉帳號特定的聊天室草稿/角色選擇/「我」標示，但保留公開大廳聊天可用。大廳聊天送出後前端需顯示倒數並停用送出按鈕：未登入 10 秒、登入後 5 秒；若後端回 `429` 與 `Retry-After`，以前端倒數顯示剩餘秒數並保留草稿。
@@ -260,11 +260,14 @@ handleQuickApply(partyId, slotId, charId?, requiresPassword?):
 ```
 QuickPartyDetailView:
   - `FIND_QUICK` 列表/房間是快速隊伍專用情境，不載入一般隊伍篩選、職業、角色清單或進行中活動查詢；只有切到一般隊伍或指定一般隊伍詳情時才啟用這些 query。
+  - 快速隊伍詳情與一般隊伍共用同一套 `PartyDetailView` 版面；畫面差異只由 viewer role / capability 決定，不另外渲染獨立的快速隊伍加入面板。
   - 房間資訊區顯示「分享房間連結」按鈕，點擊後複製 `/parties/{partyId}` 深連結到剪貼簿。
   - 房間備註提交與顯示都保留使用者輸入的空行與連續空格；空字串才視為未填寫。
   - 進入聊天室 (`quick-enter`) 與申請/加入隊伍 (`quick-join`) 是兩個獨立動作。
   - 使用者點選房間後，不需要先進入聊天室才能點選空位申請或加入隊伍。
+  - `quick-enter` 只建立 quick guest identity / visitor 狀態，不解鎖聊天室內容；快速隊伍聊天室只在 `viewer_capabilities.can_read_chat=true` 時掛載，且只有隊長與隊員可以讀取或發言。
   - 可加入的空位控制留在成員格子內；點選綠色空位直接送出 `quick-join`。
+  - 未登入且尚未建立 quick guest identity 時，若 `viewer_capabilities.chat_reason=NICKNAME_REQUIRED` 且有「任意職業 / 不限職業」空位，該空位仍應顯示為可加入；點擊後先補角色名稱，再用原本空位送出 `quick-join`。
   - 若快速隊伍角色名稱尚未設定，當前房間畫面彈出角色名稱輸入視窗，儲存後繼續原本動作，不要求返回列表。
   - 密碼房的流程為：角色名稱缺失時先補角色名稱，再顯示密碼視窗，最後送出 `quick-join`。
   - 未登入建立的快速房間，建立者憑 quick guest cookie 與 `viewer_capabilities.is_host` 可在房間詳情編輯快速隊伍設定與解散房間。
@@ -290,11 +293,19 @@ QuickPartyDetailView:
 
 [訪客/未登入]:
   - 查看基本資訊（title, target_name, slots overview）
+  - 一般隊伍不顯示獨立「加入此隊伍」欄位；空缺列直接顯示「可以加入 / 不能加入 / 登入後申請」狀態
+  - 快速隊伍同樣不顯示獨立「加入快速隊伍」欄位；訪客從「隊伍資訊」的空缺列直接加入或申請
+  - 未登入點選可申請空缺時觸發登入流程，登入後返回原隊伍
+  - 若一般隊伍 `allow_quick_login_players=true`，未登入使用者可從「任意職業 / 不限職業」空缺直接開始；前端記住原本點選的空缺，快速登入或登入完成返回後以目前角色和該 slot 送出申請
   - 密碼隊伍 → 顯示密碼輸入框
 
 [已登入/非成員]:
   - 查看詳情（無 channel）
-  - 申請按鈕（各席位）
+  - 可申請空缺直接在隊伍資訊卡內以綠色狀態顯示；點選空缺後才開啟選擇加入角色視窗
+  - 可申請空缺需呈現明確可點擊 affordance：左側使用 `+`，整列使用成功色 CTA 樣式，右側顯示「加入」動作膠囊與箭頭
+  - 空缺列只保留主行與狀態，不顯示第二行職業名稱 / 登入後說明 / 申請提示
+  - 不符合目前角色條件的空缺以危險色與 X icon 顯示「不能加入」
+  - 「不限職業」空缺對所有職業角色都視為符合，仍需遵守等級上下限
   - 若有 PENDING 申請 → 顯示「取消申請」
   - 未綁 Discord、只能 quick login 的玩家 + `allow_quick_login_players=false` → 顯示不可申請提示
   - Quick Login actor 也使用角色 API 契約；若只有目前角色，前端可直接帶該角色申請
@@ -346,6 +357,7 @@ QuickPartyDetailView:
 ```
 handleApply(slotId, charId, joinPassword?):
 
+0. 使用者必須先點選隊伍資訊卡中的可申請空缺；一般隊伍不提供獨立全隊伍申請 CTA
 1. 若已有 PENDING 申請且為同一角色 → 先取消舊申請
 2. 呼叫 apply API
 3. 若有密碼 → 記憶至 partyPasswordStore
@@ -557,7 +569,7 @@ useWebSocket hook:
 
 按需訂閱（進入隊伍頁面後）:
   - party:{partyId}      → 使用者開啟隊伍詳情且隊伍未 `CLOSED` 時即訂閱，非成員也可收到唯讀狀態與名額更新
-                         → 聊天室仍只在成員視圖中顯示；離開隊伍頁或隊伍轉為 `CLOSED` 時取消訂閱
+                         → 聊天室只在 `viewer_capabilities.can_read_chat=true` 的隊長/隊員視圖中顯示；快速隊伍未登入成員可使用 quick guest cookie 讀取與發言，非成員訪客不掛載聊天室、不抓歷史
   - guild:{guildId}      → 使用者已加入公會時由公會頁與 Header 公會 icon 訂閱，接收公會聊天、公告與自動配對事件
 ```
 
@@ -565,7 +577,7 @@ useWebSocket hook:
 - `PartyChat` 與 `GlobalChatNotifier` 可同時訂閱同一個 `party:{id}` 房間；實際送往伺服器的訂閱仍只有一份。
 - `GlobalChatNotifier` 以「進行中的活動」隊伍清單為來源；即使該清單缺少 `slots` 或 `chat.timestamp` 異常，仍需用隊伍標題 fallback 顯示跳窗通知並累加活動未讀數。
 - `chat` payload 採統一 sender 結構：`{ party_id, sender: { kind, id, display_name, character_code, job_class_id, level }, content }`。Quick Login 與 Discord actor 使用同一套 sender 契約。
-- 快速隊伍的 chat 會額外送到 quick participant personal room；`useWebSocketEventHandler` 只在目前不在該 `party` 房間且 sender 不是自己時顯示 toast。
+- 快速隊伍的 chat 會額外送到可讀取聊天的 quick participant personal room；只有隊長/隊員會收到，`useWebSocketEventHandler` 只在目前不在該 `party` 房間且 sender 不是自己時顯示 toast。
 - 若目前正在瀏覽同一個 `party` 房間，聊天室新訊息只更新房內內容，不顯示全域跳窗、不播放提示音，也不累加該房間未讀。
 - 進入房間的切頁過渡期也視為「正在進房」：一旦使用者點擊該隊伍入口，即使 URL 尚未完成切換，同房間的新訊息仍不可跳出全域提醒。
 - `GlobalChatNotifier` 必須跟 `party` query 參數同步清除 `openingPartyRoom` 狀態：進房成功後立即解除暫存抑制，離開房間後也要同步清除，避免同房新訊息在房外仍被誤判成「正在進房」而漏掉全域提醒與活動未讀數。
