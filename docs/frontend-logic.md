@@ -117,7 +117,7 @@ Quick Login：
 ### 2.3 登出
 
 1. 點擊「登出」按鈕
-2. 前端同步清空 `authStore.actor`、`currentCharacter`、`isAuthenticated` 與帳號相關 modal / wizard 狀態；使用者留在目前頁面，不自動導向 `/login`
+2. 前端同步清空 `authStore.actor`、`currentCharacter`、`isAuthenticated` 與帳號相關 modal / wizard 狀態；主動登出完成後導回首頁 `/`，不導向 `/login`
 3. 背景呼叫 `POST /api/v1/auth/logout`；即使 API 失敗，也維持本地登出狀態，避免舊帳號資訊繼續顯示
 4. 登出期間不得重新觸發 `/actors/me` bootstrap；任何登出前已送出的 `/actors/me` 回應都必須以 session/version guard 忽略，不可覆寫登出後狀態
 5. auth 從登入變未登入、或 actor id 切換時，需取消並清空 React Query cache，清除 party password cache、post-login redirect 等帳號相關 session storage
@@ -377,29 +377,33 @@ handleApply(slotId, charId, joinPassword?):
 
 ```
 隊伍類型選擇:
+  - 建立頁初始不預選類型、標題、目標、頻道、密碼或加入規則；使用者必須明確選擇後才送出
   - BOSS → 顯示 Boss 選擇器 + 時間設定，提交 `target_option_id`
   - TRAINING → 顯示地圖選擇器，提交 `target_map_id`
   - GROUP → 顯示任務選擇器（來自 `raid_boss_options.party_type=GROUP`），提交 `target_option_id`
+  - 目標選單不自動帶入第一筆 option；切換隊伍類型時清空既有目標，避免錯送其他類型目標
 
 時間設定 (BOSS 類型):
-  - scheduleType='now' → 使用當前時間計算
+  - scheduleType='now' → 使用當前時間計算，`scheduled_at=null`
     recruit_until = now + 1h
     active_until = now + 24h
-  - scheduleType='scheduled' → 選擇時間
+  - scheduleType='scheduled' → 使用者必須選擇時間，提交 `scheduled_at`
     recruit_until = scheduledAt + 1h
     active_until = scheduledAt + 24h
 
 席位管理:
-  - 初始 1 個席位
-  - 可新增最多 6 個
+  - 初始顯示 6 個空欄位，不預設加入目前角色或主要角色
+  - 使用者需自行從「我的角色」點選要加入隊伍的角色
+  - 第一個被選入隊伍的角色作為 `leader_character_id` 與隊長；可改選，不強迫使用帳號主要角色
   - 每個席位可設定 job_class, min_level, max_level, note
   - is_required 標記必填性
-  - 隊長可預填自己擁有的角色（filled_by）
+  - 角色席位以角色 ID 送出 `filled_by`
+  - 未設定的空欄位仍以 `is_filled=false` 送出，讓建立後房間詳情保留可加入空位
 
 加入設定:
   - join_requires_password=true → 顯示密碼輸入欄
-  - join_requires_approval=true → 隊長需手動審核（預設 true）
-  - `allow_quick_login_players` toggle 預設 true
+  - join_requires_approval=true → 隊長需手動審核
+  - `allow_quick_login_players` toggle 控制是否允許快速登入玩家申請
 ```
 
 ### 4.2 提交按鈕邏輯
@@ -407,7 +411,7 @@ handleApply(slotId, charId, joinPassword?):
 ```
 建立按鈕啟用條件:
   - 目標 / 任務 / 地圖已選擇（title 為選填）
-  - 至少一個角色已選擇（leader_character_id）
+  - 至少一個自己的角色已選擇（第一個選入角色作為 `leader_character_id`）
   - 必填欄位通過 Zod validation
 
 提交流程:
@@ -417,8 +421,9 @@ handleApply(slotId, charId, joinPassword?):
      - TRAINING → 對應 `target_map_id`
   3. POST /api/v1/parties
      - 帶 `leader_character_id`
+     - `max_members` 必須等於送出的 slots 數；建立頁維持 6 格容量
      - 一律同步 `allow_quick_login_players`
-  4. 成功 → 導向首頁並顯示新建隊伍資訊
+  4. 成功 → 使用 `{ party, slots }` response 正規化後導向 `/parties/:id`
   5. 失敗 → 顯示錯誤訊息
 ```
 
@@ -683,7 +688,8 @@ WebSocket 觸發通知更新:
 角色列表:
   - 顯示所有已建立的角色（game_name, job_class, level）
   - 新增角色表單 → 填寫角色名稱、角色代碼、職業、等級後呼叫 `POST /characters`
-  - 角色列可直接編輯角色資訊，按「儲存變更」後呼叫 `PATCH /characters/:id`
+  - 角色列可直接編輯角色名稱、職業與等級，按「儲存變更」後呼叫 `PATCH /characters/:id`
+  - 角色列的「設為主要角色」需呼叫 `PUT /actors/me/current-character` 並傳入 `{ character_id }`，成功後同步更新 auth store 的 `currentCharacter`
   - 角色列可啟用 / 停用角色；只有 `is_active=true` 的角色會進入 party 建立、申請與席位指派的可選清單
   - 刪除角色前必須顯示確認 modal
   - 角色代碼 (character_code) → 用於 OCR 識別

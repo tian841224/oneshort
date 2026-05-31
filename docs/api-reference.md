@@ -332,16 +332,19 @@ PIN 僅允許 4-6 位數字。
 ---
 
 ### PUT /api/v1/actors/me/current-character
-更新目前角色資料
+更新目前角色資料，或切換目前/主要角色
 
 **Request**
 ```json
 {
+  "character_id": "uuid",
   "display_name": "新名稱",
   "job_class_id": 5,
   "level": 180
 }
 ```
+
+`character_id` 可單獨傳入，用來將同帳號下的 active 角色設為目前/主要角色；成功後後端會重簽 session cookies。
 
 **Response 200**
 ```json
@@ -490,7 +493,7 @@ PIN 僅允許 4-6 位數字。
 **Response 201:**
 ```json
 {
-  "party": { /* Party 物件 */ },
+  "party": { /* Party 物件，含 viewer_capabilities */ },
   "slots": [ /* Slot 陣列 */ ]
 }
 ```
@@ -504,7 +507,7 @@ PIN 僅允許 4-6 位數字。
 ### GET /api/v1/parties/:id
 取得隊伍詳情 **[需認證]**
 
-**Response 200:** Party 物件（含 slots 及 enriched 資訊）
+**Response 200:** Party 物件（含 slots、enriched 資訊及 `viewer_capabilities`）
 
 **Error Codes:**
 - `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "message": "此隊伍需要密碼才能查看" }`
@@ -949,9 +952,10 @@ PUT 補充說明：
 ---
 
 ### GET /api/v1/parties/:id/chat
-取得隊伍聊天室歷史 **[需認證，隊伍成員]**
+取得隊伍聊天室歷史 **[隊伍成員；快速隊伍可使用 quick guest cookie]**
 
 - Query `limit` 可指定最近訊息筆數，預設 500，最大 500。
+- 快速隊伍只有隊長與隊員可以讀取聊天室；visitor / pending guest 不能讀取。
 - 每筆訊息都會回傳 `character_id`。
 - `sender` 為可選欄位，代表當前最新的角色顯示資料；角色改名、改職業、改等級後，歷史訊息中的 `sender` 也會同步更新。
 
@@ -975,7 +979,7 @@ PUT 補充說明：
 ```
 
 **Error Codes:**
-- `403` - 非隊伍成員
+- `403` - 非隊伍成員 / 非快速隊伍隊長或隊員
 - `404` - 隊伍不存在
 - `500` - 讀取聊天記錄失敗
 
@@ -1380,6 +1384,118 @@ PUT 補充說明：
 
 ### DELETE /api/v1/admin/banlist/:id
 移除封禁 **[需認證，管理員]**
+
+**Response 204:** No Content
+
+---
+
+### GET /api/v1/admin/members
+搜尋會員帳號 **[需認證，管理員]**
+
+**Query Parameters:**
+
+| 參數 | 型別 | 說明 |
+|------|------|------|
+| `search` | string | 依 actor id、Discord UID/名稱、角色名稱或角色代碼搜尋 |
+| `limit` | int | 預設 50，最大 100 |
+| `offset` | int | 分頁偏移 |
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": "actor_uuid",
+      "is_admin": false,
+      "is_banned": false,
+      "has_pin": true,
+      "discord_uid": "1234567890",
+      "discord_username": "discord_name",
+      "character_count": 2,
+      "active_character_count": 2,
+      "opened_party_count": 5,
+      "joined_party_count": 8,
+      "last_active_at": "2026-05-15T12:00:00Z",
+      "created_at": "2026-05-15T12:00:00Z",
+      "updated_at": "2026-05-15T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### GET /api/v1/admin/members/:actorId
+取得會員帳號明細 **[需認證，管理員]**
+
+回傳帳號、角色清單、該帳號角色開啟的房間，以及該帳號角色加入或申請過的隊伍歷史。
+
+**Response 200:** `{ "data": { "account": { /* MemberSummary */ }, "characters": [ /* MemberCharacter */ ], "opened_parties": [ /* MemberParty */ ], "party_history": [ /* MemberPartyHistory */ ] } }`
+
+---
+
+### POST /api/v1/admin/members/:actorId/ban
+停用會員帳號 **[需認證，管理員]**
+
+沿用既有 `actors.is_banned` / `admin_banlist` 機制，不新增獨立帳號狀態。
+
+**Request Body:**
+```json
+{
+  "reason": "違規原因",
+  "banned_until": null
+}
+```
+
+**Response 204:** No Content
+
+---
+
+### DELETE /api/v1/admin/members/:actorId/ban
+啟用會員帳號 **[需認證，管理員]**
+
+移除該 actor 的 banlist 記錄並將 `actors.is_banned=false`。
+
+**Response 204:** No Content
+
+---
+
+### DELETE /api/v1/admin/members/:actorId/discord
+清除會員 Discord 綁定 **[需認證，管理員]**
+
+若帳號沒有 Quick Login PIN，回傳 409，管理員需先重設 PIN 以避免帳號失去登入方式。
+
+**Response 204:** No Content
+
+---
+
+### PUT /api/v1/admin/members/:actorId/pin
+重設會員 PIN **[需認證，管理員]**
+
+**Request Body:**
+```json
+{
+  "pin": "1234"
+}
+```
+
+**Response 204:** No Content
+
+---
+
+### PATCH /api/v1/admin/members/:actorId/characters/:characterId
+修改會員角色 **[需認證，管理員]**
+
+**Request Body:** 任意組合的 `game_name`、`character_code`、`job_class`、`level`、`is_active`。
+
+**Response 200:** `{ "data": { /* MemberCharacter */ } }`
+
+---
+
+### DELETE /api/v1/admin/members/:actorId/characters/:characterId
+刪除會員角色 **[需認證，管理員]**
+
+沿用角色 soft delete，將 `characters.is_active=false`。
 
 **Response 204:** No Content
 
@@ -2163,7 +2279,7 @@ PUT 補充說明：
 ```
 
 `auth_success` 後 server 已自動加入當前 identity 的 personal room；登入 actor 會是 `actor:{actorId}`，未登入 quick guest 則以 `payload.room_id` 回傳 deterministic personal room。client 需訂閱 `parties:global` 與該 personal room，並在 reconnect 後重送仍有 listener 的 `party:{partyId}` 訂閱。
-快速隊伍聊天仍以 `party:{partyId}` 作為房內主事件；後端會另外把同一個 `chat` payload 鏡射到可讀取聊天的 quick participant personal room，用於房外 toast，不會重複寫入聊天歷史。
+快速隊伍聊天仍以 `party:{partyId}` 作為房內主事件；後端會另外把同一個 `chat` payload 鏡射到可讀取聊天的 quick participant personal room，用於房外 toast，不會重複寫入聊天歷史。可讀取聊天的 quick participant 僅包含隊長與已加入的隊員，不包含 visitor 或 pending guest。
 
 ---
 
