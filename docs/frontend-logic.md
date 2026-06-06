@@ -121,10 +121,10 @@ Quick Login：
 3. 背景呼叫 `POST /api/v1/auth/logout`；即使 API 失敗，也維持本地登出狀態，避免舊帳號資訊繼續顯示
 4. 登出期間不得重新觸發 `/actors/me` bootstrap；任何登出前已送出的 `/actors/me` 回應都必須以 session/version guard 忽略，不可覆寫登出後狀態
 5. auth 從登入變未登入、或 actor id 切換時，需取消並清空 React Query cache，清除 party password cache、post-login redirect 等帳號相關 session storage
-6. 未登入仍可瀏覽公開隊伍與公開公會列表/詳情，也可建立快速隊伍；公開隊伍詳情 `/parties/[id]` 不可因未登入直接顯示「找不到此隊伍」，只有 detail API 明確回 404 才顯示不存在；個人頁、我的申請、組隊紀錄、我的隊伍、我的公會、建立一般隊伍、申請加入、一般隊伍/公會聊天室發言、角色切換、公會工具、BOSS 配對與設定需隱藏或顯示「登入後開始使用」類型提示
+6. 未登入仍可瀏覽公開隊伍與公開公會列表/詳情，也可建立快速隊伍；公開隊伍詳情 `/parties/[id]` 不可因未登入直接顯示「找不到此隊伍」，只有 detail API 明確回 404 才顯示不存在；除匿名 quick guest session 例外外，個人頁、我的申請、組隊紀錄、我的隊伍、建立一般隊伍、申請加入、一般隊伍/公會聊天室發言、角色切換、公會工具、BOSS 配對與設定需隱藏或顯示「登入後開始使用」類型提示；未登入一律不顯示「我的公會 / 我的工會」
 7. 登出時需重置聊天室草稿、角色身分選擇、picker/modal、live message 的「我」標示與會員工具本地狀態；保留非帳號個資的純 UI 偏好，例如靜音、側欄寬度與聊天面板寬度
 8. auth bootstrap 判定為未登入時，使用清除本地 auth state 的路徑；使用者主動登出時，使用明確的 user-logout 清除路徑，避免 stale cookie 在 API 尚未完成前把舊帳號塞回 store
-9. 未登入瀏覽尋找隊伍時，大廳聊天仍啟用 `lobby:chat` 訂閱、載入 lobby chat history API，且發言者名稱一律顯示「遊客」；登出後需清掉帳號特定的聊天室草稿/角色選擇/「我」標示，但保留公開大廳聊天可用。大廳聊天送出後前端需顯示倒數並停用送出按鈕：未登入 10 秒、登入後 5 秒；若後端回 `429` 與 `Retry-After`，以前端倒數顯示剩餘秒數並保留草稿。
+9. 未登入瀏覽尋找隊伍時，大廳聊天仍啟用 `lobby:chat` 訂閱、載入 lobby chat history API，且發言者名稱一律顯示「遊客」；登出後需清掉帳號特定的聊天室草稿/角色選擇/「我」標示，但保留公開大廳聊天可用。大廳聊天送出後前端需顯示倒數並停用送出按鈕：未登入 10 秒、登入後 5 秒；若後端回 `429` 與 `Retry-After`，以前端倒數顯示剩餘秒數並保留草稿。當 lobby chat WebSocket 未連線時，聊天室指示燈顯示紅色，訊息輸入與送出按鈕必須停用，避免使用者以為已送出但實際沒有連線。
 
 ### 2.4 `/me` 帳號設定頁
 
@@ -195,8 +195,8 @@ URL 參數 `?tab=` 控制顯示模式：
 | `FIND_PARTY` | 公開組隊活動清單 |
 | `FIND_BOSS` | BOSS 討伐清單 |
 | `FIND_TRAINING` | 練功地圖清單 |
-| `MY_PARTY` | 我的隊伍 |
-| `MY_APPLICATIONS` | 我的申請 |
+| `MY_PARTY` | 我的隊伍；未登入且本瀏覽器有 `quick_active_party` host/member session 時，只顯示該快速隊伍，pending 不顯示 |
+| `MY_APPLICATIONS` | 我的申請；未登入且本瀏覽器有 pending quick session 時，顯示一筆 synthetic 待審申請 |
 | `CREATE_PARTY` | 建立一般隊伍；需要登入 |
 
 一般隊伍與快速隊伍建立流程的頻道欄位皆為必填，前端輸入層只允許 1~4 位數字，送出前需符合 `1~9999`，不得用 `CH. 01` 類顯示字串轉換成 API payload。
@@ -266,12 +266,17 @@ QuickPartyDetailView:
   - 進入聊天室 (`quick-enter`) 與申請/加入隊伍 (`quick-join`) 是兩個獨立動作。
   - 使用者點選房間後，不需要先進入聊天室才能點選空位申請或加入隊伍。
   - `quick-enter` 只建立 quick guest identity / visitor 狀態，不解鎖聊天室內容；快速隊伍聊天室只在 `viewer_capabilities.can_read_chat=true` 時掛載，且只有隊長與隊員可以讀取或發言。
-  - 可加入的空位控制留在成員格子內；點選綠色空位直接送出 `quick-join`。
-  - 未登入且尚未建立 quick guest identity 時，若 `viewer_capabilities.chat_reason=NICKNAME_REQUIRED` 且有「任意職業 / 不限職業」空位，該空位仍應顯示為可加入；點擊後先補角色名稱，再用原本空位送出 `quick-join`。
+  - 快速隊伍列表預覽不顯示空位條件、職業限制、等級限制或攻略；只顯示人數燈號，例如 `OOO●●` 與 `2/5 人`。
+  - 快速隊伍列表預覽的 primary action 代表「加入」而不是「進房」：OPEN / PASSWORD 房送出 `quick-join`，成功後導向 `/parties/{partyId}`；APPROVAL 房送出 `quick-join` 建立 pending application，不自動導向成員視角。
+  - PASSWORD 快速房若從列表加入，需先開密碼視窗，密碼正確才送出 `quick-join` 並導向隊伍詳情；密碼錯誤時清掉該房密碼快取。
+  - 可加入的空位控制留在成員格子內；點選快速隊伍的開啟空位直接送出 `quick-join`。
+  - 快速隊伍 slot 只代表開啟/關閉與已佔用狀態，不代表隊員條件；前端不得顯示或編輯職業、等級、是否必填、空位備註等限制。
+  - 未登入且尚未建立 quick guest identity 時，若 `viewer_capabilities.chat_reason=NICKNAME_REQUIRED` 且快速隊伍仍有開啟空位，該空位仍應顯示為可加入；點擊後先補角色名稱，再用原本空位送出 `quick-join`。
   - 若快速隊伍角色名稱尚未設定，當前房間畫面彈出角色名稱輸入視窗，儲存後繼續原本動作，不要求返回列表。
   - 密碼房的流程為：角色名稱缺失時先補角色名稱，再顯示密碼視窗，最後送出 `quick-join`。
   - 未登入建立的快速房間，建立者憑 quick guest cookie 與 `viewer_capabilities.is_host` 可在房間詳情編輯快速隊伍設定與解散房間。
   - 非建立者或未帶有效 host capability 的訪客不得看到編輯/解散等房主設定元件。
+  - 快速隊伍詳情不顯示攻略 tabs、不顯示準備出發區塊、不顯示 hero 的招募中 icon；頻道改在 hero 狀態位置以醒目的 `CH {channel}` badge 顯示。
 ```
 
 ### 3.5 隊伍資訊面板 (PartyDetailView)
@@ -294,7 +299,7 @@ QuickPartyDetailView:
 [訪客/未登入]:
   - 查看基本資訊（title, target_name, slots overview）
   - 一般隊伍不顯示獨立「加入此隊伍」欄位；空缺列直接顯示「可以加入 / 不能加入 / 登入後申請」狀態
-  - 快速隊伍同樣不顯示獨立「加入快速隊伍」欄位；訪客從「隊伍資訊」的空缺列直接加入或申請
+  - 快速隊伍同樣不顯示獨立「加入快速隊伍」欄位；訪客從「隊伍資訊」的開啟空位直接加入或申請，列內只顯示 `+`/`X` 與「開啟」/「關閉」
   - 未登入點選可申請空缺時觸發登入流程，登入後返回原隊伍
   - 若一般隊伍 `allow_quick_login_players=true`，未登入使用者可從「任意職業 / 不限職業」空缺直接開始；前端記住原本點選的空缺，快速登入或登入完成返回後以目前角色和該 slot 送出申請
   - 密碼隊伍 → 顯示密碼輸入框
@@ -312,6 +317,7 @@ QuickPartyDetailView:
 
 [成員 (isParticipant)]:
   - 查看 channel（遊戲頻道）
+  - 快速隊伍 channel 在 hero 狀態位置顯示為 `CH {channel}` badge，不再併列招募中 icon
   - 非關閉隊伍的桌面版頂部列右側只顯示更新時間，不另外顯示招募中 / 滿員 / 隱藏狀態 badge
   - 隊伍資訊卡右上角的頻道 chip 兼作狀態提示：`RECRUITING / ACTIVE`（含滿員）使用綠色，`HIDDEN` 使用灰色
   - `BOSS` 隊伍資訊卡內需顯示開打狀態：`scheduled_at` 為空時顯示「現在開打」，有值時顯示具體開打時間
@@ -321,6 +327,7 @@ QuickPartyDetailView:
   - 聊天室
     - 先顯示即時 slot 角色資料
     - 若角色已離隊、改名或不在目前 slots 中，改用訊息內的 `sender` snapshot 顯示名稱與職業
+    - 快速隊伍 guest 的 sender/member 若沒有職業與等級 snapshot，職業統一顯示「遊客」，icon 也使用 guest 樣式，不得 fallback 成任一職業
     - 收到 `character.updated` 的隊伍房間事件時，聊天室會重新抓歷史訊息，確保舊訊息也同步成最新角色資料
     - 歷史訊息與連線期間已收到的 live 訊息合併時，需以 `timestamp + sender.id + content` 去重，避免初載 history 回來後重複顯示同一則訊息
   - 確認仍在線按鈕 (ConfirmLiveness)
@@ -673,6 +680,8 @@ WebSocket 觸發通知更新:
   - PENDING 狀態 → 顯示「取消申請」按鈕
   - ACCEPTED 狀態 → 顯示「前往隊伍」連結
   - 依 created_at 倒序
+  - 未登入不顯示 LoginRequiredState；若 `quick_active_party` 為 pending，需以 `GET /parties/:id` 補齊真實隊伍資料且確認 `viewer_capabilities.chat_reason=PENDING_APPROVAL` 後，顯示一筆 synthetic quick 申請列；取消時呼叫 quick cancel endpoint，不使用一般申請 cancel API
+  - 未登入且無 pending quick session 時顯示空狀態，不主動開登入 dialog
 
 篩選選項:
   - 全部 / 待審中 / 已接受 / 已拒絕
