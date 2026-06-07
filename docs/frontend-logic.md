@@ -90,7 +90,7 @@ Discord 登入：
 4. Discord 回調 → `/auth/discord/callback?code=...`
 5. 前端先驗證 `state`，再依 OAuth intent 決定是登入或綁定
 6. 成功後寫入 `{ actor, current_character }` 到 `authStore`
-7. 登入優先導回開啟登入視窗前的站內畫面（例如隊伍詳情），無記錄時導回首頁；綁定導回 `/me`
+7. 登入優先導回開啟登入視窗前的站內畫面（例如隊伍詳情），無記錄時導回首頁；綁定導回 `/me`；成功後先顯示 callback feedback modal（約 1200ms 後自動跳轉），使用者可點擊「立即前往」即時跳轉，不使用全域 toast
 8. 若 Discord callback 因 session 失效回 `401`，callback 頁需直接顯示單一錯誤訊息「登入已過期，請重新登入後再試。」；不可再額外觸發全域登入過期 toast 或首頁跳轉
 9. 若 Discord 綁定流程回 `409 discord_merge_required`，callback 頁需切到 merge confirmation state，而不是回 `/me`
 10. merge confirmation state 需直接顯示：
@@ -99,7 +99,7 @@ Discord 登入：
     - 將搬移的資料摘要與 warnings
     - `確認合併並綁定 Discord` / `取消並返回個人頁`
 11. 使用者確認後呼叫 `POST /api/v1/auth/discord/link/merge`
-12. merge confirm 成功後寫入 `{ actor, current_character }` 到 `authStore`，toast「Discord 帳號已完成合併並綁定。」並導回 `/me`
+12. merge confirm 成功後寫入 `{ actor, current_character }` 到 `authStore`，顯示 callback feedback modal「Discord 帳號已完成合併並綁定」（約 1200ms 後自動跳轉），不使用全域 toast；導回 `/me`
 13. 若 callback 或 confirm 回 `409 discord_merge_blocked`，callback 頁需顯示 blocker 清單與返回 `/me` 動作
 14. 若 confirm 回 `400 invalid_merge_token`，callback 頁需停留在 merge state，顯示「這次合併確認已失效，請重新發起 Discord 綁定後再試。」
 15. `409 discord_already_linked` 保留為 fallback handled error，仍顯示「這個 Discord 帳號已綁定其他帳號，請改用原帳號登入。」
