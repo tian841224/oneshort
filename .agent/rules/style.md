@@ -1,5 +1,7 @@
 ---
-trigger: uiux_task
+trigger:
+  - frontend/**/*
+  - uiux_task
 ---
 
 # OneShort Design Rules
@@ -287,34 +289,59 @@ Rules:
 
 ### Game Context Icons
 
-Use OneShort-generated warm neutral assets for:
+Use the shared OneShort asset system for:
 - job/class avatars
 - job family icons
 - party type icons
 - status/empty state illustrations
 - guild or party atmosphere art
 
-Style requirements:
-- 2D chibi pixel-art or clean warm pictogram
-- soft low-saturation colors
-- warm beige and muted brown fantasy palette
-- crisp edges
-- circular or softly framed composition
-- no complex background
-- no text inside the image
-- no neon, no cyberpunk, no 3D, no realistic rendering
+Rules:
+- Game-context assets are contextual support, not primary UI controls.
+- Do not replace functional icons, status labels, CTAs, navigation, or filters with generated bitmap art.
+- All Traditional Chinese labels, status text, counts, room codes, and instructions must be real UI text, not baked into images.
+- New or revised assets must follow the `oneshort-asset-generation` skill.
 
-Class avatar baseline:
-- centered character
-- circular cream/beige background
-- thin warm brown ring
-- consistent padding
-- consistent outline thickness
-- consistent visual weight
+## 8. Design Asset Integration
 
-All Traditional Chinese labels must be rendered as real UI text, not baked into image files.
+本文件只定義設計資產在 UI 中的使用規則；產圖流程、prompt template、檔名規範與審查細節放在 `oneshort-asset-generation` skill。
 
-## 8. Motion
+主要產品 surface 在有助於辨識情境時，應至少使用一種 OneShort game-context asset：
+- job/class avatar
+- party thumbnail
+- scene banner
+- empty-state illustration
+- guild emblem or banner
+- boss thumbnail
+- status icon
+
+Rules:
+- 資產只能輔助情境，不可取代資料結構、狀態顯示或操作文字。
+- 所有 UI label、狀態、數字、房間資訊與教學文案都必須是 real HTML text。
+- 圖像要使用穩定 aspect ratio，避免列表卡片因圖片載入而跳動。
+- 表單、表格、聊天與高密度工作區只使用低干擾資產，不在欄位旁堆裝飾圖。
+- 不使用 copyrighted Artale assets 或明顯複製的遊戲原圖。
+- 產生、修改、審查或命名新資產時，載入 `oneshort-asset-generation` skill。
+
+Recommended paths:
+
+```txt
+frontend/public/assets/jobs/
+frontend/public/assets/scenes/
+frontend/public/assets/thumbnails/
+frontend/public/assets/empty/
+frontend/public/assets/status/
+frontend/public/assets/guilds/
+frontend/public/assets/bosses/
+```
+
+Recommended formats:
+- icons / avatars: `webp` or `png` with transparency
+- simple status icons: `svg`
+- scene banners and large backgrounds: `webp`
+- fallback assets: `png`
+
+## 9. Motion
 
 Allowed:
 - fade
@@ -338,7 +365,7 @@ Timing:
 
 Respect `prefers-reduced-motion`.
 
-## 9. Responsive Rules
+## 10. Responsive Rules
 
 Desktop:
 - use dashboard columns
@@ -355,7 +382,7 @@ Mobile:
 - minimum 44px touch targets
 - no horizontal overflow
 
-## 10. Golden Rules
+## 11. Golden Rules
 
 Before adding or changing any UI:
 
@@ -369,3 +396,4 @@ Before adding or changing any UI:
 8. Is there enough whitespace without losing dashboard density?
 9. Are empty/loading/error states designed, not left as plain text?
 10. Does the page still feel like OneShort?
+11. If new visual assets are involved, did they follow `oneshort-asset-generation` and avoid copyrighted game artwork?

@@ -747,6 +747,100 @@ PUT 補充說明：
 
 ---
 
+### POST /api/v1/parties/:id/quick-enter
+進入快速隊伍 / 取得訪客能力 **[快速隊伍，可使用 quick guest cookie]**
+
+**Request Body:**
+```json
+{
+  "guest_display_name": "遊客名稱",
+  "join_password": "123456"
+}
+```
+
+**說明:**
+- `quick-enter` 只建立或更新 quick guest identity，並回傳快速隊伍 detail 與 `viewer_capabilities`。
+- OPEN 房呼叫此 endpoint 不會增加隊伍人數、不會自動佔用 slot。
+- PASSWORD 房需要正確 `join_password` 才能解鎖檢視；前端可把正確密碼存在 `partyPasswordStore`。
+- 是否能讀取/發言聊天室由 `viewer_capabilities.can_read_chat` 決定；visitor / pending guest 不應掛載隊伍聊天室。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `400` - 請求格式錯誤
+- `403` - 密碼錯誤 / 無法檢視此快速隊伍
+- `404` - 隊伍不存在或不是快速隊伍
+- `409` - 隊伍已滿、已關閉或狀態不可進入
+
+---
+
+### POST /api/v1/parties/:id/quick-join
+加入快速隊伍或建立快速隊伍申請 **[快速隊伍，可使用 quick guest cookie]**
+
+**Request Body:**
+```json
+{
+  "guest_display_name": "遊客名稱",
+  "slot_order": 2,
+  "join_password": "123456"
+}
+```
+
+**說明:**
+- `quick-join` 是快速隊伍唯一的加入/申請操作；前端列表預覽的「加入隊伍」與詳情空位列都必須呼叫此 endpoint。
+- OPEN 房直接加入最低可用空位；若指定 `slot_order`，該空位必須存在且可用。
+- PASSWORD 房需要正確 `join_password`，成功後加入空位並回傳成員能力。
+- APPROVAL 房只建立 pending application，不自動佔位，也不應自動導向成員視角。
+- 快速隊伍 slot 不支援職業、等級或是否必填條件；加入判斷只看空位是否開啟且未佔用。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `400` - 請求格式錯誤 / 指定 slot order 無效
+- `403` - 密碼錯誤 / 無法加入此快速隊伍
+- `404` - 隊伍不存在或不是快速隊伍
+- `409` - 隊伍已滿、已加入、已有待審申請、已關閉或狀態不可加入
+
+---
+
+### PATCH /api/v1/parties/:id/quick-settings
+更新快速隊伍房間設定 **[快速隊伍建立者 cookie]**
+
+**說明:**
+- 只允許快速隊伍房主更新房名、備註、房型、密碼、頻道、是否在卡片顯示頻道等房間設定。
+- 不用於更新 slot 條件；快速隊伍不支援隊員條件。
+- 既有密碼房未提供 `join_password` 時會保留原密碼。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `400` - 請求格式錯誤
+- `403` - 不是快速隊伍房主
+- `404` - 隊伍不存在或不是快速隊伍
+- `409` - 隊伍已關閉或版本狀態不可更新
+
+---
+
+### PUT /api/v1/parties/:id/quick-settings
+取代快速隊伍設定與空位開關 **[快速隊伍建立者 cookie]**
+
+**說明:**
+- 只允許快速隊伍房主取代房間設定與空位開關。
+- slot payload 只代表空位是否存在/開啟與已佔用狀態；`job_class`、`job_classes`、`min_level`、`max_level`、空位 `note`、`is_required` 不接受作為隊員條件。
+- 後端會清除或忽略快速隊伍 slot 條件，並以保留的 slot 數量推導 `max_members`。
+- 已佔用 slot 不能透過 settings 直接清空；需沿用 kick/leave flow。
+- 取代設定時會保留既有 quick participant 與 occupied slot runtime snapshot，避免登入角色或遊客顯示資料被覆蓋成空資料。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `400` - 請求格式錯誤 / slot 數超過限制 / 嘗試用 settings 清空已佔用 slot
+- `403` - 不是快速隊伍房主
+- `404` - 隊伍不存在或不是快速隊伍
+- `409` - 版本衝突 / 隊伍已關閉或狀態不可更新
+
+---
+
 ### POST /api/v1/parties/:id/applications
 申請加入隊伍 **[需認證]**
 

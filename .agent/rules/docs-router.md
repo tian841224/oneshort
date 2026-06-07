@@ -26,6 +26,7 @@ trigger: always_on
 | 修改後端 Worker / 事件 | [docs/backend-data-flows.md](../../docs/backend-data-flows.md) | 理解請求生命週期與 Outbox 流程 |
 | 修改前端 UI / 通知 / WS | [docs/frontend-logic.md](../../docs/frontend-logic.md) | 理解前端頁面邏輯與 WebSocket 呈現 |
 | 修改前端 UI/UX / 視覺樣式 / 響應式設計 | [style.md](style.md) + [frontend.md](frontend.md) | 修改任何前端視覺、互動、排版或行動版體驗前，必讀 OneShort 設計語言與 Golden Rules |
+| 產生 / 修改 / 審查 OneShort 設計資產 | [style.md](style.md) + `oneshort-asset-generation` skill | UI 中使用資產時先遵循 OneShort 設計規則；實際產圖、命名、格式與審查流程交給 Claude Code skill |
 | 修改即時通訊 / Redis | [docs/data-flow/realtime.md](../../docs/data-flow/realtime.md) | 理解 WebSocket 訂閱、推送與重連機制 |
 
 ## 開發流程

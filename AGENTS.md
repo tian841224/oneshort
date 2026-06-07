@@ -21,5 +21,31 @@
 
 ## Skill 來源
 
-- Project-local Codex skill 以 `.codex/skills/` 為 canonical source。
+- Project-local skill 以 `.claude/skills/` 為 canonical source。
 - `.agent/` 只保留規則文件；不要在 `.agent/skills/` 放第二份 skill 複本。
+
+## 同步規則（重要）
+
+> [!IMPORTANT]
+> 修改 **rules** 或 **skills** 後，必須同步更新所有路徑。未同步會導致不同 agent 行為不一致。
+
+### Rules 同步目錄
+
+| Canonical | 需同步 |
+|-----------|--------|
+| `.agent/rules/` | `.agents/rules/` |
+
+### Skills 同步目錄
+
+| Canonical | 需同步 |
+|-----------|--------|
+| `.claude/skills/` | `.agents/skills/`、`.codex/skills/` |
+
+### 各 Agent 讀取路徑
+
+| Agent | Rules | Skills |
+|-------|-------|--------|
+| Claude Code | `CLAUDE.md` @import → `.agent/rules/` | `.claude/skills/` |
+| OMC | `.agents/rules/`（trigger 自動載入） | `.agents/skills/` |
+| Codex | `AGENTS.md` → `.agent/rules/` | `.codex/skills/` |
+| Gemini | `AGENTS.md` → `.agent/rules/` | — |
