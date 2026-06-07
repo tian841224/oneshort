@@ -50,7 +50,7 @@ OneShort 針對「隊伍加入」、「成員變動」等高頻率變更，採�
       - `party.created`（來自 `parties:global`）→ 觸發 `queryClient.invalidateQueries(['parties'])`
       - `party.updated`（來自 `parties:global`、`party:{id}`，或 quick-party 發送到各 quick participant personal room）→ 刷新列表、隊伍詳情與進行中活動快取
       - `chat`（來自 `party:{id}`）→ 房內聊天室更新；快速隊伍額外鏡射到 quick participant personal room 時，若不在該房間頁面則顯示房外 toast
-      - `lobby.chat`（來自 `lobby:chat`）→ 尋找隊伍的大廳聊天室追加公開訊息；未登入也會載入 `GET /api/v1/lobby/chat` 並可 `POST /api/v1/lobby/chat`
+      - `lobby.chat`（來自 `lobby:chat`）→ 尋找隊伍的大廳聊天室追加公開訊息；未登入也會載入 `GET /api/v1/lobby/chat`（最近 100 筆、最久 24 小時）並可 `POST /api/v1/lobby/chat`
       - `party.guide_state.updated`（來自 `party:{id}`）→ 更新本地 guide state store 並失效 `['partyGuide', partyId]`；`GuideTab` 會在攻略分頁開啟時獨立訂閱 `party:{id}`，不依賴聊天室元件是否掛載
       - `character.updated`（來自 `actor:{id}` 或 `party:{id}`）→ 刷新角色/通知/申請快取，且在隊伍房間內重新抓聊天室歷史
       - 進入中的 `party:{id}` 事件 → 觸發 `queryClient.invalidateQueries(['party', partyId])`

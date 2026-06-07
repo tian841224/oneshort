@@ -1048,7 +1048,7 @@ PUT 補充說明：
 ### GET /api/v1/parties/:id/chat
 取得隊伍聊天室歷史 **[隊伍成員；快速隊伍可使用 quick guest cookie]**
 
-- Query `limit` 可指定最近訊息筆數，預設 500，最大 500。
+- Query `limit` 可指定最近訊息筆數，預設 100，最大 100；聊天歷史最久保留 24 小時。
 - 快速隊伍只有隊長與隊員可以讀取聊天室；visitor / pending guest 不能讀取。
 - 每筆訊息都會回傳 `character_id`。
 - `sender` 為可選欄位，代表當前最新的角色顯示資料；角色改名、改職業、改等級後，歷史訊息中的 `sender` 也會同步更新。

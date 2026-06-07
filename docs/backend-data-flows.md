@@ -878,18 +878,18 @@ WebSocket Chat（非持久化，Redis 快取）:
      - sender.id = 當前在隊伍中的 `character_id`
   4. XADD "ws_events" * { room_id, event_type='chat', payload, emitted_at }
   5. WS Stream Consumer 將 chat event 轉譯成 { type:'chat', room_id, payload, timestamp } 並廣播到 party room
-  6. 同步 RPush "chat:party:{id}" 保留最近 500 則歷史訊息
+  6. 同步 RPush "chat:party:{id}" 保留最近 100 則歷史訊息，並設定 24 小時 TTL
   7. 若為快速隊伍，另外 XADD 同一 chat payload 到可讀聊天的 quick participant personal room；這一步不追加聊天歷史，避免重複訊息
 
 讀取歷史:
-  1. 前端呼叫 GET /api/v1/parties/{id}/chat，可用 `limit` 指定最近 1-500 筆（預設 500）
+  1. 前端呼叫 GET /api/v1/parties/{id}/chat，可用 `limit` 指定最近 1-100 筆（預設 100），後端不回傳 24 小時以前的訊息
   2. 後端再次依 identity 驗證呼叫者仍為隊伍成員
   3. LRange "chat:party:{id}" -limit -1，回傳 { sender, content, timestamp } 陣列
   4. 後續新訊息透過 WS 推送
 
 清除策略:
   - 隊伍解散時：DEL "chat:party:{id}"
-  - 訊息歷史：Redis List 僅保留最近 500 則
+  - 訊息歷史：Redis List 僅保留最近 100 則，且最久保留 24 小時
 ```
 
 ---
