@@ -747,6 +747,35 @@ PUT 補充說明：
 
 ---
 
+### POST /api/v1/parties/quick
+建立快速隊伍 **[免登入；登入者與遊客皆可]**
+
+**Request Body:**
+```json
+{
+  "title": "速刷炎魔",
+  "note": "缺補",
+  "room_type": "OPEN",
+  "join_password": "123456",
+  "channel": "7",
+  "show_channel_on_card": true,
+  "guest_display_name": "遊客名稱"
+}
+```
+
+**說明:**
+- `room_type` 必填，`OPEN` / `APPROVAL` / `PASSWORD` 三選一；`PASSWORD` 房需附 `join_password`（最長 6 碼）。
+- 未登入呼叫時會建立 quick guest identity（cookie），`guest_display_name` 作為遊客顯示名稱（最長 20 字）。
+- 建立者自動成為快速隊伍 HOST participant。
+
+**Response 201:** `QuickPartyResponse`（`{ "party": Party, "viewer_capabilities": {...}, "guest": {...} }`）
+
+**Error Codes:**
+- `400` - 請求格式錯誤
+- `429` - 建立頻率限制
+
+---
+
 ### POST /api/v1/parties/:id/quick-enter
 進入快速隊伍 / 取得訪客能力 **[快速隊伍，可使用 quick guest cookie]**
 
@@ -803,6 +832,76 @@ PUT 補充說明：
 
 ---
 
+### POST /api/v1/parties/:id/quick-leave
+離開快速隊伍 **[快速隊伍成員，使用 quick guest cookie 或登入身分]**
+
+**說明:**
+- 成員（非 HOST）離開快速隊伍，釋放原本佔用的空位。
+- HOST 不可用此 endpoint 離開；請改用 `quick-close` 關閉房間。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `403` - 呼叫者不是此快速隊伍成員
+- `404` - 隊伍不存在或不是快速隊伍
+- `409` - 隊伍已關閉
+
+---
+
+### GET /api/v1/parties/:id/quick-applications
+取得快速隊伍待審申請清單 **[快速隊伍 HOST]**
+
+**Response 200:** `QuickApplication[]`
+```json
+[
+  {
+    "id": "uuid",
+    "display_name": "申請者名稱",
+    "status": "PENDING",
+    "slot_order": 2,
+    "character": { "id": "uuid", "name": "角色名", "job_class": 1, "level": 200 },
+    "created_at": "2026-06-01T12:00:00Z",
+    "updated_at": "2026-06-01T12:00:00Z"
+  }
+]
+```
+
+**Error Codes:**
+- `403` - 不是快速隊伍 HOST
+- `404` - 隊伍不存在或不是快速隊伍
+
+---
+
+### PATCH /api/v1/parties/:id/quick-applications/:appId
+審核快速隊伍申請 **[快速隊伍 HOST]**
+
+**Request Body:**
+```json
+{ "action": "accept" }
+```
+
+- `action` 只接受 `accept` / `reject`。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `400` - action 無效
+- `403` - 不是快速隊伍 HOST
+- `404` - 隊伍或申請不存在
+- `409` - 申請已被處理 / 隊伍已滿或已關閉
+
+---
+
+### DELETE /api/v1/parties/:id/quick-applications/me
+取消自己的快速隊伍申請 **[使用 quick guest cookie 或登入身分]**
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `404` - 隊伍不存在、不是快速隊伍或沒有待審申請
+
+---
+
 ### PATCH /api/v1/parties/:id/quick-settings
 更新快速隊伍房間設定 **[快速隊伍建立者 cookie]**
 
@@ -838,6 +937,36 @@ PUT 補充說明：
 - `403` - 不是快速隊伍房主
 - `404` - 隊伍不存在或不是快速隊伍
 - `409` - 版本衝突 / 隊伍已關閉或狀態不可更新
+
+---
+
+### POST /api/v1/parties/:id/quick-slots/:slotId/kick
+踢出快速隊伍空位上的成員 **[快速隊伍 HOST]**
+
+**說明:**
+- 對應一般隊伍的 `POST /parties/:id/slots/:slotId/kick`；快速隊伍必須使用本路徑。
+
+**Response 200:** `QuickPartyResponse`
+
+**Error Codes:**
+- `403` - 不是快速隊伍 HOST
+- `404` - 隊伍或 slot 不存在、不是快速隊伍
+- `409` - slot 未被佔用或隊伍已關閉
+
+---
+
+### POST /api/v1/parties/:id/quick-close
+關閉快速隊伍 **[快速隊伍 HOST]**
+
+**說明:**
+- HOST 主動關閉房間；關閉後隊伍進入唯讀狀態，成員與訪客不可再加入或發言。
+
+**Response 200:** `Party`
+
+**Error Codes:**
+- `403` - 不是快速隊伍 HOST
+- `404` - 隊伍不存在或不是快速隊伍
+- `409` - 隊伍已關閉
 
 ---
 
@@ -1079,6 +1208,38 @@ PUT 補充說明：
 
 ---
 
+### POST /api/v1/parties/:id/chat
+傳送隊伍聊天訊息 **[隊伍成員；快速隊伍可使用 quick guest cookie]**
+
+**Request Body:**
+```json
+{ "content": "Hello!" }
+```
+
+**說明:**
+- 只有隊長與成員（`viewer_capabilities.can_send_chat`）可以發言。
+- 訊息寫入聊天歷史並透過 WebSocket `chat` 事件即時推送給訂閱 `party:{id}` 的用戶端。
+
+**Response 201:** 新建的聊天訊息物件（同 GET 之 `data[]` 單筆格式）
+
+**Error Codes:**
+- `400` - 內容為空或超過長度限制
+- `403` - 無發言權限
+- `404` - 隊伍不存在
+- `429` - 發言頻率限制
+
+---
+
+### GET /api/v1/actors/me/party-history
+取得自己的組隊紀錄 **[需認證]**
+
+- Query `limit`（預設 20，最大 100）、`offset`（預設 0）。
+- 回傳目前 actor 以隊長或成員身分參與過的隊伍歷史，供 `/history` 頁使用。
+
+**Response 200:** `{ "data": [ ... ] }`
+
+---
+
 ## 三、席位 (Slots)
 
 ### POST /api/v1/parties/:id/slots
@@ -1209,6 +1370,36 @@ PUT 補充說明：
 
 ---
 
+### GET /api/v1/lobby/chat
+取得大廳聊天歷史 **[公開，無需認證]**
+
+- Query `limit` 指定最近訊息筆數（預設 100，最大 100）；聊天歷史最久保留 24 小時。
+- 登入者的 `sender` snapshot 會包含 `character_id`、`job_class_id`、`level`；未登入者以「遊客」顯示。
+
+**Response 200:** `{ "data": [聊天訊息] }`
+
+---
+
+### POST /api/v1/lobby/chat
+傳送大廳聊天訊息 **[公開，無需認證]**
+
+**Request Body:**
+```json
+{ "content": "有人要打王嗎？" }
+```
+
+**說明:**
+- 訊息寫入公開歷史並透過 WebSocket 推送給訂閱大廳頻道的用戶端。
+- 頻率限制：未登入者 10 秒 1 則，登入者 5 秒 1 則。
+
+**Response 201:** 新建的聊天訊息物件
+
+**Error Codes:**
+- `400` - 內容為空或格式錯誤
+- `429` - 發言頻率限制
+
+---
+
 ## 五、角色 (Characters)
 
 ### GET /api/v1/job-classes
@@ -1328,6 +1519,30 @@ PUT 補充說明：
 取得在線人數
 
 **Response 200:** `{ "count": 42 }`
+
+---
+
+### GET /api/v1/activity/recent
+取得最近活動 **[公開，無需認證]**
+
+- 回傳最近 24 小時內的公開活動事件（隊伍建立、玩家加入），供登入頁活動牆使用。
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "kind": "party_created",
+      "actor_name": "角色名稱",
+      "target_name": "隊伍或 BOSS 名稱",
+      "timestamp": "2026-06-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+- `kind`：`party_created` / `player_joined` / `boss_cleared`。
 
 ---
 
@@ -1840,6 +2055,396 @@ PUT 補充說明：
 
 ## 十三、公會 (Guilds)
 
+角色權限：`LEADER`（會長）> `OFFICER`（幹部）> `MEMBER`（成員）。標注「幹部」的 endpoint 會長亦可呼叫。
+
+### GET /api/v1/guilds
+公會列表 **[公開，無需認證；帶認證時回傳 current_role]**
+
+- Query：`keyword`（名稱關鍵字）、`page`（預設 1）、`size`（預設 20）。
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "遠征隊",
+      "slug": "expedition",
+      "description": "公會簡介",
+      "icon_url": null,
+      "join_mode": "OPEN",
+      "member_limit": 50,
+      "min_level": 100,
+      "created_by": "uuid",
+      "is_active": true,
+      "member_count": 12,
+      "current_role": "MEMBER",
+      "created_at": "2026-05-01T00:00:00Z",
+      "updated_at": "2026-05-01T00:00:00Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "size": 20
+}
+```
+
+- `join_mode`：`OPEN` / `APPROVAL` / `PASSWORD`。
+- `current_role` / `membership` 僅在帶認證且為該公會成員時出現。
+
+---
+
+### GET /api/v1/guilds/:id
+公會詳情 **[公開，無需認證]**
+
+**Response 200:** `Guild`（同列表單筆格式，成員另含 `membership`）
+
+**Error Codes:**
+- `404` - 公會不存在或已解散
+
+---
+
+### POST /api/v1/guilds
+建立公會 **[需認證]**
+
+**Request Body:**
+```json
+{
+  "name": "遠征隊",
+  "description": "公會簡介",
+  "icon_url": null,
+  "join_mode": "PASSWORD",
+  "password": "123456",
+  "member_limit": 50,
+  "min_level": 100
+}
+```
+
+- `name` 必填（最長 64 字）；`join_mode` 必填。
+- `join_mode = PASSWORD` 時需附 `password`（最長 64 字）。
+- 建立者自動成為 `LEADER`。
+
+**Response 201:** `Guild`
+
+---
+
+### PUT /api/v1/guilds/:id
+更新公會設定 **[需認證，會長]**
+
+**Request Body:** 同建立公會（所有欄位可選）
+
+**Response 200:** `Guild`
+
+**Error Codes:**
+- `403` - 不是會長
+- `404` - 公會不存在
+
+---
+
+### DELETE /api/v1/guilds/:id
+解散公會 **[需認證，會長]**
+
+**Response 204:** No Content
+
+---
+
+### POST /api/v1/guilds/:id/join
+加入公會 / 送出加入申請 **[需認證]**
+
+**Request Body:**
+```json
+{ "password": "123456" }
+```
+
+**說明:**
+- `OPEN` 房直接加入成為 `MEMBER`。
+- `PASSWORD` 房需附正確 `password`。
+- `APPROVAL` 房建立 PENDING join request，待幹部審核。
+
+**Response 200:** `Guild`（含 `membership`；APPROVAL 模式下 `membership` 為 null）
+
+**Error Codes:**
+- `403` - 密碼錯誤
+- `409` - 已是成員 / 已有待審申請 / 公會已滿
+
+---
+
+### DELETE /api/v1/guilds/:id/me
+離開公會 **[需認證，成員]**
+
+**說明:**
+- 會長離開時自動將會長移交給最早加入的幹部或成員；若為最後一名成員，公會轉為 inactive。
+
+**Response 200:** 離開結果（含新會長資訊，若有移交）
+
+---
+
+### POST /api/v1/guilds/:id/transfer
+移交會長 **[需認證，會長]**
+
+**Request Body:**
+```json
+{ "new_leader_user_id": "uuid" }
+```
+
+**Response 204:** No Content
+
+**Error Codes:**
+- `403` - 不是會長
+- `404` - 目標不是公會成員
+
+---
+
+### GET /api/v1/guilds/:id/members
+成員列表 **[需認證，成員]**
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "guild_id": "uuid",
+      "user_id": "uuid",
+      "role": "MEMBER",
+      "display_name": "顯示名稱",
+      "joined_at": "2026-05-02T00:00:00Z",
+      "characters": [
+        { "id": "uuid", "user_id": "uuid", "game_name": "角色名", "character_code": "ABC1234", "job_class": 1, "level": 200, "created_at": "2026-05-01T00:00:00Z" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### PATCH /api/v1/guilds/:id/members/:uid/role
+變更成員角色 **[需認證，會長]**
+
+**Request Body:**
+```json
+{ "role": "OFFICER" }
+```
+
+- `role` 只接受 `OFFICER` / `MEMBER`；不可變更會長本人。
+
+**Response 204:** No Content
+
+---
+
+### DELETE /api/v1/guilds/:id/members/:uid
+踢出成員 **[需認證，幹部]**
+
+**說明:**
+- 幹部只能踢出 `MEMBER`；會長可踢出幹部與成員；不可踢出自己。
+
+**Response 204:** No Content
+
+**Error Codes:**
+- `403` - 權限不足（角色階級不允許）
+- `404` - 目標不是公會成員
+
+---
+
+### GET /api/v1/guilds/:id/join-requests
+待審加入申請列表 **[需認證，幹部]**
+
+**Response 200:** `{ "data": [JoinRequest] }`（`status`：`PENDING` / `APPROVED` / `REJECTED`）
+
+---
+
+### PATCH /api/v1/guilds/:id/join-requests/:rid
+審核加入申請 **[需認證，幹部]**
+
+**Request Body:**
+```json
+{ "action": "APPROVE", "reject_reason": null }
+```
+
+- `action` 只接受 `APPROVE` / `REJECT`；`REJECT` 可附 `reject_reason`（最長 500 字）。
+
+**Response 200:** 更新後的 `JoinRequest`
+
+---
+
+### GET /api/v1/guilds/:id/announcements
+公告列表 **[需認證，成員]**
+
+**Response 200:** `{ "data": [Announcement] }`
+```json
+{
+  "data": [
+    { "id": "uuid", "guild_id": "uuid", "author_user_id": "uuid", "title": "週末打王", "body": "<p>內容</p>", "pinned": true, "created_at": "2026-05-10T00:00:00Z", "updated_at": "2026-05-10T00:00:00Z" }
+  ]
+}
+```
+
+---
+
+### POST /api/v1/guilds/:id/announcements
+新增公告 **[需認證，幹部]**
+
+**Request Body:**
+```json
+{ "title": "週末打王", "body": "公告內容", "pinned": false }
+```
+
+- `title` 必填（最長 100 字）；`body` 必填（最長 10000 字，HTML 會被 sanitize）。
+
+**Response 201:** `Announcement`
+
+---
+
+### PUT /api/v1/guilds/:id/announcements/:aid
+更新公告 **[需認證，幹部]**
+
+**Request Body:** 同新增公告
+
+**Response 200:** `Announcement`
+
+---
+
+### DELETE /api/v1/guilds/:id/announcements/:aid
+刪除公告 **[需認證，幹部]**
+
+**Response 204:** No Content
+
+---
+
+### PATCH /api/v1/guilds/:id/announcements/:aid/pin
+置頂 / 取消置頂公告 **[需認證，幹部]**
+
+**Request Body:**
+```json
+{ "pinned": true }
+```
+
+**Response 200:** `Announcement`
+
+---
+
+### GET /api/v1/guilds/:id/chat
+取得公會聊天歷史 **[需認證，成員]**
+
+- Query：`before`（訊息游標，往前翻頁）、`size`（預設 50）。
+
+**Response 200:**
+```json
+{
+  "data": [
+    { "message_id": "id", "guild_id": "uuid", "user_id": "uuid", "content": "今晚八點", "ts": "2026-06-01T12:00:00Z" }
+  ]
+}
+```
+
+---
+
+### POST /api/v1/guilds/:id/chat
+傳送公會聊天訊息 **[需認證，成員]**
+
+**Request Body:**
+```json
+{ "content": "今晚八點" }
+```
+
+- `content` 必填（最長 10000 字，HTML 會被 sanitize）。
+- 訊息透過 WebSocket `guild.chat` 事件推送給訂閱 `guild:{id}` 的用戶端。
+
+**Response 201:** `ChatMessage`
+
+---
+
+### GET /api/v1/guilds/:id/parties
+公會隊伍列表 **[需認證，成員]**
+
+- Query：`type`、`status`、`include_history=true`（含歷史隊伍）、`limit`（預設 20）、`offset`（預設 0）。
+
+**Response 200:** `{ "data": [GuildParty] }`（含 `generated_by_match`、`scheduled_at`、`slots[]` 等欄位）
+
+---
+
+### POST /api/v1/guilds/:id/parties
+建立公會隊伍 **[需認證，成員]**
+
+**Request Body:** 同 `POST /api/v1/parties`（CreatePartyInput）
+
+**說明:**
+- 後端自動設定 `guild_id` 與 `visibility = GUILD`；公會隊伍不出現在公開列表。
+
+**Response 201:** 同 `POST /api/v1/parties` 回傳格式
+
+---
+
+### GET /api/v1/guilds/:id/me/preferences
+取得自己的配對偏好 **[需認證，成員]**
+
+**Response 200:**
+```json
+{
+  "guild_id": "uuid",
+  "user_id": "uuid",
+  "boss_ids": ["uuid"],
+  "time_slots": [20, 21],
+  "character_ids": ["uuid"],
+  "character_preferences": [
+    { "character_id": "uuid", "boss_ids": ["uuid"], "time_slots": [20] }
+  ],
+  "updated_at": "2026-06-01T12:00:00Z"
+}
+```
+
+---
+
+### PUT /api/v1/guilds/:id/me/preferences
+更新自己的配對偏好 **[需認證，成員]**
+
+**Request Body:** 同 Response（不含 `guild_id` / `user_id` / `updated_at`）
+
+**Response 200:** 更新後的偏好
+
+---
+
+### GET /api/v1/guilds/:id/me/match-history
+取得自己的公會配對紀錄 **[需認證，成員]**
+
+- Query：`limit`（預設 10）。
+
+**Response 200:** `{ "data": [MatchRun] }`
+
+---
+
+### GET /api/v1/guilds/:id/boss-configs
+取得 BOSS 配對設定 **[需認證，幹部]**
+
+**Response 200:** `{ "data": [BossConfig] }`
+```json
+{
+  "data": [
+    {
+      "guild_id": "uuid",
+      "boss_id": "uuid",
+      "max_members": 6,
+      "min_members": 4,
+      "min_level": 120,
+      "job_slots": [ { "job_class": 1, "count": 1 } ],
+      "enabled": true,
+      "updated_at": "2026-06-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### PUT /api/v1/guilds/:id/boss-configs
+更新 BOSS 配對設定 **[需認證，幹部]**
+
+**Request Body:** `[BossConfigInput]`（`boss_id` 必填；`max_members` 1–6）
+
+**Response 200:** `{ "data": [BossConfig] }`
+
+---
+
 ### GET /api/v1/guilds/me
 取得目前 actor 加入的公會清單。
 
@@ -2040,6 +2645,38 @@ PUT 補充說明：
 - `plan`、`generated`、`skipped`、`unmatched` 會與 `run.draft_plan` 對齊；前端可優先讀取 `run.draft_plan`。
 - 每個 guild/cycle 僅允許一個 active `DRAFT`；重新產生草案會取消舊草案。
 - 已 `GENERATED` 的 cycle 不允許再次生成正式隊伍。
+
+---
+
+### GET /api/v1/guilds/:id/match/member-settings
+查詢指定 BOSS 的成員偏好設定 **[需認證，幹部]**
+
+- Query：`boss_id`（必填）。
+- 供幹部在執行自動配對前查看已設定此 BOSS 的角色、順位與可出團時段。
+
+**Response 200:**
+```json
+{
+  "boss_id": "uuid",
+  "members": [
+    {
+      "guild_id": "uuid",
+      "boss_id": "uuid",
+      "user_id": "uuid",
+      "display_name": "顯示名稱",
+      "role": "MEMBER",
+      "character_id": "uuid",
+      "character_name": "角色名",
+      "character_code": "ABC1234",
+      "job_class": 1,
+      "level": 200,
+      "boss_rank": 1,
+      "time_slots": [20, 21],
+      "updated_at": "2026-06-01T12:00:00Z"
+    }
+  ]
+}
+```
 
 ---
 
