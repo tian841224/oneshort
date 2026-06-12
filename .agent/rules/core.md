@@ -90,7 +90,7 @@ git -C frontend worktree add ..\oneshort-frontend-worktrees\feature-party-search
 > [!IMPORTANT]
 > 本專案已導入 **Semantic Release**。團隊成員 **必須** 嚴格遵守 Conventional Commits 規範，否則自動化版本號更迭與變更日誌將無法運作。
 
-```
+```text
 <type>(<scope>): <簡短描述>
 ```
 

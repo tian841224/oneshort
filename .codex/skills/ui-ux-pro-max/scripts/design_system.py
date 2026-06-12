@@ -48,7 +48,7 @@ class DesignSystemGenerator:
         with open(filepath, 'r', encoding='utf-8') as f:
             return list(csv.DictReader(f))
 
-    def _multi_domain_search(self, query: str, style_priority: list = None) -> dict:
+    def _multi_domain_search(self, query: str, style_priority: list | None = None) -> dict:
         """Execute searches across multiple domains."""
         results = {}
         for domain, config in SEARCH_CONFIG.items():
@@ -160,7 +160,7 @@ class DesignSystemGenerator:
         """Extract results list from search result dict."""
         return search_result.get("results", [])
 
-    def generate(self, query: str, project_name: str = None) -> dict:
+    def generate(self, query: str, project_name: str | None = None) -> dict:
         """Generate complete design system recommendation."""
         # Step 1: First search product to get category
         product_result = search(query, "product", 1)
@@ -403,8 +403,8 @@ def format_markdown(design_system: dict) -> str:
 
     # Colors section
     lines.append("### Colors")
-    lines.append(f"| Role | Hex |")
-    lines.append(f"|------|-----|")
+    lines.append("| Role | Hex |")
+    lines.append("|------|-----|")
     lines.append(f"| Primary | {colors.get('primary', '')} |")
     lines.append(f"| Secondary | {colors.get('secondary', '')} |")
     lines.append(f"| CTA | {colors.get('cta', '')} |")
@@ -425,10 +425,10 @@ def format_markdown(design_system: dict) -> str:
     if typography.get("google_fonts_url"):
         lines.append(f"- **Google Fonts:** {typography.get('google_fonts_url', '')}")
     if typography.get("css_import"):
-        lines.append(f"- **CSS Import:**")
-        lines.append(f"```css")
+        lines.append("- **CSS Import:**")
+        lines.append("```css")
         lines.append(f"{typography.get('css_import', '')}")
-        lines.append(f"```")
+        lines.append("```")
     lines.append("")
 
     # Key Effects section
@@ -459,8 +459,8 @@ def format_markdown(design_system: dict) -> str:
 
 
 # ============ MAIN ENTRY POINT ============
-def generate_design_system(query: str, project_name: str = None, output_format: str = "ascii", 
-                           persist: bool = False, page: str = None, output_dir: str = None) -> str:
+def generate_design_system(query: str, project_name: str | None = None, output_format: str = "ascii",
+                           persist: bool = False, page: str | None = None, output_dir: str | None = None) -> str:
     """
     Main entry point for design system generation.
 
@@ -488,7 +488,7 @@ def generate_design_system(query: str, project_name: str = None, output_format: 
 
 
 # ============ PERSISTENCE FUNCTIONS ============
-def persist_design_system(design_system: dict, page: str = None, output_dir: str = None, page_query: str = None) -> dict:
+def persist_design_system(design_system: dict, page: str | None = None, output_dir: str | None = None, page_query: str | None = None) -> dict:
     """
     Persist design system to design-system/<project>/ folder using Master + Overrides pattern.
     
@@ -658,7 +658,7 @@ def format_master_md(design_system: dict) -> str:
     lines.append("")
     lines.append("/* Secondary Button */")
     lines.append(".btn-secondary {")
-    lines.append(f"  background: transparent;")
+    lines.append("  background: transparent;")
     lines.append(f"  color: {colors.get('primary', '#2563EB')};")
     lines.append(f"  border: 2px solid {colors.get('primary', '#2563EB')};")
     lines.append("  padding: 12px 24px;")
@@ -802,7 +802,7 @@ def format_master_md(design_system: dict) -> str:
     return "\n".join(lines)
 
 
-def format_page_override_md(design_system: dict, page_name: str, page_query: str = None) -> str:
+def format_page_override_md(design_system: dict, page_name: str, page_query: str | None = None) -> str:
     """Format a page-specific override file with intelligent AI-generated content."""
     project = design_system.get("project_name", "PROJECT")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -20,11 +20,11 @@ Enable low-risk guest trial usage without reviving the removed legacy guest arch
 As an anonymous user, I can create and maintain a short-lived guest session and guest character so that I can try party creation without an actor account.
 
 Acceptance criteria:
-- `POST /api/v1/guest/session` sets a signed HTTP-only guest cookie and creates a Redis TTL session.
+- `POST /api/v1/guest/session` sets a signed, HTTP-only, `Secure`, `SameSite=Lax` cookie with `Path=/` and `Max-Age=86400` (24 h) and creates a Redis TTL session.
 - `POST /api/v1/guest/character` validates the guest cookie and stores display name, job class, and level in Redis with TTL.
 - `GET /api/v1/guest/me` returns guest state or anonymous-safe empty state without global auth errors.
-- `DELETE /api/v1/guest/session` clears cookie and guest Redis state.
-- Unit tests cover token parsing and Redis/session behavior.
+- `DELETE /api/v1/guest/session` clears the cookie using the same `Path`, `SameSite`, and `Secure` attributes with `Max-Age=0` (or past `Expires`) and purges the Redis guest state.
+- Unit tests cover token parsing, Redis/session behavior, and that `DELETE` issues a `Set-Cookie` header with `Max-Age=0` matching the original attributes.
 
 ### US-002 Optional Principal
 

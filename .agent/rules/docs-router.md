@@ -14,6 +14,7 @@ trigger: always_on
 4. **停止條件**：找到負責模組、契約與驗證方式後停止讀文件，開始實作或驗證。
 
 ## 核心規則與架構
+
 | 任務類型 | 關鍵文件 | 目的 |
 |---|---|---|
 | 修改核心邏輯 / 狀態轉換 | [docs/business-logic.md](../../docs/business-logic.md) | 理解派對狀態機、演員權限與全域限制 |
@@ -21,6 +22,7 @@ trigger: always_on
 | 修改 API / 資料結構 | [docs/api-reference.md](../../docs/api-reference.md) | 遵循 API 契約、錯誤碼與 WS 訊息格式 |
 
 ## 資料流與技術細節
+
 | 任務類型 | 關鍵文件 | 目的 |
 |---|---|---|
 | 修改後端 Worker / 事件 | [docs/backend-data-flows.md](../../docs/backend-data-flows.md) | 理解請求生命週期與 Outbox 流程 |
@@ -30,6 +32,7 @@ trigger: always_on
 | 修改即時通訊 / Redis | [docs/data-flow/realtime.md](../../docs/data-flow/realtime.md) | 理解 WebSocket 訂閱、推送與重連機制 |
 
 ## 開發流程
+
 | 任務類型 | 關鍵文件 | 目的 |
 |---|---|---|
 | Git 操作 / Branch / Worktree | [.agent/rules/core.md](core.md) | 遵循 Git Flow 與任務清理流程 |
