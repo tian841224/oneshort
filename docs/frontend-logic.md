@@ -834,6 +834,111 @@ Toast 類型:
 
 ---
 
+## 十八、隊伍圖片系統 (Party Artwork)
+
+> 核心邏輯：`src/lib/partyArtwork.ts` ｜ 顯示元件：`src/components/design/BossImage.tsx`
+
+### 18.1 整體架構
+
+隊伍圖片系統將「隊伍目標名稱 / 類型」對應到前端的圖片資產，並決定顯示方式（`contain` 或 `cover`）。
+
+```
+API 回傳 target_name / boss_label
+        ↓
+  getPartyArtworkLabel()   ← 解析 type + target_name → 取得 label (target-xxx.png)
+        ↓
+  getPartyArtworkAsset()   ← label → PartyArtworkAsset { src, fit, crops }
+        ↓
+  <BossImage label={...} crop="square|wide|default" />
+```
+
+### 18.2 圖片資產路徑
+
+#### 地圖類圖片（MAP_TARGETS）
+
+| label（DB 儲存值） | 顯示名稱 | 實際路徑 |
+|---|---|---|
+| `target-aqua-road.png` | 水世界 | `public/images/party/targets/target-aqua-road.png` |
+| `target-dead-mine.png` | 廢棄礦坑 | `public/images/party/targets/target-dead-mine.png` |
+| `target-el-nath.png` | 冰原雪域 | `public/images/party/targets/target-el-nath.png` |
+| `target-japan.png` | 日本 | `public/images/party/targets/target-japan.png` |
+| `target-kritias.png` | 克里提亞斯 | `public/images/party/targets/target-kritias.png` |
+| `target-ludus-lake.png` | 路德斯湖 | `public/images/party/targets/target-ludus-lake.png` |
+| `target-maple-island.png` | 楓之島 | `public/images/party/targets/target-maple-island.png` |
+| `target-minar-forest.png` | 米納爾森林 | `public/images/party/targets/target-minar-forest.png` |
+| `target-mu-lung.png` | 武陵桃園 | `public/images/party/targets/target-mu-lung.png` |
+| `target-night-market.png` | 不夜城 | `public/images/party/targets/target-night-market.png` |
+| `target-nihale-desert.png` | 納希沙漠 | `public/images/party/targets/target-nihale-desert.png` |
+| `target-taipei-101.png` | 台北101 | `public/images/party/targets/target-taipei-101.png` |
+| `target-temple-of-time.png` | 時間神殿 | `public/images/party/targets/target-temple-of-time.png` |
+| `target-thailand.png` | 泰國 | `public/images/party/targets/target-thailand.png` |
+| `target-victoria-island.png` | 維多利亞島 | `public/images/party/targets/target-victoria-island.png` |
+| `target-ximending.png` | 西門町 | `public/images/party/targets/target-ximending.png` |
+
+#### BOSS / 任務類圖片（非 MAP_TARGETS）
+
+| label | 顯示名稱 | 路徑 |
+|---|---|---|
+| `target-normal-lotus.png` | 普通拉圖斯 | `public/images/party/targets/target-normal-lotus.png` |
+| `target-hard-lotus.png` | 困難拉圖斯 | `public/images/party/targets/target-hard-lotus.png` |
+| `target-zakum.png` | 殘暴炎魔 | `public/images/party/targets/target-zakum.png` |
+| `target-horntail.png` | 龍王 | `public/images/party/targets/target-horntail.png` |
+| `target-super-slime.png` | 超級綠水靈 | `public/images/party/targets/target-super-slime.png` |
+| `target-toy-101.png` | 玩具城101 | `public/images/party/targets/target-toy-101.png` |
+| `target-pirate-king.png` | 金勾海賊王 | `public/images/party/targets/target-pirate-king.png` |
+| `target-romeo-juliet.png` | 羅密歐與茱麗葉 | `public/images/party/targets/target-romeo-juliet.png` |
+| `target-goddess-tower.png` | 女神之塔 | `public/images/party/targets/target-goddess-tower.png` |
+
+BOSS 類圖片各有三個預裁切版本：
+- `target-{name}.png` — 預設
+- `target-{name}-square.png` — 正方形（列表卡片用）
+- `target-{name}-wide.png` — 寬版（預覽面板用）
+
+#### Placeholder 圖片
+
+| label | 說明 | 路徑 |
+|---|---|---|
+| `placeholder-map.png` | 地圖預設圖 | `public/images/party/placeholders/placeholder-map.png` |
+| `placeholder-boss.png` | BOSS 隊伍預設圖 | `public/images/party/placeholders/placeholder-boss.png` |
+| `placeholder-training.png` | 團練預設圖 | `public/images/party/placeholders/placeholder-training.png` |
+| `placeholder-group.png` | 組隊任務預設圖 | `public/images/party/placeholders/placeholder-group.png` |
+| `placeholder-default.png` | 通用預設圖 | `public/images/party/placeholders/placeholder-default.png` |
+
+### 18.3 地圖圖片顯示規則（禁止裁切）
+
+地圖類圖片（`MAP_TARGETS` 成員）是場景實景截圖，**必須完整顯示，禁止裁切**：
+
+- `fit` 固定為 `'contain'`，禁止使用 `'cover'`。
+- 三個 crop 變體（`default`、`square`、`wide`）全部指向同一張原始圖片，不使用 `-square.png`、`-wide.png` 預裁切版本。
+- 圖片統一以 `.png` 格式存放，label key 為 DB 儲存值，不可改變副檔名。
+
+BOSS 類圖片維持 `'contain'` + 獨立 `-square.png`/`-wide.png` 版本，與地圖邏輯無關。
+
+### 18.4 BossImage 元件使用
+
+```tsx
+// 隊伍列表卡片
+<BossImage label={party.image} height={92} crop="square" />
+
+// 預覽面板（寬版）
+<BossImage label={party.image} height={170} crop="wide" />
+
+// 隊伍詳情頁
+<BossImage label={party.image ?? party.boss} height={132} crop="square" />
+```
+
+`label` 來源：`getPartyArtworkLabel(targetName, partyType)` 的回傳值（即 `target-{name}.png` 格式的字串）。
+
+### 18.5 新增地圖圖片的步驟
+
+1. 將原始圖片放到 `public/images/party/targets/target-{name}.png`。
+2. 在 `partyArtwork.ts` 的 `MAP_TARGETS` Set 加入 `'target-{name}.png'`。
+3. 在 `TARGETS` 物件加入 `'target-{name}.png': '顯示名稱'`。
+4. 在 `TARGET_ALIASES` 加入中英文別名對應。
+5. **不需要**產生 `-square.png` / `-wide.png` 版本（地圖類不使用）。
+
+---
+
 ## 十七、頁尾捷徑 (Footer)
 
 ```
