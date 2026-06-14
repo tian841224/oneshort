@@ -323,6 +323,32 @@ Rules:
 - 不使用 copyrighted Artale assets 或明顯複製的遊戲原圖。
 - 產生、修改、審查或命名新資產時，載入 `oneshort-asset-generation` skill。
 
+### 地圖 Target 圖片顯示規範
+
+`MAP_TARGETS`（`partyArtwork.ts`）內的地圖類圖片是場景實景截圖，必須完整呈現，**禁止裁切**。
+
+**規則（違反任一項均為 bug）：**
+
+- 地圖 target 的 `fit` 必須為 `'contain'`，禁止使用 `'cover'`。
+- 三個 crop 變體（`default`、`square`、`wide`）必須全部指向同一張原始圖片（`label` 本身），不得使用 `-square.png`、`-wide.png` 預裁切版本。
+- 地圖圖片統一以 `.png` 存放於 `public/images/party/targets/target-{name}.png`。
+- `TARGETS` 與 `MAP_TARGETS` 的 key 是整個系統（含 DB）的 canonical label，不可更改副檔名。
+- BOSS 類圖片（非 `MAP_TARGETS` 成員）不受本規範影響，維持 `contain` + `-square.png`/`-wide.png` 邏輯。
+
+**`targetAsset()` 地圖分支的正確寫法：**
+
+```typescript
+crops: isMap ? {
+  default: '/images/party/targets/' + label,
+  square:  '/images/party/targets/' + label,  // 全指向原圖，不裁切
+  wide:    '/images/party/targets/' + label,
+} : {
+  default: '/images/party/targets/' + label,
+  square:  '/images/party/targets/' + base + '-square.png',
+  wide:    '/images/party/targets/' + base + '-wide.png',
+},
+```
+
 Recommended paths:
 
 ```txt
