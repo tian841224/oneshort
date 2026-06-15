@@ -325,15 +325,15 @@ Rules:
 
 ### 地圖 Target 圖片顯示規範
 
-`MAP_TARGETS`（`partyArtwork.ts`）內的地圖類圖片是場景實景截圖，必須完整呈現，**禁止裁切**。
+`MAP_TARGETS`（`partyArtwork.ts`）內的地圖類圖片是場景實景截圖，以 `'contain'` 完整顯示原圖（卡片背景以 `.os-boss-image` gradient 補白）。
 
 **規則（違反任一項均為 bug）：**
 
-- 地圖 target 的 `fit` 必須為 `'contain'`，禁止使用 `'cover'`。
-- 三個 crop 變體（`default`、`square`、`wide`）必須全部指向同一張原始圖片（`label` 本身），不得使用 `-square.png`、`-wide.png` 預裁切版本。
+- 地圖 target 的 `fit` 必須為 `'contain'`（完整顯示截圖），禁止使用 `'cover'`（會裁切圖片使部分內容超出可視範圍）。
+- 三個 crop 變體（`default`、`square`、`wide`）必須全部指向同一張原始圖片（`label` 本身），不得使用 `-square.png`、`-wide.png` 預裁切版本（地圖不製作裁切版）。
 - 地圖圖片統一以 `.png` 存放於 `public/images/party/targets/target-{name}.png`。
 - `TARGETS` 與 `MAP_TARGETS` 的 key 是整個系統（含 DB）的 canonical label，不可更改副檔名。
-- BOSS 類圖片（非 `MAP_TARGETS` 成員）不受本規範影響，維持 `contain` + `-square.png`/`-wide.png` 邏輯。
+- 非地圖 target（BOSS／冒險場景）的 `fit` 為 `'contain'`，並附帶 `BOSS_BACKGROUNDS` 背景圖，有 `-square.png`、`-wide.png` 裁切版本。
 
 **`targetAsset()` 地圖分支的正確寫法：**
 
@@ -348,6 +348,12 @@ crops: isMap ? {
   wide:    '/images/party/targets/' + base + '-wide.png',
 },
 ```
+
+### BOSS_BACKGROUNDS 套用範圍（設計決策）
+
+`targetAsset()` 對所有**非 `MAP_TARGETS` 成員**（含 BOSS、GROUP 冒險場景、TRAINING 練功場景等）一律套用 `BOSS_BACKGROUNDS`（`background1/2/3.png`）作為卡片背景圖層。
+
+**這是刻意設計，不是 bug**：非地圖目標圖片以 `fit: 'contain'` 呈現，需要背景圖來填補留白區域；BOSS_BACKGROUNDS 的色調對 BOSS、GROUP、TRAINING 類型的卡片均適用。若未來某類型需要獨立背景色組，才在 `targetAsset()` 內依 party type 分支。
 
 Recommended paths:
 
