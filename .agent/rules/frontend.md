@@ -44,7 +44,7 @@ npm run build            # 構建驗證（大型改動建議）
 
 修改任何前端版面、觸控行為或斷點前，必讀 [style.md §10 Responsive Invariants](style.md)。硬性要點：
 
-- **斷點單一來源**：JS 用 `useIsMobile(BP.x)`（`src/lib/breakpoints.ts`）對齊 CSS `@media`；禁止 `innerWidth` 自訂判斷或裸數字斷點。標準值 `mobile 768 / bottomNav 900 / desktop 1200`。
+- **斷點單一來源**：JS 用 `useIsMobile(BP.x)`（`src/lib/breakpoints.ts`）對齊 CSS `@media`；禁止 `innerWidth` 自訂判斷或裸數字斷點。標準值 `sm 640 / mobile 768 / bottomNav 900 / desktop 1200 / wide 1600`（CSS `max-width` 用「值−1」：`639/767/899/1199`）。
 - **響應式屬性不寫 inline**：`grid-template-columns`、`flex-direction`、`width`、`display` 等放 class / `data-*` / CSS 變數，讓 `@media` 可覆寫（inline 特異度會壓過 media query）。
 - **觸控目標 ≥44×44**：用 `.os-btn--icon` / `.os-icon-btn`，勿寫 sub-44 的 inline 尺寸。
 - **底部清除用 `var(--os-bottom-nav-h)`**（含 safe-area），禁止寫死 `72/76/80`。

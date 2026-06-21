@@ -418,7 +418,7 @@ Mobile:
 
 這些是從 RWD 審查歸納、最容易被「巧合正確」掩蓋的硬性規則。修改任何版面、觸控或斷點前必讀：
 
-1. **斷點單一來源**：JS 與 CSS 不得各自定義斷點。JS 一律用 `useIsMobile(BP.x)`（`frontend/src/lib/breakpoints.ts`）對齊 `globals.css` 的 `@media`。標準值：`mobile 768 / bottomNav 900 / desktop 1200`。新增 viewport 判斷前先確認是否已有對應 `BP`，禁止裸 `innerWidth` 或裸數字斷點。
+1. **斷點單一來源**：JS 與 CSS 不得各自定義斷點。JS 一律用 `useIsMobile(BP.x)`（`frontend/src/lib/breakpoints.ts`）對齊 `globals.css` 的 `@media`。標準值：`sm 640 / mobile 768 / bottomNav 900 / desktop 1200 / wide 1600`（CSS `max-width` 用「值−1」＝ `639/767/899/1199`、`min-width` 用值本身 ＝ `768/1200/1600`，與 `useIsMobile(X)` ≡ `(max-width: X−1)` 對齊）。新增 viewport 判斷前先確認是否已有對應 `BP`，禁止裸 `innerWidth` 或裸數字斷點。
 2. **響應式屬性禁止寫 inline style**：`grid-template-columns`、`flex-direction`、`width/height`、`display` 等「會隨斷點改變」的屬性必須放在 class / `data-*` / CSS 變數，**不可寫成 inline `style`**——inline 特異度高於 `@media`，會靜默壓過手機覆寫。範例：角色列用 `.os-member-row--account` + `data-editing`，而非 inline `gridTemplateColumns`。
 3. **觸控目標 ≥44×44**：固定尺寸或圖示型互動元素在觸控（`@media (pointer: coarse)` 或 ≤900px）必須 ≥44×44。用共用 class（`.os-btn--icon`、`.os-icon-btn`），不要寫 sub-44 的 inline `width/height`。
 4. **底部固定列清除用 token**：任何位於行動底部導覽列上方的可捲區，底部保留量一律用 `calc(var(--os-bottom-nav-h) + 內距)`（`--os-bottom-nav-h = 56px + safe-area`），禁止寫死 `72/76/80/100` 等魔術數字，且必須含 `env(safe-area-inset-bottom)`。
