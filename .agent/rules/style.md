@@ -220,6 +220,7 @@ Modals should:
 - use thin dark border
 - preserve the same radius and shadow as dashboard cards
 - keep footer actions clear and right-aligned
+- use `width: min(Npx, calc(100vw - 32px))` (never a fixed px width), an overlay with padding, and `max-height` + scroll — so they never overflow on narrow phones
 
 Do not use generic dark overlays with bright game colors.
 
