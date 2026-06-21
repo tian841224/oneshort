@@ -5,7 +5,7 @@ trigger:
 ---
 
 # OneShort Design Rules
-Version: 2.0
+Version: 2.1
 
 本文件只在修改前端 UI/UX、視覺樣式、互動文案、排版、響應式行為或設計資產時讀取。非 UI 任務不要載入本文件。
 
@@ -414,6 +414,16 @@ Mobile:
 - minimum 44px touch targets
 - no horizontal overflow
 
+### Responsive Invariants（違反任一項視為 bug）
+
+這些是從 RWD 審查歸納、最容易被「巧合正確」掩蓋的硬性規則。修改任何版面、觸控或斷點前必讀：
+
+1. **斷點單一來源**：JS 與 CSS 不得各自定義斷點。JS 一律用 `useIsMobile(BP.x)`（`frontend/src/lib/breakpoints.ts`）對齊 `globals.css` 的 `@media`。標準值：`mobile 768 / bottomNav 900 / desktop 1200`。新增 viewport 判斷前先確認是否已有對應 `BP`，禁止裸 `innerWidth` 或裸數字斷點。
+2. **響應式屬性禁止寫 inline style**：`grid-template-columns`、`flex-direction`、`width/height`、`display` 等「會隨斷點改變」的屬性必須放在 class / `data-*` / CSS 變數，**不可寫成 inline `style`**——inline 特異度高於 `@media`，會靜默壓過手機覆寫。範例：角色列用 `.os-member-row--account` + `data-editing`，而非 inline `gridTemplateColumns`。
+3. **觸控目標 ≥44×44**：固定尺寸或圖示型互動元素在觸控（`@media (pointer: coarse)` 或 ≤900px）必須 ≥44×44。用共用 class（`.os-btn--icon`、`.os-icon-btn`），不要寫 sub-44 的 inline `width/height`。
+4. **底部固定列清除用 token**：任何位於行動底部導覽列上方的可捲區，底部保留量一律用 `calc(var(--os-bottom-nav-h) + 內距)`（`--os-bottom-nav-h = 56px + safe-area`），禁止寫死 `72/76/80/100` 等魔術數字，且必須含 `env(safe-area-inset-bottom)`。
+5. **z-index 走既定 scale**：固定／浮動層級用 `--z-*` token（`--z-nav / --z-bottom-nav / --z-overlay / --z-dropdown / --z-modal / --z-toast`），不要寫任意數字。
+
 ## 11. Golden Rules
 
 Before adding or changing any UI:
@@ -429,3 +439,4 @@ Before adding or changing any UI:
 9. Are empty/loading/error states designed, not left as plain text?
 10. Does the page still feel like OneShort?
 11. If new visual assets are involved, did they follow `oneshort-asset-generation` and avoid copyrighted game artwork?
+12. Are responsive values (breakpoints, grid templates, touch sizes, bottom-nav clearance, z-index) driven by shared tokens/classes (`BP`, `.os-btn--icon`, `--os-bottom-nav-h`, `--z-*`) and never hardcoded inline, so `@media` can still override? (見 §10 Responsive Invariants)

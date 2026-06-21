@@ -39,3 +39,13 @@ npm run build            # 構建驗證（大型改動建議）
 - 合併回 `develop` 後必須執行 `npm run test:e2e`。
 - 新增或修改功能必須同步更新 E2E 測試。
 - 確保無型別報錯且與後端契約同步。
+
+## 6. 響應式不變式（RWD）
+
+修改任何前端版面、觸控行為或斷點前，必讀 [style.md §10 Responsive Invariants](style.md)。硬性要點：
+
+- **斷點單一來源**：JS 用 `useIsMobile(BP.x)`（`src/lib/breakpoints.ts`）對齊 CSS `@media`；禁止 `innerWidth` 自訂判斷或裸數字斷點。標準值 `mobile 768 / bottomNav 900 / desktop 1200`。
+- **響應式屬性不寫 inline**：`grid-template-columns`、`flex-direction`、`width`、`display` 等放 class / `data-*` / CSS 變數，讓 `@media` 可覆寫（inline 特異度會壓過 media query）。
+- **觸控目標 ≥44×44**：用 `.os-btn--icon` / `.os-icon-btn`，勿寫 sub-44 的 inline 尺寸。
+- **底部清除用 `var(--os-bottom-nav-h)`**（含 safe-area），禁止寫死 `72/76/80`。
+- **z-index 走 `--z-*` scale**，不寫任意數字。
