@@ -426,6 +426,7 @@ Mobile:
 5. **z-index 走既定 scale**：固定／浮動層級用 `--z-*` token（`--z-nav / --z-bottom-nav / --z-overlay / --z-dropdown / --z-modal / --z-toast`），不要寫任意數字。
 6. **行動殼與內容單欄共用斷點**：「shell 行動化（收側欄＋出底部導覽，`bottomNav` 900）」與「內容頁／navbar 單欄化／簡化」必須用同一斷點（900），不可讓內容頁停在較低斷點（640/768）— 否則 768–899 會出現「行動殼包桌機內容」死區（hover 預覽在觸控失效、欄寬被擠）。需依容器寬度（非視窗）收合的版面用 `@container`（如 create-party），其顯示／隱藏一律由同一 container query 控制，勿混入 viewport JS gate。
 7. **觸控互動 fallback**：依賴拖曳或 hover 的互動必須提供觸控 tap 替代（用 `e.pointerType` 分流，touch 走 `onClick` 切換、mouse/pen 才拖曳）。可捲動表面上的互動格子／控制項**不可**用 `touch-action: none`（會吃掉頁面捲動）— 改用 `manipulation` 或 `pan-y`。任何「唯一操作入口」不可只放在 hover 顯示的元素上。
+8. **版面用 CSS 而非 JS 量測**：能用 `@media`／`@container` 表達的版面切換（雙欄／單欄、顯示／隱藏、尺寸階）**不要**用 JS 量測 viewport（`useState`+`useEffect` 讀 `innerWidth/Height`）後切換 — SSR／首載會先以預設值渲染再跳版（CLS）。改用 CSS 讓首次 paint 即正確；靜態裝飾（如插畫 SVG）總是渲染、用 CSS 隱藏。只有 CSS 無法表達時（依資料數量、需 `getBoundingClientRect`）才用 JS，並配 `useIsMobile` 或穩定初值。
 
 ## 11. Golden Rules
 
