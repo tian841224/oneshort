@@ -1,6 +1,5 @@
 ---
 trigger:
-  - frontend/**/*
   - uiux_task
 ---
 
