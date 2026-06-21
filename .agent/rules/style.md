@@ -424,6 +424,7 @@ Mobile:
 4. **底部固定列清除用 token**：任何位於行動底部導覽列上方的可捲區，底部保留量一律用 `calc(var(--os-bottom-nav-h) + 內距)`（`--os-bottom-nav-h = 56px + safe-area`），禁止寫死 `72/76/80/100` 等魔術數字，且必須含 `env(safe-area-inset-bottom)`。
 5. **z-index 走既定 scale**：固定／浮動層級用 `--z-*` token（`--z-nav / --z-bottom-nav / --z-overlay / --z-dropdown / --z-modal / --z-toast`），不要寫任意數字。
 6. **行動殼與內容單欄共用斷點**：「shell 行動化（收側欄＋出底部導覽，`bottomNav` 900）」與「內容頁／navbar 單欄化／簡化」必須用同一斷點（900），不可讓內容頁停在較低斷點（640/768）— 否則 768–899 會出現「行動殼包桌機內容」死區（hover 預覽在觸控失效、欄寬被擠）。需依容器寬度（非視窗）收合的版面用 `@container`（如 create-party），其顯示／隱藏一律由同一 container query 控制，勿混入 viewport JS gate。
+7. **觸控互動 fallback**：依賴拖曳或 hover 的互動必須提供觸控 tap 替代（用 `e.pointerType` 分流，touch 走 `onClick` 切換、mouse/pen 才拖曳）。可捲動表面上的互動格子／控制項**不可**用 `touch-action: none`（會吃掉頁面捲動）— 改用 `manipulation` 或 `pan-y`。任何「唯一操作入口」不可只放在 hover 顯示的元素上。
 
 ## 11. Golden Rules
 
