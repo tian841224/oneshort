@@ -40,9 +40,9 @@ trigger: always_on
 | 公會 / Guild / 公會聊天 / 王團配對 | [docs/features/guild.md](../../docs/features/guild.md) | 功能範圍、公會限定隊伍、自動配對規則 |
 | 通知 / Notification / 推播事件 | [docs/features/notify.md](../../docs/features/notify.md) | 通知路由規則、事件種類與中心化處理 |
 | 公告 / 跑馬燈 / Announcement / NoticeBar | [docs/features/announcement.md](../../docs/features/announcement.md) | 公告系統與 NoticeBar 規格（已實作） |
-| 線上人數 / 每日統計 / online-stats | [docs/features/online-stats.md](../../docs/features/online-stats.md) | 即時人數顯示與每日統計落庫規格（待實作） |
+| 線上人數 / 每日統計 / online-stats | [docs/features/online-stats.md](../../docs/features/online-stats.md) | 即時人數顯示與每日統計落庫規格（已實作） |
 | OCR / Bug 回報 / 已移除功能狀態 | [docs/features/others.md](../../docs/features/others.md) | OCR、Bug 回報與退場模組現況 |
-| Telegram Bot / 管理員 TG 指令 | [docs/features/telegram-bot.md](../../docs/features/telegram-bot.md) | Bot 指令擴充計畫與驗收條件（待實作） |
+| Telegram Bot / 管理員 TG 指令 | [docs/features/telegram-bot.md](../../docs/features/telegram-bot.md) | Bot 指令擴充計畫與驗收條件（已實作） |
 | Guest Mode / 訪客模式 | [docs/features/guest-mode-plan.md](../../docs/features/guest-mode-plan.md) | Guest mode v1 架構決策與規格 |
 
 ## 開發流程

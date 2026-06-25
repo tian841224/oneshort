@@ -1,12 +1,20 @@
 # OneShort 訪客快速使用 (Guest Mode) v1 規劃
 
-## Implementation Status (2026-05-01)
+## Implementation Status (2026-06-25 校正)
 
-已在隔離 worktree `feature/guest-mode-v1` 實作 v1 主線：
+> ⚠️ 本段先前宣稱於 `feature/guest-mode-v1` 分支實作 v1——但該分支在 frontend / backend 兩個 repo（含 origin）**都不存在**，`internal/guest`、`guestProfileStore.ts` 等規格命名的檔案也從未進入 git 歷史。先前敘述視為**過期 / 未採用的設計提案**。
 
-- Backend：新增 `internal/guest`、guest token/cookie、Redis session/character、optional principal middleware、public/optional party list/detail/create routes、guest-owned immediate party、guest-owned migration endpoint。
-- Frontend：新增 `guestProfileStore`、`useIdentity()`、`GuestEnrollDialog`、訪客建隊 immediate-only UI、guest-owned badge、未登入申請 preflight、登入後 guest party migrate。
-- Tests：已新增 backend guest create validation 與 frontend guest create/chat/migration regression tests。
+**實際狀態：本規格的 v1 能力已由既有「quick-party / quick-guest」系統實作並上線於 develop，但採用了與本文件不同的命名**（規格的 `Principal` / `internal/guest` / `guestProfileStore` / `useIdentity` 命名未被採用）。能力對應：
+
+| 規格 v1 能力 | 實際實作（develop） |
+|---|---|
+| 未登入瀏覽公開即時隊伍 | `OptionalAuth` + party `GET /parties`、`/:id`（`backend/internal/party/handler.go`）|
+| 未登入用訪客角色建即時 Redis 隊伍 | `quick_guest_token` cookie + `QuickPartyViewer` + `POST /parties/quick` + immediate Redis party；前端 `QuickCreateWizard`、`QuickGuestIdentityPrompt`、`frontend/src/lib/quickGuestIdentity.ts` |
+| actor 申請 / 加入 guest-owned party | quick-join 流程（見 `docs/frontend-logic.md` §3.4A）|
+| 訪客登入後 party 轉 actor-owned | `frontend/src/lib/quickPartySession.ts`（host/member/pending）+ 登入流程（遷移細節仍待逐項核對）|
+| localStorage + cookie + Redis TTL、no Postgres PII | `quick_guest_token` + `quickPartySession`(localStorage) + Redis |
+
+> **不應據此「全新實作」**，以免與既有 quick-guest 系統產生平行系統。若要推進 Phase 2，請以既有 quick-guest 命名為基準做 gap 分析。下方原始規格保留作為設計參考。
 
 仍保留 v1 範圍限制：guest 不申請 actor-owned party、不開 guest websocket/chat/notifications、不新增匿名 Postgres 資料、不新增 `allow_guest_players`。
 

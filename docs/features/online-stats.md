@@ -2,7 +2,9 @@
 
 **版本**: 1.1  
 **日期**: 2026-04-12  
-**狀態**: 規格已修訂，待實作
+**狀態**: ✅ 已實作（文件於 2026-06-25 校正；原標「待實作」已過期）
+
+> 已落地：後端 `backend/internal/stats/`（service / redis_stats / repository / middleware / handler + 測試）、migration `0015_daily_stats`；前端 `frontend/src/hooks/useOnlineCount.ts` + Navbar 顯示；即時推送走 WebSocket `system.online_count` 事件。
 
 ---
 

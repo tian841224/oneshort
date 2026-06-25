@@ -1,6 +1,6 @@
 # Plan: 擴充 Telegram Bot — 跑馬燈、Bug 管理、雙向回覆
 
-**Status:** Draft
+**Status:** ✅ 已實作（文件於 2026-06-25 校正；原標 Draft 已過期）。指令實作於 `backend/internal/admin/telegram.go`（`/announce`、`/notice`、`/bugs`、`/bug`、`/bug-status`、`/bug-reply`、`/help`），outbound 走 `backend/internal/telegram/sender.go`（含 deduper）。下方驗收清單視為已完成。
 **Owner:** Tian
 **Created:** 2026-05-18
 **Scope:** Backend (Go), Telegram webhook + outbound sender
