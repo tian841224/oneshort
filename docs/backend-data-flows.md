@@ -222,12 +222,12 @@ POST /api/v1/auth/discord/link/merge
      - 公開搜尋不可混入 `HIDDEN` / `CLOSED` / `DISBANDED` 的非公開或唯讀快照
    - Redis immediate 隊伍索引拆成兩份：
      - `party:list:immediate`：仍可搜尋的 immediate 隊伍
-     - `party:list:immediate:closed`：最近 24 小時內保留唯讀的已關閉 immediate 快照
+     - `party:list:immediate:closed`：最近 72 小時內保留唯讀的已關閉 immediate 快照
      - 若索引缺失，會 fallback 掃描 `party:data:*`，並在讀取時自動修補索引
 
    include_closed=true（我的隊伍）時：
    - 回傳 RECRUITING / ACTIVE / HIDDEN
-   - 回傳最近 24 小時內的 CLOSED / DISBANDED
+   - 回傳最近 72 小時內的 CLOSED / DISBANDED
    - immediate `CLOSED` 快照從 `party:list:immediate:closed` 讀取，不再留在公開搜尋索引
    - 公開搜尋不再以前端 updated_at 1 小時過濾
 
