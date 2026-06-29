@@ -4,7 +4,7 @@ trigger:
 ---
 
 # OneShort Design Rules
-Version: 2.1
+Version: 2.2
 
 本文件只在修改前端 UI/UX、視覺樣式、互動文案、排版、響應式行為或設計資產時讀取。非 UI 任務不要載入本文件。
 
@@ -443,3 +443,57 @@ Before adding or changing any UI:
 10. Does the page still feel like OneShort?
 11. If new visual assets are involved, did they follow `oneshort-asset-generation` and avoid copyrighted game artwork?
 12. Are responsive values (breakpoints, grid templates, touch sizes, bottom-nav clearance, z-index) driven by shared tokens/classes (`BP`, `.os-btn--icon`, `--os-bottom-nav-h`, `--z-*`) and never hardcoded inline, so `@media` can still override? (見 §10 Responsive Invariants)
+13. 版面重排時是否「只改排列、未刪任何原本顯示的資訊或操作」，且版面屬性走 class/token（非 inline）、空/載入/錯誤狀態用共用元件？（見 §12 版面實作純度）
+
+## 12. 版面實作純度（Layout Implementation Integrity）
+
+本節記錄一次完整版面審查歸納出的「實作走樣」根因。設計語言（§1–§9）本身已經正確；過去的問題多半發生在實作把它稀釋掉——版面屬性散落 inline、導覽各寫一份、容器寬度各頁不一、狀態畫面各自重刻。以下每條都對應重複出現過的錯誤；**違反任一項視為 bug**。修改任何版面前必讀本節。
+
+### 12.1 資訊保全（重排版面，不刪資訊）
+
+> 版面可以重排，顯示的資訊內容必須全部保留。
+
+- 重排只能改變「排列、分組、視覺層級、容器、響應式行為」；**不可刪除任何原本顯示的資訊或操作入口**：欄位、狀態 badge、數字（人數 / 等級 / 頻道）、房間資訊、時間、攻略、備註文案、CTA。
+- 重構前先列出該畫面目前顯示的「資訊 / 狀態 / 操作」清單；重構後逐項對照，缺一即為回歸缺陷。
+- 若某資訊確實要移除或合併，屬於規格 / 邏輯變更，依 [core.md](core.md) 與 Logic Modification Guard 先取得使用者明確確認，**不可在版面重排時順手砍掉**。
+
+### 12.2 版面屬性禁止寫 inline style（強化 §10 不變式 #2）
+
+- **根因**：inline `style` 特異度高於 `@media` / `@container`，手機與斷點覆寫會被靜默壓過；且樣式散落在 JSX，無法統一維護、無法被設計稽核。
+- 會隨斷點改變的版面屬性——`display`、`flex-direction`、`grid-template-*`、`width` / `height`、`gap`、`padding` / `margin`——一律放 class / `data-*` / CSS 變數，**不可 inline**。
+- 動態數值（面板寬、欄數）以 CSS 變數注入（如 `--os-find-chat-w`），由 class 的 `@media` / `@container` 消費。
+- **禁止用 JS 模擬樣式**：不可用 `onMouseEnter` / `onMouseLeave`（或 ref 直接改 `el.style`）模擬 hover / resize 視覺，改用 CSS `:hover` / `:active`。
+
+✅ `<div className="os-party-detail-toolbar">`（flex / wrap / gap 在 CSS，手機可覆寫）
+❌ `<div style={{ display: "flex", gap: 12, gridTemplateColumns: "132px 1fr" }}>`
+
+### 12.3 導覽單一來源（Single Nav Source）
+
+- **根因**：側欄（`Sidebar`）與底部導覽（`MobileBottomNav`）各自手寫一份路由清單，改一邊忘另一邊就不一致。
+- 所有主導覽項（path、icon、label、badge 來源、出現條件）集中在單一 `navConfig`；`Sidebar`、`MobileBottomNav`、麵包屑都由它衍生，不得各自硬寫。
+
+### 12.4 容器寬度 token 化（Container Width）
+
+- **根因**：頁面最大寬度散落各頁且多為 inline 魔術數字（如 920 / 960 / 1100 / 1360），跨頁切換時內容區忽寬忽窄，破壞 SaaS 的穩定感。
+- 頁面最大寬度用共用 class + token（如 `.os-content` 搭配寬度階變數），**不可每頁各寫數字**；同類頁面套用同一寬度階。
+
+### 12.5 狀態畫面元件化（Empty / Loading / Error）
+
+- **根因**：核心頁有設計過的空 / 載入 / 錯誤狀態，次要頁卻各自 inline 重刻、或只放純文字 placeholder，導致全站精緻度不一致。
+- 空狀態、載入骨架、錯誤狀態一律使用共用元件（`EmptyState` / `LoadingSkeleton` / `ErrorState`），並保留 §6 規格（暖色 icon 或小插畫、一個明確下一步、簡潔繁中），**不得用純文字充數**。
+
+### 12.6 間距、層級與微互動走 token / CSS
+
+- `gap`、`padding` 對應 §4 間距階（`--s-*` / 4 的倍數），不寫 `gap: 6`、`gap: 14` 類非階值。
+- **z-index 一律用 `--z-*` token**（`--z-nav` / `--z-bottom-nav` / `--z-overlay` / `--z-dropdown` / `--z-modal` / `--z-toast`，定義於 `globals.css`），不寫 inline 魔術數字（如 `zIndex: 100`、`zIndex: 9999`）。modal 用 `--z-modal`、dropdown 用 `--z-dropdown`，避免堆疊順序靜默失序。（強化 §10 不變式 #5）
+- hover / press 微互動用 CSS `:hover` `:active` + §9 timing（150–250ms），不用 JS 改 style。
+- 重複結構（卡片狀態點、role pill、stat chip、modal / overlay 外殼）抽成共用元件或 class，不在每處 inline 重刻或用大量條件堆樣式。
+
+### 12.7 重構驗證義務
+
+每次版面重構完成前：
+
+1. `npx tsc --noEmit` 與 `npm run build` 通過。
+2. 對照 §12.1 資訊保全清單，逐項確認無資訊 / 操作遺漏。
+3. RWD 在 375 / 768 / 1024 / 1440 檢查：無水平溢位、無首載跳版（CLS）、觸控目標 ≥44、底部固定列清除正確。
+4. 合併回 `develop` 後 `npm run test:e2e`。
