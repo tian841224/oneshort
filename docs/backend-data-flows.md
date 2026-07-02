@@ -222,12 +222,12 @@ POST /api/v1/auth/discord/link/merge
      - 公開搜尋不可混入 `HIDDEN` / `CLOSED` / `DISBANDED` 的非公開或唯讀快照
    - Redis immediate 隊伍索引拆成兩份：
      - `party:list:immediate`：仍可搜尋的 immediate 隊伍
-     - `party:list:immediate:closed`：最近 24 小時內保留唯讀的已關閉 immediate 快照
+     - `party:list:immediate:closed`：最近 72 小時內保留唯讀的已關閉 immediate 快照
      - 若索引缺失，會 fallback 掃描 `party:data:*`，並在讀取時自動修補索引
 
    include_closed=true（我的隊伍）時：
    - 回傳 RECRUITING / ACTIVE / HIDDEN
-   - 回傳最近 24 小時內的 CLOSED / DISBANDED
+   - 回傳最近 72 小時內的 CLOSED / DISBANDED
    - immediate `CLOSED` 快照從 `party:list:immediate:closed` 讀取，不再留在公開搜尋索引
    - 公開搜尋不再以前端 updated_at 1 小時過濾
 
@@ -934,4 +934,45 @@ GET /api/v1/admin/stats:
      - `actors` 總數 → `total_users`
      - status IN ('RECRUITING','ACTIVE') 的 parties 總數 → `active_parties`
   3. 回傳 `{ data: { total_users, active_parties } }`
+```
+
+---
+
+## 十三、NoticeBar 資料流
+
+### 13.1 公開讀取
+
+```
+GET /api/v1/notice:
+  1. Repository 查詢 admin_notices 取得最新一筆 active notice
+     SELECT * FROM admin_notices WHERE is_active=true ORDER BY created_at DESC, id DESC LIMIT 1
+  2. 回傳 { data: AdminNotice | null }
+     AdminNotice: { id, content, is_active, created_at, updated_at }
+  3. Notice 內容為純文字，上限 240 字元
+```
+
+### 13.2 前端刷新語義
+
+```
+useSystemNotice hook（useAdminDashboard.ts）:
+  - staleTime: 0（每次存取均視為過期，確保最快感知到更新）
+  - refetchIntervalInBackground: true（背景 Tab 仍持續輪詢）
+
+  輪詢間隔（依 WS 連線狀態動態切換）:
+    WS connected    → 60 秒（SYSTEM_NOTICE_CONNECTED_REFETCH_INTERVAL_MS）
+    WS disconnected → 15 秒（SYSTEM_NOTICE_FALLBACK_REFETCH_INTERVAL_MS，降低延遲感知）
+```
+
+### 13.3 管理員寫入後的前端失效
+
+```
+PUT /api/v1/admin/notice / DELETE /api/v1/admin/notice:
+  1. Handler 完成寫入後，發布 system.notice.updated 到 public:broadcast room
+     payload: { notice: AdminNotice | null }
+
+  2. 前端 WS handler 收到 system.notice.updated 事件後執行（systemEffects.ts）:
+     a. setQueryData(adminQueryKeys.systemNotice, payload.notice) → 立即更新 Ticker 顯示
+     b. invalidate(adminQueryKeys.systemNotice) → 背景確認 refetch，確保資料一致
+
+  3. 若前端 WS 尚未連線，輪詢間隔（15s）確保最遲 15 秒內感知到更新
 ```

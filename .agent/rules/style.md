@@ -1,13 +1,14 @@
 ---
 trigger:
-  - frontend/**/*
   - uiux_task
 ---
 
 # OneShort Design Rules
-Version: 2.0
+Version: 2.2
 
 本文件只在修改前端 UI/UX、視覺樣式、互動文案、排版、響應式行為或設計資產時讀取。非 UI 任務不要載入本文件。
+
+本文件聚焦 OneShort 專屬品牌語言與 token；跨專案通用的 RWD 斷點、熱區、WCAG 對比度、狀態設計（載入/空/錯誤）、表單驗證、手勢衝突、安全區域與動效基準，另見全域 `frontend-rwd-uiux-standards` skill。兩者衝突時，本文件與 §10/§12 的專案級 token/class 優先；該 skill 補足本文件未列出的通用檢查項與回報格式。
 
 ## 1. Product Identity
 
@@ -220,6 +221,7 @@ Modals should:
 - use thin dark border
 - preserve the same radius and shadow as dashboard cards
 - keep footer actions clear and right-aligned
+- use `width: min(Npx, calc(100vw - 32px))` (never a fixed px width), an overlay with padding, and `max-height` + scroll — so they never overflow on narrow phones
 
 Do not use generic dark overlays with bright game colors.
 
@@ -323,6 +325,38 @@ Rules:
 - 不使用 copyrighted Artale assets 或明顯複製的遊戲原圖。
 - 產生、修改、審查或命名新資產時，載入 `oneshort-asset-generation` skill。
 
+### 地圖 Target 圖片顯示規範
+
+`MAP_TARGETS`（`partyArtwork.ts`）內的地圖類圖片是場景實景截圖，以 `'contain'` 完整顯示原圖（卡片背景以 `.os-boss-image` gradient 補白）。
+
+**規則（違反任一項均為 bug）：**
+
+- 地圖 target 的 `fit` 必須為 `'contain'`（完整顯示截圖），禁止使用 `'cover'`（會裁切圖片使部分內容超出可視範圍）。
+- 三個 crop 變體（`default`、`square`、`wide`）必須全部指向同一張原始圖片（`label` 本身），不得使用 `-square.png`、`-wide.png` 預裁切版本（地圖不製作裁切版）。
+- 地圖圖片統一以 `.png` 存放於 `public/images/party/targets/target-{name}.png`。
+- `TARGETS` 與 `MAP_TARGETS` 的 key 是整個系統（含 DB）的 canonical label，不可更改副檔名。
+- 非地圖 target（BOSS／冒險場景）的 `fit` 為 `'contain'`，並附帶 `BOSS_BACKGROUNDS` 背景圖，有 `-square.png`、`-wide.png` 裁切版本。
+
+**`targetAsset()` 地圖分支的正確寫法：**
+
+```typescript
+crops: isMap ? {
+  default: '/images/party/targets/' + label,
+  square:  '/images/party/targets/' + label,  // 全指向原圖，不裁切
+  wide:    '/images/party/targets/' + label,
+} : {
+  default: '/images/party/targets/' + label,
+  square:  '/images/party/targets/' + base + '-square.png',
+  wide:    '/images/party/targets/' + base + '-wide.png',
+},
+```
+
+### BOSS_BACKGROUNDS 套用範圍（設計決策）
+
+`targetAsset()` 對所有**非 `MAP_TARGETS` 成員**（含 BOSS、GROUP 冒險場景、TRAINING 練功場景等）一律套用 `BOSS_BACKGROUNDS`（`background1/2/3.png`）作為卡片背景圖層。
+
+**這是刻意設計，不是 bug**：非地圖目標圖片以 `fit: 'contain'` 呈現，需要背景圖來填補留白區域；BOSS_BACKGROUNDS 的色調對 BOSS、GROUP、TRAINING 類型的卡片均適用。若未來某類型需要獨立背景色組，才在 `targetAsset()` 內依 party type 分支。
+
 Recommended paths:
 
 ```txt
@@ -382,6 +416,19 @@ Mobile:
 - minimum 44px touch targets
 - no horizontal overflow
 
+### Responsive Invariants（違反任一項視為 bug）
+
+這些是從 RWD 審查歸納、最容易被「巧合正確」掩蓋的硬性規則。修改任何版面、觸控或斷點前必讀：
+
+1. **斷點單一來源**：JS 與 CSS 不得各自定義斷點。JS 一律用 `useIsMobile(BP.x)`（`frontend/src/lib/breakpoints.ts`）對齊 `globals.css` 的 `@media`。標準值：`sm 640 / mobile 768 / bottomNav 900 / desktop 1200 / wide 1600`（CSS `max-width` 用「值−1」＝ `639/767/899/1199`、`min-width` 用值本身 ＝ `768/1200/1600`，與 `useIsMobile(X)` ≡ `(max-width: X−1)` 對齊）。新增 viewport 判斷前先確認是否已有對應 `BP`，禁止裸 `innerWidth` 或裸數字斷點。
+2. **響應式屬性禁止寫 inline style**：`grid-template-columns`、`flex-direction`、`width/height`、`display` 等「會隨斷點改變」的屬性必須放在 class / `data-*` / CSS 變數，**不可寫成 inline `style`**——inline 特異度高於 `@media`，會靜默壓過手機覆寫。範例：角色列用 `.os-member-row--account` + `data-editing`，而非 inline `gridTemplateColumns`。
+3. **觸控目標 ≥44×44**：固定尺寸或圖示型互動元素在觸控（`@media (pointer: coarse)` 或 ≤900px）必須 ≥44×44。用共用 class：`.os-icon-btn`（已 min-44）、`.os-btn--icon`（固定寬 `.os-btn`）、`.os-touch-tall`（可長高的文字鈕／分頁／選項 → min-height:44）、`.os-touch-target`（toggle／小鈕保留視覺、`::before` 擴大命中區）。規則一律用 `min-width/min-height`（非 `width/height`）才壓得過 inline；不要寫 sub-44 的 inline 尺寸。密集 widget（如 TimeSlotPainter 塗格）不硬塞，改以批次/預設大目標替代。
+4. **底部固定列清除用 token**：任何位於行動底部導覽列上方的可捲區，底部保留量一律用 `calc(var(--os-bottom-nav-h) + 內距)`（`--os-bottom-nav-h = 56px + safe-area`）或套 `.os-page-scroll--bottom-nav`，禁止寫死 `72/76/80/100` 等魔術數字，且必須含 `env(safe-area-inset-bottom)`。注意：inline `padding` 簡寫會壓過 `.os-shell__main > *` 的清除規則（改用 class 的 `!important` 或 explicit `paddingBottom`）。NO_SHELL 頁（login/home）的手機底部 padding 也須含 safe-area（home-indicator）。
+5. **z-index 走既定 scale**：固定／浮動層級用 `--z-*` token（`--z-nav / --z-bottom-nav / --z-overlay / --z-dropdown / --z-modal / --z-toast`），不要寫任意數字。
+6. **行動殼與內容單欄共用斷點**：「shell 行動化（收側欄＋出底部導覽，`bottomNav` 900）」與「內容頁／navbar 單欄化／簡化」必須用同一斷點（900），不可讓內容頁停在較低斷點（640/768）— 否則 768–899 會出現「行動殼包桌機內容」死區（hover 預覽在觸控失效、欄寬被擠）。需依容器寬度（非視窗）收合的版面用 `@container`（如 create-party），其顯示／隱藏一律由同一 container query 控制，勿混入 viewport JS gate。
+7. **觸控互動 fallback**：依賴拖曳或 hover 的互動必須提供觸控 tap 替代（用 `e.pointerType` 分流，touch 走 `onClick` 切換、mouse/pen 才拖曳）。可捲動表面上的互動格子／控制項**不可**用 `touch-action: none`（會吃掉頁面捲動）— 改用 `manipulation` 或 `pan-y`。任何「唯一操作入口」不可只放在 hover 顯示的元素上。
+8. **版面用 CSS 而非 JS 量測**：能用 `@media`／`@container` 表達的版面切換（雙欄／單欄、顯示／隱藏、尺寸階）**不要**用 JS 量測 viewport（`useState`+`useEffect` 讀 `innerWidth/Height`）後切換 — SSR／首載會先以預設值渲染再跳版（CLS）。改用 CSS 讓首次 paint 即正確；靜態裝飾（如插畫 SVG）總是渲染、用 CSS 隱藏。只有 CSS 無法表達時（依資料數量、需 `getBoundingClientRect`）才用 JS，並配 `useIsMobile` 或穩定初值。
+
 ## 11. Golden Rules
 
 Before adding or changing any UI:
@@ -397,3 +444,58 @@ Before adding or changing any UI:
 9. Are empty/loading/error states designed, not left as plain text?
 10. Does the page still feel like OneShort?
 11. If new visual assets are involved, did they follow `oneshort-asset-generation` and avoid copyrighted game artwork?
+12. Are responsive values (breakpoints, grid templates, touch sizes, bottom-nav clearance, z-index) driven by shared tokens/classes (`BP`, `.os-btn--icon`, `--os-bottom-nav-h`, `--z-*`) and never hardcoded inline, so `@media` can still override? (見 §10 Responsive Invariants)
+13. 版面重排時是否「只改排列、未刪任何原本顯示的資訊或操作」，且版面屬性走 class/token（非 inline）、空/載入/錯誤狀態用共用元件？（見 §12 版面實作純度）
+
+## 12. 版面實作純度（Layout Implementation Integrity）
+
+本節記錄一次完整版面審查歸納出的「實作走樣」根因。設計語言（§1–§9）本身已經正確；過去的問題多半發生在實作把它稀釋掉——版面屬性散落 inline、導覽各寫一份、容器寬度各頁不一、狀態畫面各自重刻。以下每條都對應重複出現過的錯誤；**違反任一項視為 bug**。修改任何版面前必讀本節。
+
+### 12.1 資訊保全（重排版面，不刪資訊）
+
+> 版面可以重排，顯示的資訊內容必須全部保留。
+
+- 重排只能改變「排列、分組、視覺層級、容器、響應式行為」；**不可刪除任何原本顯示的資訊或操作入口**：欄位、狀態 badge、數字（人數 / 等級 / 頻道）、房間資訊、時間、攻略、備註文案、CTA。
+- 重構前先列出該畫面目前顯示的「資訊 / 狀態 / 操作」清單；重構後逐項對照，缺一即為回歸缺陷。
+- 若某資訊確實要移除或合併，屬於規格 / 邏輯變更，依 [core.md](core.md) 與 Logic Modification Guard 先取得使用者明確確認，**不可在版面重排時順手砍掉**。
+
+### 12.2 版面屬性禁止寫 inline style（強化 §10 不變式 #2）
+
+- **根因**：inline `style` 特異度高於 `@media` / `@container`，手機與斷點覆寫會被靜默壓過；且樣式散落在 JSX，無法統一維護、無法被設計稽核。
+- 會隨斷點改變的版面屬性——`display`、`flex-direction`、`grid-template-*`、`width` / `height`、`gap`、`padding` / `margin`——一律放 class / `data-*` / CSS 變數，**不可 inline**。
+- 動態數值（面板寬、欄數）以 CSS 變數注入（如 `--os-find-chat-w`），由 class 的 `@media` / `@container` 消費。
+- **禁止用 JS 模擬樣式**：不可用 `onMouseEnter` / `onMouseLeave`（或 ref 直接改 `el.style`）模擬 hover / resize 視覺，改用 CSS `:hover` / `:active`。
+
+✅ `<div className="os-party-detail-toolbar">`（flex / wrap / gap 在 CSS，手機可覆寫）
+❌ `<div style={{ display: "flex", gap: 12, gridTemplateColumns: "132px 1fr" }}>`
+
+### 12.3 導覽單一來源（Single Nav Source）
+
+- **根因**：側欄（`Sidebar`）與底部導覽（`MobileBottomNav`）各自手寫一份路由清單，改一邊忘另一邊就不一致。
+- 所有主導覽項（path、icon、label、badge 來源、出現條件）集中在單一 `navConfig`；`Sidebar`、`MobileBottomNav`、麵包屑都由它衍生，不得各自硬寫。
+
+### 12.4 容器寬度 token 化（Container Width）
+
+- **根因**：頁面最大寬度散落各頁且多為 inline 魔術數字（如 920 / 960 / 1100 / 1360），跨頁切換時內容區忽寬忽窄，破壞 SaaS 的穩定感。
+- 頁面最大寬度用共用 class + token（如 `.os-content` 搭配寬度階變數），**不可每頁各寫數字**；同類頁面套用同一寬度階。
+
+### 12.5 狀態畫面元件化（Empty / Loading / Error）
+
+- **根因**：核心頁有設計過的空 / 載入 / 錯誤狀態，次要頁卻各自 inline 重刻、或只放純文字 placeholder，導致全站精緻度不一致。
+- 空狀態、載入骨架、錯誤狀態一律使用共用元件（`EmptyState` / `LoadingSkeleton` / `ErrorState`），並保留 §6 規格（暖色 icon 或小插畫、一個明確下一步、簡潔繁中），**不得用純文字充數**。
+
+### 12.6 間距、層級與微互動走 token / CSS
+
+- `gap`、`padding` 對應 §4 間距階（`--s-*` / 4 的倍數），不寫 `gap: 6`、`gap: 14` 類非階值。
+- **z-index 一律用 `--z-*` token**（`--z-nav` / `--z-bottom-nav` / `--z-overlay` / `--z-dropdown` / `--z-modal` / `--z-toast`，定義於 `globals.css`），不寫 inline 魔術數字（如 `zIndex: 100`、`zIndex: 9999`）。modal 用 `--z-modal`、dropdown 用 `--z-dropdown`，避免堆疊順序靜默失序。（強化 §10 不變式 #5）
+- hover / press 微互動用 CSS `:hover` `:active` + §9 timing（150–250ms），不用 JS 改 style。
+- 重複結構（卡片狀態點、role pill、stat chip、modal / overlay 外殼）抽成共用元件或 class，不在每處 inline 重刻或用大量條件堆樣式。
+
+### 12.7 重構驗證義務
+
+每次版面重構完成前：
+
+1. `npx tsc --noEmit` 與 `npm run build` 通過。
+2. 對照 §12.1 資訊保全清單，逐項確認無資訊 / 操作遺漏。
+3. RWD 在 375 / 768 / 1024 / 1440 檢查：無水平溢位、無首載跳版（CLS）、觸控目標 ≥44、底部固定列清除正確。
+4. 合併回 `develop` 後 `npm run test:e2e`。

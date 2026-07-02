@@ -1,6 +1,6 @@
 # OneShort - Agent Entry Point
 
-本檔只保留 AI agent 入口索引與讀取策略；詳細規則放在 `.agent/rules/`。不要把所有規則全文複製到這裡。
+本檔保留 AI agent 入口索引與讀取策略；詳細規則放在 `.agent/rules/`。不要把所有規則全文複製到這裡。
 
 ## 規則載入
 
@@ -12,6 +12,14 @@
 | [frontend.md](.agent/rules/frontend.md) | `frontend/**/*` | 前端技術棧、驗證、完成條件 |
 | [style.md](.agent/rules/style.md) | UI/UX 任務 | 前端設計語言、視覺樣式與 Golden Rules |
 
+## 強制啟動載入（Codex / Gemini 適用）
+
+> 開始任何任務前，必須先依序讀取以下兩個檔案，再繼續：
+> 1. `.agent/rules/core.md`
+> 2. `.agent/rules/docs-router.md`
+
+讀完後，依 docs-router.md 的路由表，只載入當前任務命中的關聯文件。
+
 ## 開發守則
 
 - **先讀規則再動手**：所有開發行為必須符合 `.agent/rules/` 下的定義。
@@ -21,31 +29,17 @@
 
 ## Skill 來源
 
-- Project-local skill 以 `.claude/skills/` 為 canonical source。
-- `.agent/` 只保留規則文件；不要在 `.agent/skills/` 放第二份 skill 複本。
+| Agent | Skills 路徑 |
+|-------|------------|
+| Claude Code | `.claude/skills/` |
+| Codex | `.codex/skills/` |
 
-## 同步規則（重要）
+Project-local skill 以 `.claude/skills/` 為 canonical source；`.codex/skills/` 保留同步副本供 Codex 讀取。
 
-> [!IMPORTANT]
-> 修改 **rules** 或 **skills** 後，必須同步更新所有路徑。未同步會導致不同 agent 行為不一致。
-
-### Rules 同步目錄
-
-| Canonical | 需同步 |
-|-----------|--------|
-| `.agent/rules/` | `.agents/rules/` |
-
-### Skills 同步目錄
-
-| Canonical | 需同步 |
-|-----------|--------|
-| `.claude/skills/` | `.agents/skills/`、`.codex/skills/` |
-
-### 各 Agent 讀取路徑
+## 各 Agent 讀取路徑
 
 | Agent | Rules | Skills |
 |-------|-------|--------|
 | Claude Code | `CLAUDE.md` @import → `.agent/rules/` | `.claude/skills/` |
-| OMC | `.agents/rules/`（trigger 自動載入） | `.agents/skills/` |
 | Codex | `AGENTS.md` → `.agent/rules/` | `.codex/skills/` |
 | Gemini | `AGENTS.md` → `.agent/rules/` | — |

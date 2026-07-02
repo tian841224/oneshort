@@ -56,6 +56,5 @@
 
 ## 5. 相關文件
 
-- 規格與驗收條件：[../../guild-feature.md](../../guild-feature.md)
 - 後端功能索引：`backend/docs/features.md`
-- 前端功能索引：`frontend/docs/features.md`
+- 前端文件索引：`frontend/docs/README.md`

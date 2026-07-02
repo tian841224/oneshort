@@ -154,7 +154,7 @@ CLOSED
 **可見性規則**:
 - 對外搜尋只顯示 `RECRUITING` 和 `ACTIVE` 狀態的隊伍
 - `HIDDEN`, `EXPIRED`, `CLOSED`, `DISBANDED` 均不對外可見
-- `我的隊伍` 會保留目前仍為 `HIDDEN` 的隊伍，以及最近 24 小時內的 `CLOSED` / `DISBANDED`
+- `我的隊伍` 會保留目前仍為 `HIDDEN` 的隊伍，以及最近 72 小時內的 `CLOSED` / `DISBANDED`
 
 ### 2.3 隊伍建立邏輯
 
