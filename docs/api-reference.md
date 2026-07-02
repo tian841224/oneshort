@@ -509,6 +509,8 @@ PIN 僅允許 4-6 位數字。
 
 **Response 200:** Party 物件（含 slots、enriched 資訊及 `viewer_capabilities`）
 
+- 審核房（`join_requires_approval=true`）對非成員一律可查看（不再要求已送出申請），只是 `channel` 會被清空；密碼房仍優先回 `403`。
+
 **Error Codes:**
 - `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "message": "此隊伍需要密碼才能查看" }`
 - `404` - 隊伍不存在

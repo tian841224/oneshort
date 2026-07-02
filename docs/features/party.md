@@ -15,6 +15,7 @@ OneShort 的核心模組，提供靈活且即時的遊戲組隊體驗。
     - 建隊時若 slot 已預填角色或手動隊員，`current_members` 會直接計入這些已填席位。
     - **[New] 密碼保護**: 支援設定隊伍密碼，僅持有密碼者可加入。
     - **[New] 加入審核模式**: 隊長決定是否需審核，或由系統根據規則自動允許。
+    - **審核房可視性**: 需審核（`join_requires_approval=true`）的隊伍對任何訪客（含未登入 guest）皆可查看完整房間資訊，行為與一般公開隊伍一致；差別只在非成員一律看不到頻道與聊天室內容。審核只發生在「申請加入」當下（建立 PENDING application，待隊長同意），不會讓隊伍在查詢階段對非申請者回傳 404。密碼優先於審核：`join_requires_password=true` 的隊伍仍會在非成員查看時要求先驗證密碼。
     - **快速登入玩家開關**: `allow_quick_login_players` 預設為 `true`，隊長可在建隊時關閉，限制只有已綁 Discord 的 actor 可申請。
     - 建隊必須提交 `leader_character_id`；隊長與預填席位角色都必須屬於目前 actor。
 

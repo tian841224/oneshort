@@ -8,6 +8,8 @@ Version: 2.2
 
 本文件只在修改前端 UI/UX、視覺樣式、互動文案、排版、響應式行為或設計資產時讀取。非 UI 任務不要載入本文件。
 
+本文件聚焦 OneShort 專屬品牌語言與 token；跨專案通用的 RWD 斷點、熱區、WCAG 對比度、狀態設計（載入/空/錯誤）、表單驗證、手勢衝突、安全區域與動效基準，另見全域 `frontend-rwd-uiux-standards` skill。兩者衝突時，本文件與 §10/§12 的專案級 token/class 優先；該 skill 補足本文件未列出的通用檢查項與回報格式。
+
 ## 1. Product Identity
 
 OneShort is a premium Artale real-time party matchmaking platform.
