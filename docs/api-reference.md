@@ -499,8 +499,11 @@ PIN 僅允許 4-6 位數字。
 ```
 
 **Error Codes:**
-- `400` - 請求格式錯誤
-- `500` - 伺服器錯誤
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤（JSON bind 失敗）
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 建立公會隊伍時非公會成員
+- `500` - `{ "code": "PARTY_CREATE_FAILED", "error": "failed to create party" }` 伺服器錯誤
 
 ---
 
@@ -512,8 +515,11 @@ PIN 僅允許 4-6 位數字。
 - 審核房（`join_requires_approval=true`）對非成員一律可查看（不再要求已送出申請），只是 `channel` 會被清空；密碼房仍優先回 `403`。
 
 **Error Codes:**
-- `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "message": "此隊伍需要密碼才能查看" }`
-- `404` - 隊伍不存在
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `403` - `{ "code": "PARTY_001", "message": "此隊伍需要密碼才能查看" }` 需要密碼才能查看（`apierror.CodePartyPasswordRequired`）
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員不可查看
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "party not found" }` 隊伍不存在
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "failed to get party" }` 伺服器錯誤
 
 ---
 
@@ -528,8 +534,12 @@ PIN 僅允許 4-6 位數字。
 **Response 200:** Party 物件（驗證成功後返回）
 
 **Error Codes:**
-- `400` - 密碼格式錯誤
-- `403` - `{ "code": "PARTY_INVALID_PASSWORD" }` 密碼不正確
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 密碼格式錯誤或請求格式錯誤
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_002", "message": "密碼錯誤" }` 密碼不正確（`apierror.CodePartyInvalidPassword`）
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員不可驗證
+- `404` - `{ "code": "RES_001", "message": "隊伍不存在" }` 隊伍不存在（`apierror.CodeResourceNotFound`）
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "failed to verify password" }` 伺服器錯誤
 
 ---
 
@@ -571,10 +581,16 @@ PATCH 補充說明：
 **Response 200:** 更新後的 Party 物件
 
 **Error Codes:**
-- `400` - 請求格式錯誤
-- `403` - 非隊長
-- `404` - 隊伍不存在
-- `403` - 隊伍已關閉或已解散（read-only）
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "..." }` 隊伍不存在
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（read-only）
+- `409` - `{ "code": "PARTY_REVISION_CONFLICT", "error": "..." }` 版本衝突
+- `409` - `{ "code": "PARTY_QUICK_BUSY", "error": "..." }` 快速隊伍暫時忙碌（併發鎖定，可重試）
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "failed to update party" }` 伺服器錯誤
 
 ---
 
@@ -695,12 +711,17 @@ PUT 補充說明：
 ```
 
 **Error Codes:**
-- `400` - 請求格式錯誤 / slot 數超過 6 / 隊長 slot 缺失
-- `403` - 非隊長
-- `404` - 隊伍不存在
-- `409` - `{ "error": "party revision conflict" }` 一般版本衝突
-- `409` - `{ "code": "PARTY_SLOT_CONFLICT", "party": ..., "conflicts": [...] }` slot 級硬衝突
-- `409` - 隊伍已關閉或已解散（read-only）
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗 / slot 數超過 6 / 隊長 slot 缺失
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "unauthorized" }` 未認證
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "..." }` 隊伍不存在
+- `409` - `{ "code": "PARTY_REVISION_CONFLICT", "error": "party revision conflict" }` 一般版本衝突
+- `409` - `{ "code": "PARTY_SLOT_CONFLICT", "error": "...", "party": ..., "conflicts": [...] }` slot 級硬衝突
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（read-only）
+- `409` - `{ "code": "PARTY_QUICK_BUSY", "error": "..." }` 快速隊伍暫時忙碌（併發鎖定，可重試）
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "failed to replace party" }` 伺服器錯誤
 
 ---
 
@@ -715,8 +736,13 @@ PUT 補充說明：
 **Response 200:** 更新後的 Party 物件
 
 **Error Codes:**
-- `403` - 非隊長
-- `404` - 隊伍不存在
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "..." }` 隊伍不存在
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（read-only）
+- `409` - `{ "code": "PARTY_QUICK_BUSY", "error": "..." }` 快速隊伍暫時忙碌（併發鎖定，可重試）
 
 ---
 
@@ -726,7 +752,10 @@ PUT 補充說明：
 **Response 204:** No Content
 
 **Error Codes:**
-- `403` - 非隊長
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
 - `404` - `{ "code": "PARTY_IDLE_ACTION_NOT_FOUND" }` 隊伍已不存在
 - `409` - `{ "code": "PARTY_IDLE_ACTION_ALREADY_CLOSED" }` 隊伍已關閉或已解散（stale no-op）
 
@@ -773,8 +802,11 @@ PUT 補充說明：
 **Response 201:** `QuickPartyResponse`（`{ "party": Party, "viewer_capabilities": {...}, "guest": {...} }`）
 
 **Error Codes:**
-- `400` - 請求格式錯誤
-- `429` - 建立頻率限制
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗（如密碼長度、暱稱長度）
+- `429` - `{ "code": "RATE_001", "message": "請求過於頻繁，請稍後再試" }` 建立頻率限制
+- `500` - `{ "code": "PARTY_QUICK_GUEST_FAILED", "error": "failed to prepare quick guest" }` 建立訪客身分失敗
+- `500` - `{ "code": "PARTY_QUICK_CREATE_FAILED", "error": "failed to create quick party" }` 伺服器錯誤
 
 ---
 
@@ -798,10 +830,15 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `400` - 請求格式錯誤
-- `403` - 密碼錯誤 / 無法檢視此快速隊伍
-- `404` - 隊伍不存在或不是快速隊伍
-- `409` - 隊伍已滿、已關閉或狀態不可進入
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "error": "..." }` 需要密碼
+- `403` - `{ "code": "PARTY_INVALID_PASSWORD", "error": "..." }` 密碼錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 無法檢視此快速隊伍
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉
+- `409` - `{ "code": "PARTY_FULL", "error": "..." }` 隊伍已滿或狀態不可進入
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -827,10 +864,15 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `400` - 請求格式錯誤 / 指定 slot order 無效
-- `403` - 密碼錯誤 / 無法加入此快速隊伍
-- `404` - 隊伍不存在或不是快速隊伍
-- `409` - 隊伍已滿、已加入、已有待審申請、已關閉或狀態不可加入
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤 / 指定 slot order 無效
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "error": "..." }` 需要密碼
+- `403` - `{ "code": "PARTY_INVALID_PASSWORD", "error": "..." }` 密碼錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 無法加入此快速隊伍
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或狀態不可加入
+- `409` - `{ "code": "PARTY_FULL", "error": "..." }` 隊伍已滿、已加入或已有待審申請
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -844,9 +886,11 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `403` - 呼叫者不是此快速隊伍成員
-- `404` - 隊伍不存在或不是快速隊伍
-- `409` - 隊伍已關閉
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 呼叫者不是此快速隊伍成員
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -869,8 +913,10 @@ PUT 補充說明：
 ```
 
 **Error Codes:**
-- `403` - 不是快速隊伍 HOST
-- `404` - 隊伍不存在或不是快速隊伍
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 不是快速隊伍 HOST
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -887,10 +933,11 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `400` - action 無效
-- `403` - 不是快速隊伍 HOST
-- `404` - 隊伍或申請不存在
-- `409` - 申請已被處理 / 隊伍已滿或已關閉
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` action 無效 / 請求格式錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 不是快速隊伍 HOST
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍或申請不存在
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 申請已被處理 / 隊伍已滿或已關閉
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -900,7 +947,9 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `404` - 隊伍不存在、不是快速隊伍或沒有待審申請
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在、不是快速隊伍或沒有待審申請
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -915,10 +964,12 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `400` - 請求格式錯誤
-- `403` - 不是快速隊伍房主
-- `404` - 隊伍不存在或不是快速隊伍
-- `409` - 隊伍已關閉或版本狀態不可更新
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 不是快速隊伍房主
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或版本狀態不可更新
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -935,10 +986,12 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `400` - 請求格式錯誤 / slot 數超過限制 / 嘗試用 settings 清空已佔用 slot
-- `403` - 不是快速隊伍房主
-- `404` - 隊伍不存在或不是快速隊伍
-- `409` - 版本衝突 / 隊伍已關閉或狀態不可更新
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` slot 數超過限制 / 嘗試用 settings 清空已佔用 slot
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 不是快速隊伍房主
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或狀態不可更新（含版本衝突）
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -951,9 +1004,11 @@ PUT 補充說明：
 **Response 200:** `QuickPartyResponse`
 
 **Error Codes:**
-- `403` - 不是快速隊伍 HOST
-- `404` - 隊伍或 slot 不存在、不是快速隊伍
-- `409` - slot 未被佔用或隊伍已關閉
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 隊伍 ID 或 slot ID 格式錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 不是快速隊伍 HOST
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍或 slot 不存在、不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` slot 未被佔用或隊伍已關閉
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -966,9 +1021,11 @@ PUT 補充說明：
 **Response 200:** `Party`
 
 **Error Codes:**
-- `403` - 不是快速隊伍 HOST
-- `404` - 隊伍不存在或不是快速隊伍
-- `409` - 隊伍已關閉
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 不是快速隊伍 HOST
+- `404` - `{ "code": "PARTY_QUICK_NOT_FOUND", "error": "not found" }` 隊伍不存在或不是快速隊伍
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "quick party action failed" }` 伺服器錯誤
 
 ---
 
@@ -1003,11 +1060,24 @@ PUT 補充說明：
 `target_slot_id` 代表申請時選擇的偏好位置；若系統在 auto-accept 或隊長接受時改配到其他相容空缺，該欄位會被改寫為實際分配到的 slot。系統只會使用「已存在的顯式空缺」進行分配；若其他 pending 申請原本也指向同一實際 slot，系統會依 `created_at ASC` 重新判斷是否可改配到其他相容空位；找不到就自動取消。
 
 **Error Codes:**
-- `409` - 未綁 Discord、只能 quick login 的玩家不被此房間接受（`allow_quick_login_players=false`）
-- `403` - 密碼錯誤（`PARTY_INVALID_PASSWORD`）
-- `400` - 指定的 `target_slot_id` 不屬於此隊伍
-- `409` - 角色已在活動中 / 隊伍已滿 / 非招募中狀態 / 目前沒有任何符合條件的顯式空缺
-- `403` - 隊伍已關閉或已解散（不可申請）
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `400` - `{ "code": "PARTY_INVALID_TARGET_SLOT", "error": "指定的位置不存在於此隊伍" }` 指定的 `target_slot_id` 不屬於此隊伍
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "error": "..." }` 需要密碼才能申請
+- `403` - `{ "code": "PARTY_INVALID_PASSWORD", "error": "..." }` 密碼錯誤
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員不可申請
+- `403` - `{ "code": "PARTY_APPLICATION_FORBIDDEN", "error": "forbidden" }` 隊伍已關閉或已解散（不可申請）
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "party not found" }` 隊伍不存在
+- `409` - `{ "code": "PARTY_NOT_RECRUITING", "error": "隊伍目前未在招募中" }` 隊伍非招募中狀態
+- `409` - `{ "code": "PARTY_ALREADY_IN_PARTY", "error": "角色已在隊伍中，或是已有正在進行的申請" }` 角色已在隊伍中或已有進行中的申請
+- `409` - `{ "code": "PARTY_FULL", "error": "隊伍或位置已額滿" }` 隊伍或位置已額滿
+- `409` - `{ "code": "PARTY_APPLICATION_ACTIVITY_CONFLICT", "error": "角色已在其他現在進行中的活動，請先退出後再申請" }` 角色已在活動中
+- `409` - `{ "code": "PARTY_APPLICATION_BLOCKLISTED", "error": "由於黑名單限制，無法申請此隊伍" }` 黑名單限制
+- `409` - `{ "code": "PARTY_QUICK_BUSY", "error": "系統忙碌中，請稍後再試" }` 快速隊伍暫時忙碌（併發鎖定，可重試）
+- `409` - `{ "code": "PARTY_NO_COMPATIBLE_SLOT", "error": "目前沒有符合角色條件的空缺" }` 目前沒有任何符合條件的顯式空缺
+- `409` - `{ "code": "PARTY_QUICK_LOGIN_NOT_ALLOWED", "error": "此隊伍未開放未綁 Discord 的快速登入玩家申請" }` 未綁 Discord、只能 quick login 的玩家不被此房間接受（`allow_quick_login_players=false`）
+- `409` - `{ "code": "PARTY_APPLICATION_PENDING", "error": "已有待審核的申請，請等待審核結果或取消後再試" }` 已有待審核的申請（unique constraint）
+- `500` - `{ "code": "PARTY_APPLICATION_INTERNAL_ERROR", "error": "failed to apply" }` 伺服器錯誤
 
 ---
 
@@ -1041,6 +1111,14 @@ PUT 補充說明：
 - 申請以角色為單位；`applicant_id` 為角色 ID。
 - `character` 是申請列表的顯示用快照，來源為 `characters`。
 
+**Error Codes:**
+- `400` - `{ "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "error": "only party managers can list applications" }` 非隊長
+- `403` - `{ "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "error": "party not found" }` 隊伍不存在
+- `500` - `{ "error": "internal server error" }` 伺服器錯誤
+
 ---
 
 ### GET /api/v1/parties/:id/my-applications
@@ -1060,6 +1138,12 @@ PUT 補充說明：
   }
 ]
 ```
+
+**Error Codes:**
+- `400` - `{ "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "error": "..." }` 公會隊伍非公會成員
+- `500` - `{ "error": "failed to list my applications" }` 伺服器錯誤
 
 ---
 
@@ -1092,6 +1176,10 @@ PUT 補充說明：
 ]
 ```
 
+**Error Codes:**
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `500` - `{ "error": "failed to list my applications" }` 伺服器錯誤
+
 ---
 
 ### PATCH /api/v1/parties/:id/applications/:appId
@@ -1113,8 +1201,15 @@ PUT 補充說明：
 - `accept` 會依 `ACTIVITY_VISIBILITY_DURATION` 刷新 `recruit_until`；`reject` 不刷新。
 
 **Error Codes:**
-- `409` - 申請者已在其他活動中（accept 時） / 目前沒有任何相容顯式空位可供分配
-- `403` - 隊伍已關閉或已解散（不可審核）
+- `400` - `{ "error": "invalid party id" }` / `{ "error": "invalid application id" }` ID 格式錯誤
+- `400` - `{ "error": "application does not belong to party" }` 申請不屬於此隊伍
+- `400` - `{ "error": "invalid action" }` action 無效
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "error": "only party managers can review applications" }` 非隊長
+- `403` - `{ "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "error": "application or party not found" }` 申請或隊伍不存在
+- `409` - `{ "error": "application review conflict" }` 申請已非 pending / slot 已被佔用 / 目前沒有相容空位 / 隊伍已滿或非招募中 / 角色已在隊伍中 / 申請者已在其他活動中（accept 時）
+- `500` - `{ "error": "failed to review application" }` 伺服器錯誤
 
 ---
 
@@ -1126,6 +1221,15 @@ PUT 補充說明：
 **Side Effects:**
 - 取消申請不刷新 `recruit_until`。
 
+**Error Codes:**
+- `400` - `{ "error": "invalid party id" }` / `{ "error": "invalid application id" }` ID 格式錯誤
+- `400` - `{ "error": "application does not belong to party" }` 申請不屬於此隊伍
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "error": "..." }` 公會隊伍非公會成員
+- `403` - `{ "error": "..." }` 非申請者本人
+- `404` - `{ "error": "application or party not found" }` 申請或隊伍不存在
+- `500` - `{ "error": "failed to cancel application" }` 伺服器錯誤
+
 ---
 
 ### POST /api/v1/parties/:id/slots/:slotId/kick
@@ -1134,9 +1238,12 @@ PUT 補充說明：
 **Response 204:** No Content
 
 **Error Codes:**
-- `403` - 非隊長（且非席位成員本人）
-- `403` - 隊長不可踢出自己的角色
-- `403` - 隊伍已關閉或已解散（不可修改）
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 隊伍 ID 或 slot ID 格式錯誤
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_FORBIDDEN", "error": "..." }` 非隊長（且非席位成員本人）/ 隊長不可踢出自己的角色
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "..." }` 隊伍不存在
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（不可修改）
 
 ---
 
@@ -1204,9 +1311,11 @@ PUT 補充說明：
 ```
 
 **Error Codes:**
-- `403` - 非隊伍成員 / 非快速隊伍隊長或隊員
-- `404` - 隊伍不存在
-- `500` - 讀取聊天記錄失敗
+- `400` - `{ "code": "NOTIFY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤 / `{ "error": "invalid limit" }` limit 參數錯誤
+- `403` - `{ "code": "NOTIFY_CHAT_FORBIDDEN", "error": "not a member of this party" }` 非隊伍成員 / 非快速隊伍隊長或隊員
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to verify party membership" }` 成員資格檢查失敗
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to fetch chat history" }` 讀取聊天記錄失敗
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "service unavailable" }` 聊天服務未就緒
 
 ---
 
@@ -1225,10 +1334,14 @@ PUT 補充說明：
 **Response 201:** 新建的聊天訊息物件（同 GET 之 `data[]` 單筆格式）
 
 **Error Codes:**
-- `400` - 內容為空或超過長度限制
-- `403` - 無發言權限
-- `404` - 隊伍不存在
-- `429` - 發言頻率限制
+- `400` - `{ "code": "NOTIFY_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤 / `{ "error": "invalid chat payload" }` 請求格式錯誤
+- `400` - `{ "code": "NOTIFY_CHAT_EMPTY", "error": "message cannot be empty" }` 內容為空
+- `400` - `{ "code": "NOTIFY_CHAT_TOO_LONG", "error": "message too long (max 2000 characters)" }` 內容超過長度限制
+- `403` - `{ "code": "NOTIFY_CHAT_FORBIDDEN", "error": "not a member of this party" }` 無發言權限
+- `429` - `{ "code": "RATE_001", "message": "請求過於頻繁，請稍後再試" }` 發言頻率限制（全域寫入限流）
+- `500` - `{ "code": "NOTIFY_CHAT_PERSIST_FAILED", "error": "failed to persist chat message" }` 訊息寫入失敗
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to send chat message" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "service unavailable" }` 聊天服務未就緒
 
 ---
 
@@ -1264,9 +1377,14 @@ PUT 補充說明：
 **Response 201:** 新建的 Slot 物件
 
 **Error Codes:**
-- `400` - 席位已達上限（6個）
-- `400` - 新增後總 slot 數超過 6
-- `403` - 隊伍已關閉或已解散（不可修改）
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "unauthorized" }` 未認證
+- `403` - `{ "code": "PARTY_SLOT_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "party not found" }` 隊伍不存在
+- `409` - `{ "code": "PARTY_SLOT_MAX_REACHED", "error": "..." }` 席位已達上限（6個）／新增後總 slot 數超過 6
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（不可修改）
+- `500` - `{ "code": "PARTY_SLOT_INTERNAL_ERROR", "error": "failed to add slot" }` 伺服器錯誤
 
 ---
 
@@ -1288,8 +1406,14 @@ PUT 補充說明：
 **Response 200:** 更新後的 Slot 物件
 
 **Error Codes:**
-- `400` - `filled_by` 若存在，必須是隊長擁有、已在隊伍中，或已對此隊伍送出 pending application 的角色
-- `403` - 隊伍已關閉或已解散（不可修改）
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 隊伍 ID 或 slot ID 格式錯誤 / 請求格式錯誤
+- `400` - `{ "code": "PARTY_SLOT_VALIDATION_FAILED", "error": "..." }` `filled_by` 若存在，必須是隊長擁有、已在隊伍中，或已對此隊伍送出 pending application 的角色
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "unauthorized" }` 未認證
+- `403` - `{ "code": "PARTY_SLOT_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "party not found" }` 隊伍不存在
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（不可修改）
+- `500` - `{ "code": "PARTY_SLOT_INTERNAL_ERROR", "error": "failed to update slot" }` 伺服器錯誤
 
 ---
 
@@ -1299,9 +1423,14 @@ PUT 補充說明：
 **Response 204:** No Content
 
 **Error Codes:**
-- `409` - 席位有成員，需先踢出
-- `409` - 不可刪除隊長目前佔用的席位
-- `403` - 隊伍已關閉或已解散（不可修改）
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 隊伍 ID 或 slot ID 格式錯誤
+- `400` - `{ "code": "PARTY_SLOT_VALIDATION_FAILED", "error": "..." }` 席位有成員，需先踢出 / 不可刪除隊長目前佔用的席位
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "unauthorized" }` 未認證
+- `403` - `{ "code": "PARTY_SLOT_LEADER_ONLY", "error": "..." }` 非隊長
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 公會隊伍非公會成員
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "party not found" }` 隊伍不存在
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉或已解散（不可修改）
+- `500` - `{ "code": "PARTY_SLOT_INTERNAL_ERROR", "error": "failed to delete slot" }` 伺服器錯誤
 
 ---
 
@@ -1335,12 +1464,20 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to list notifications" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "notification service unavailable" }` 通知服務未就緒
+
 ---
 
 ### GET /api/v1/notifications/unread-count
 取得未讀通知數量 **[需認證]**
 
 **Response 200:** `{ "count": 3 }`
+
+**Error Codes:**
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to count unread" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "notification service unavailable" }` 通知服務未就緒
 
 ---
 
@@ -1349,12 +1486,22 @@ PUT 補充說明：
 
 **Response 204:** No Content
 
+**Error Codes:**
+- `400` - `{ "code": "NOTIFY_INVALID_REQUEST", "error": "invalid notification id" }` 通知 ID 格式錯誤
+- `404` - `{ "code": "NOTIFY_NOT_FOUND", "error": "notification not found" }` 通知不存在
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to mark read" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "notification service unavailable" }` 通知服務未就緒
+
 ---
 
 ### PATCH /api/v1/notifications/read-all
 全部標記為已讀 **[需認證]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to mark all read" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "notification service unavailable" }` 通知服務未就緒
 
 ---
 
@@ -1363,12 +1510,25 @@ PUT 補充說明：
 
 **Response 204:** No Content
 
+**說明:**
+- 只能刪除已讀通知；未讀通知呼叫此端點會回 `404`。
+
+**Error Codes:**
+- `400` - `{ "code": "NOTIFY_INVALID_REQUEST", "error": "invalid notification id" }` 通知 ID 格式錯誤
+- `404` - `{ "code": "NOTIFY_NOT_FOUND_OR_UNREAD", "error": "notification not found or not yet read" }` 通知不存在或尚未讀取
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to delete notification" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "notification service unavailable" }` 通知服務未就緒
+
 ---
 
 ### DELETE /api/v1/notifications/read-all
 刪除所有已讀通知 **[需認證]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to delete all read notifications" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "notification service unavailable" }` 通知服務未就緒
 
 ---
 
@@ -1379,6 +1539,11 @@ PUT 補充說明：
 - 登入者的 `sender` snapshot 會包含 `character_id`、`job_class_id`、`level`；未登入者以「遊客」顯示。
 
 **Response 200:** `{ "data": [聊天訊息] }`
+
+**Error Codes:**
+- `400` - `{ "code": "NOTIFY_INVALID_REQUEST", "error": "invalid limit" }` limit 參數錯誤
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to fetch lobby chat history" }` 伺服器錯誤
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "service unavailable" }` 聊天服務未就緒
 
 ---
 
@@ -1397,8 +1562,13 @@ PUT 補充說明：
 **Response 201:** 新建的聊天訊息物件
 
 **Error Codes:**
-- `400` - 內容為空或格式錯誤
-- `429` - 發言頻率限制
+- `400` - `{ "code": "NOTIFY_INVALID_REQUEST", "error": "invalid chat payload" }` 請求格式錯誤
+- `400` - `{ "code": "NOTIFY_CHAT_EMPTY", "error": "..." }` 內容為空
+- `400` - `{ "code": "NOTIFY_CHAT_TOO_LONG", "error": "..." }` 內容超過長度限制（大廳聊天上限 500 字）
+- `429` - `{ "code": "RATE_001", "message": "請求過於頻繁，請稍後再試" }` 發言頻率限制
+- `500` - `{ "code": "NOTIFY_CHAT_PERSIST_FAILED", "error": "failed to persist lobby chat" }` 訊息寫入失敗
+- `500` - `{ "code": "NOTIFY_INTERNAL_ERROR", "error": "failed to rate limit lobby chat" }` 頻率限制檢查失敗
+- `503` - `{ "code": "NOTIFY_SERVICE_UNAVAILABLE", "error": "service unavailable" }` 聊天服務未就緒
 
 ---
 
@@ -1408,6 +1578,9 @@ PUT 補充說明：
 取得職業清單 **[公開]**
 
 **Response 200:** 職業選項陣列
+
+**Error Codes:**
+- `500` - `{ "code": "user_internal_error", "error": "failed to list job classes" }` 伺服器錯誤
 
 ---
 
@@ -1429,6 +1602,9 @@ PUT 補充說明：
   }
 ]
 ```
+
+**Error Codes:**
+- `500` - `{ "code": "user_internal_error", "error": "failed to list characters" }` 伺服器錯誤
 
 ---
 
@@ -1453,10 +1629,10 @@ PUT 補充說明：
 - `level` 僅接受 1-200。
 
 **Error Codes:**
-- `400 invalid_job_class` - 不支援的職業 ID
-- `409 character_code_taken` - 角色代碼已被使用
-- `409 game_name_taken` - 角色名稱已被使用
-- `500` - 未預期的伺服器錯誤
+- `400` - `{ "code": "REQ_001", "message": "..." }` 請求格式錯誤（`apierror.CodeBadRequest`）
+- `400` - `{ "code": "invalid_job_class", "message": "不支援的職業，請重新選擇。" }` 不支援的職業 ID
+- `409` - `{ "code": "character_code_taken", "message": "角色代碼已被使用。" }` 角色代碼已被使用
+- `500` - `{ "code": "user_internal_error", "error": "failed to create character" }` 未預期的伺服器錯誤
 
 ---
 
@@ -1473,12 +1649,23 @@ PUT 補充說明：
 - 隊伍聊天室歷史 `sender`
 - 通知內容中的角色名稱 / 職業 / 等級
 
+**Error Codes:**
+- `400` - `{ "code": "character_invalid_id", "error": "invalid character id" }` 角色 ID 格式錯誤
+- `400` - `{ "code": "user_invalid_request", "error": "..." }` 請求格式錯誤
+- `403` - `{ "code": "character_not_owned", "error": "character not owned" }` 角色不屬於目前使用者
+- `500` - `{ "code": "user_internal_error", "error": "failed to update character" }` 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/characters/:id
 刪除角色 **[需認證]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "code": "character_invalid_id", "error": "invalid character id" }` 角色 ID 格式錯誤
+- `403` - `{ "code": "character_not_owned", "error": "character not owned" }` 角色不屬於目前使用者
+- `500` - `{ "code": "user_internal_error", "error": "failed to delete character" }` 伺服器錯誤
 
 ---
 
@@ -1521,6 +1708,21 @@ PUT 補充說明：
 取得在線人數
 
 **Response 200:** `{ "count": 42 }`
+
+**Error Codes:**
+- `500` - `{ "code": "STATS_INTERNAL_ERROR", "error": "failed to load online count" }` 伺服器錯誤
+- `503` - `{ "code": "STATS_UNAVAILABLE", "error": "stats service unavailable" }` 統計服務未就緒
+
+---
+
+### GET /api/v1/stats/summary
+取得公開統計摘要 **[公開]**
+
+**Response 200:** `PublicSummaryResponse`
+
+**Error Codes:**
+- `500` - `{ "code": "STATS_INTERNAL_ERROR", "error": "failed to load summary" }` 伺服器錯誤
+- `503` - `{ "code": "STATS_UNAVAILABLE", "error": "stats service unavailable" }` 統計服務未就緒
 
 ---
 
@@ -1668,12 +1870,18 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to get stats" }` 伺服器錯誤
+
 ---
 
 ### GET /api/v1/admin/banlist
 取得封禁清單 **[需認證，管理員]**
 
 **Response 200:** `{ "data": [ /* BanEntry */ ] }`
+
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to list bans" }` 伺服器錯誤
 
 ---
 
@@ -1691,12 +1899,21 @@ PUT 補充說明：
 
 **Response 201:** `{ "data": { /* BanEntry */ } }`
 
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `409` - `{ "code": "ADMIN_CONFLICT", "error": "User already has an active ban" }` 該使用者已有有效封禁
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to create ban" }` 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/admin/banlist/:id
 移除封禁 **[需認證，管理員]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "invalid ban id" }` 封禁記錄 ID 格式錯誤
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to delete ban" }` 伺服器錯誤
 
 ---
 
@@ -1817,12 +2034,43 @@ PUT 補充說明：
 
 **Response 200:** `{ "data": [ /* Party summary */ ] }`
 
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to list parties" }` 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/admin/parties/:id
 強制關閉隊伍 **[需認證，管理員]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "invalid party id" }` 隊伍 ID 格式錯誤
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to close party" }` 伺服器錯誤
+
+---
+
+### GET /api/v1/admin/guilds
+取得管理員公會清單 **[需認證，管理員]**
+
+**Response 200:** `{ "data": [ /* Guild summary */ ] }`
+
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to list guilds" }` 伺服器錯誤
+
+---
+
+### DELETE /api/v1/admin/guilds/:id
+強制解散公會 **[需認證，管理員]**
+
+**說明:**
+- 將公會標記 inactive、移除成員並關閉公會限定隊伍。
+
+**Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to disband guild" }` 伺服器錯誤
 
 ---
 
@@ -1831,12 +2079,18 @@ PUT 補充說明：
 
 **Response 200:** 同公開公告列表格式。
 
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to get announcements" }` 伺服器錯誤
+
 ---
 
 ### GET /api/v1/admin/announcement
 取得管理員主要公告 **[需認證，管理員]**
 
 **Response 200:** 同公開主要公告格式。
+
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to get announcement" }` 伺服器錯誤
 
 ---
 
@@ -1853,6 +2107,10 @@ PUT 補充說明：
 
 **Response 201:** `{ "data": { /* Announcement */ } }`
 
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "..." }` 請求格式錯誤 / 內容為空
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to add announcement" }` 伺服器錯誤
+
 ---
 
 ### PUT /api/v1/admin/announcement
@@ -1867,12 +2125,21 @@ PUT 補充說明：
 
 **Response 200:** `{ "data": { /* Announcement */ } }`
 
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "..." }` 請求格式錯誤 / 內容為空
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to update announcement" }` 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/admin/announcement/:id
 刪除指定公告 **[需認證，管理員]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "invalid id" }` 公告 ID 格式錯誤
+- `404` - `{ "code": "ADMIN_NOT_FOUND", "error": "announcement not found" }` 公告不存在
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to delete announcement" }` 伺服器錯誤
 
 ---
 
@@ -1881,12 +2148,18 @@ PUT 補充說明：
 
 **Response 204:** No Content
 
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to clear announcement" }` 伺服器錯誤
+
 ---
 
 ### GET /api/v1/admin/notice
 取得管理員 NoticeBar 內容 **[需認證，管理員]**
 
 **Response 200:** 同公開 NoticeBar 格式。
+
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to get notice" }` 伺服器錯誤
 
 ---
 
@@ -1902,12 +2175,19 @@ PUT 補充說明：
 
 **Response 200:** `{ "data": { /* Notice */ } }`
 
+**Error Codes:**
+- `400` - `{ "code": "ADMIN_INVALID_REQUEST", "error": "..." }` 請求格式錯誤 / 內容為空
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to update notice" }` 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/admin/notice
 清除 NoticeBar 內容 **[需認證，管理員]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `500` - `{ "code": "ADMIN_INTERNAL_ERROR", "error": "failed to clear notice" }` 伺服器錯誤
 
 ---
 
@@ -1939,6 +2219,12 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `400` - `{ "code": "OCR_INVALID_REQUEST", "error": "missing file field" }` 缺少 `file` 欄位 / 檔案讀取失敗 / 檔案為空
+- `400` - `{ "code": "OCR_FILE_TOO_LARGE", "error": "file too large (max 5MB)" }` 檔案超過 5 MB
+- `400` - `{ "code": "OCR_INVALID_IMAGE_TYPE", "error": "..." }` Content-Type 或圖片格式不符（僅接受 PNG/JPEG/WEBP）／magic bytes 驗證失敗
+- `500` - `{ "code": "OCR_INTERNAL_ERROR", "error": "ocr analysis failed" }` OCR 解析失敗
+
 ---
 
 ### POST /api/v1/ocr/presign
@@ -1961,8 +2247,11 @@ PUT 補充說明：
 ```
 
 **Error Codes:**
-- `400` - 不支援的圖片格式
-- `503` - Storage 未設定
+- `400` - `{ "code": "OCR_INVALID_REQUEST", "error": "..." }` 請求格式錯誤 / 副檔名與 content type 不符
+- `400` - `{ "code": "OCR_INVALID_IMAGE_TYPE", "error": "unsupported content type" }` 不支援的圖片格式
+- `400` - `{ "code": "OCR_FILE_TOO_LARGE", "error": "file too large (max 5MB)" }` 檔案超過 5 MB
+- `500` - `{ "code": "OCR_INTERNAL_ERROR", "error": "..." }` 產生唯一 key 或預簽 URL 失敗
+- `503` - `{ "code": "OCR_STORAGE_UNAVAILABLE", "error": "storage is not configured" }` Storage 未設定
 
 ---
 
@@ -2000,6 +2289,10 @@ PUT 補充說明：
 - `description` 必填，最多 2000 字元。
 - `contact` 選填，最多 128 字元。
 
+**Error Codes:**
+- `400` - `{ "code": "BUGREPORT_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `500` - `{ "code": "BUGREPORT_INTERNAL_ERROR", "error": "failed to submit bug report" }` 伺服器錯誤
+
 ### GET /api/v1/bug-reports
 列出 Bug 回報 **[公開]**
 
@@ -2024,6 +2317,9 @@ PUT 補充說明：
   }
 ]
 ```
+
+**Error Codes:**
+- `500` - `{ "code": "BUGREPORT_INTERNAL_ERROR", "error": "failed to list bug reports" }` 伺服器錯誤
 
 ### PATCH /api/v1/admin/bug-reports/{id}
 更新 Bug 回報狀態與開發者回覆 **[需要管理員]**
@@ -2052,6 +2348,12 @@ PUT 補充說明：
   "updated_at": "2026-04-16T04:00:00Z"
 }
 ```
+
+**Error Codes:**
+- `400` - `{ "code": "BUGREPORT_INVALID_REQUEST", "error": "invalid id" }` Bug report ID 格式錯誤
+- `400` - `{ "code": "BUGREPORT_INVALID_REQUEST", "error": "..." }` 請求格式錯誤 / `status` 與 `developer_reply` 皆未提供 / 不支援的 `status` 值
+- `404` - `{ "code": "BUGREPORT_NOT_FOUND", "error": "bug report not found" }` Bug report 不存在
+- `500` - `{ "code": "BUGREPORT_INTERNAL_ERROR", "error": "failed to update bug report" }` 伺服器錯誤
 
 ---
 
@@ -2102,7 +2404,8 @@ PUT 補充說明：
 **Response 200:** `Guild`（同列表單筆格式，成員另含 `membership`）
 
 **Error Codes:**
-- `404` - 公會不存在或已解散
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在或已解散
 
 ---
 
@@ -2128,6 +2431,12 @@ PUT 補充說明：
 
 **Response 201:** `Guild`
 
+**Error Codes:**
+- `400` - `{ "code": "GUILD_VALIDATION_FAILED", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "GUILD_INVALID_MEMBER_LIMIT", "error": "..." }` `member_limit` 不合法
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `500` - 伺服器錯誤
+
 ---
 
 ### PUT /api/v1/guilds/:id
@@ -2138,8 +2447,13 @@ PUT 補充說明：
 **Response 200:** `Guild`
 
 **Error Codes:**
-- `403` - 不是會長
-- `404` - 公會不存在
+- `400` - `{ "code": "GUILD_VALIDATION_FAILED", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "GUILD_INVALID_MEMBER_LIMIT", "error": "..." }` `member_limit` 不合法
+- `400` - `{ "code": "GUILD_MEMBER_LIMIT_BELOW_CURRENT", "error": "..." }` `member_limit` 低於目前成員數
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 不是會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2147,6 +2461,13 @@ PUT 補充說明：
 解散公會 **[需認證，會長]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 不是會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2166,8 +2487,14 @@ PUT 補充說明：
 **Response 200:** `Guild`（含 `membership`；APPROVAL 模式下 `membership` 為 null）
 
 **Error Codes:**
-- `403` - 密碼錯誤
-- `409` - 已是成員 / 已有待審申請 / 公會已滿
+- `400` - `{ "code": "GUILD_PASSWORD_REQUIRED", "error": "..." }` 需要密碼
+- `401` - `{ "code": "INVALID_GUILD_PASSWORD", "error": "..." }` 密碼錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `409` - `{ "code": "ALREADY_GUILD_MEMBER", "error": "..." }` 已是成員
+- `409` - `{ "code": "ALREADY_IN_GUILD", "error": "..." }` 已加入其他公會或已有待審申請
+- `409` - `{ "code": "GUILD_MEMBER_LIMIT_REACHED", "error": "..." }` 公會已滿
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2178,6 +2505,13 @@ PUT 補充說明：
 - 會長離開時自動將會長移交給最早加入的幹部或成員；若為最後一名成員，公會轉為 inactive。
 
 **Response 200:** 離開結果（含新會長資訊，若有移交）
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_MEMBER_NOT_FOUND", "error": "..." }` 呼叫者不是公會成員
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2192,8 +2526,12 @@ PUT 補充說明：
 **Response 204:** No Content
 
 **Error Codes:**
-- `403` - 不是會長
-- `404` - 目標不是公會成員
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤 / `{ "error": "..." }` 請求格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 不是會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_MEMBER_NOT_FOUND", "error": "..." }` 目標不是公會成員
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2218,6 +2556,12 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### PATCH /api/v1/guilds/:id/members/:uid/role
@@ -2232,6 +2576,15 @@ PUT 補充說明：
 
 **Response 204:** No Content
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid user id" }` ID 格式錯誤
+- `400` - `{ "error": "..." }` `role` 不合法
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 不是會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_MEMBER_NOT_FOUND", "error": "..." }` 目標不是公會成員
+- `500` - 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/guilds/:id/members/:uid
@@ -2243,8 +2596,12 @@ PUT 補充說明：
 **Response 204:** No Content
 
 **Error Codes:**
-- `403` - 權限不足（角色階級不允許）
-- `404` - 目標不是公會成員
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid user id" }` ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 權限不足（角色階級不允許）
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_MEMBER_NOT_FOUND", "error": "..." }` 目標不是公會成員
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2252,6 +2609,13 @@ PUT 補充說明：
 待審加入申請列表 **[需認證，幹部]**
 
 **Response 200:** `{ "data": [JoinRequest] }`（`status`：`PENDING` / `APPROVED` / `REJECTED`）
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2267,6 +2631,16 @@ PUT 補充說明：
 
 **Response 200:** 更新後的 `JoinRequest`
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid request id" }` ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤 / `action` 不合法
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_JOIN_REQUEST_NOT_FOUND", "error": "..." }` 申請不存在
+- `409` - `{ "code": "GUILD_MEMBER_LIMIT_REACHED", "error": "..." }` 核准時公會已滿
+- `500` - 伺服器錯誤
+
 ---
 
 ### GET /api/v1/guilds/:id/announcements
@@ -2280,6 +2654,13 @@ PUT 補充說明：
   ]
 }
 ```
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2295,6 +2676,14 @@ PUT 補充說明：
 
 **Response 201:** `Announcement`
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤（`title`／`body` 缺漏或超長）
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### PUT /api/v1/guilds/:id/announcements/:aid
@@ -2304,12 +2693,29 @@ PUT 補充說明：
 
 **Response 200:** `Announcement`
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid announcement id" }` ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_ANNOUNCEMENT_NOT_FOUND", "error": "..." }` 公告不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### DELETE /api/v1/guilds/:id/announcements/:aid
 刪除公告 **[需認證，幹部]**
 
 **Response 204:** No Content
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid announcement id" }` ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_ANNOUNCEMENT_NOT_FOUND", "error": "..." }` 公告不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2322,6 +2728,15 @@ PUT 補充說明：
 ```
 
 **Response 200:** `Announcement`
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid announcement id" }` ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_ANNOUNCEMENT_NOT_FOUND", "error": "..." }` 公告不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2339,6 +2754,13 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### POST /api/v1/guilds/:id/chat
@@ -2354,6 +2776,15 @@ PUT 補充說明：
 
 **Response 201:** `ChatMessage`
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤（`content` 缺漏或超長）
+- `400` - `{ "code": "GUILD_INVALID_CHAT_CONTENT", "error": "..." }` 內容不合法
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### GET /api/v1/guilds/:id/parties
@@ -2362,6 +2793,13 @@ PUT 補充說明：
 - Query：`type`、`status`、`include_history=true`（含歷史隊伍）、`limit`（預設 20）、`offset`（預設 0）。
 
 **Response 200:** `{ "data": [GuildParty] }`（含 `generated_by_match`、`scheduled_at`、`slots[]` 等欄位）
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2374,6 +2812,13 @@ PUT 補充說明：
 - 後端自動設定 `guild_id` 與 `visibility = GUILD`；公會隊伍不出現在公開列表。
 
 **Response 201:** 同 `POST /api/v1/parties` 回傳格式
+
+**Error Codes:**
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗
+- `401` - `{ "code": "PARTY_UNAUTHORIZED", "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "PARTY_GUILD_MEMBERSHIP_REQUIRED", "error": "..." }` 非公會成員
+- `500` - `{ "code": "PARTY_CREATE_FAILED", "error": "failed to create guild party" }` 伺服器錯誤
 
 ---
 
@@ -2395,6 +2840,13 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### PUT /api/v1/guilds/:id/me/preferences
@@ -2404,6 +2856,16 @@ PUT 補充說明：
 
 **Response 200:** 更新後的偏好
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "GUILD_INVALID_TIME_SLOT", "error": "..." }` `time_slots` 不合法
+- `400` - `{ "code": "GUILD_CHARACTER_NOT_OWNED", "error": "..." }` `character_ids` 含非本人角色
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### GET /api/v1/guilds/:id/me/match-history
@@ -2412,6 +2874,13 @@ PUT 補充說明：
 - Query：`limit`（預設 10）。
 
 **Response 200:** `{ "data": [MatchRun] }`
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2436,6 +2905,13 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### PUT /api/v1/guilds/:id/boss-configs
@@ -2444,6 +2920,14 @@ PUT 補充說明：
 **Request Body:** `[BossConfigInput]`（`boss_id` 必填；`max_members` 1–6）
 
 **Response 200:** `{ "data": [BossConfig] }`
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2490,6 +2974,10 @@ PUT 補充說明：
 - `guilds` 是目前 actor 加入的所有公會。
 - `guild` / `membership` 會指向清單中的最新加入公會，以相容舊版單一公會客戶端。
 - 若 actor 尚未加入任何公會，回傳 `{ "guild": null, "guilds": [], "membership": null }`。
+
+**Error Codes:**
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2648,6 +3136,17 @@ PUT 補充說明：
 - 每個 guild/cycle 僅允許一個 active `DRAFT`；重新產生草案會取消舊草案。
 - 已 `GENERATED` 的 cycle 不允許再次生成正式隊伍。
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "GUILD_INVALID_MATCH_SLOT_TEMPLATE", "error": "..." }` `slot_template` 不合法
+- `400` - `{ "code": "GUILD_INVALID_TIME_SLOT", "error": "..." }` `time_slots` 不合法
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `409` - `{ "code": "GUILD_MATCH_RUN_ALREADY_EXISTS", "error": "..." }` 目前週期已有 active `DRAFT`（`dry_run=false`）
+- `500` - 伺服器錯誤
+
 ---
 
 ### GET /api/v1/guilds/:id/match/member-settings
@@ -2680,6 +3179,14 @@ PUT 補充說明：
 }
 ```
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `400` - `{ "error": "invalid boss_id" }` `boss_id` 缺漏或格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
+
 ---
 
 ### GET /api/v1/guilds/:id/match-runs/current-draft
@@ -2688,6 +3195,14 @@ PUT 補充說明：
 **Response 200**
 
 回傳格式同 `POST /api/v1/guilds/:id/match` 的 `DRAFT` response。
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_MATCH_DRAFT_NOT_FOUND", "error": "..." }` 沒有進行中的草案
+- `500` - 伺服器錯誤
 
 ---
 
@@ -2851,6 +3366,17 @@ PUT 補充說明：
 
 `draft_revision` 必須帶入目前草案 `run.updated_at`。若草案已被其他操作更新或取消，後端回 `409 GUILD_MATCH_DRAFT_REVISION_CONFLICT`，前端應重新讀取目前草案後再提交。生成出的 BOSS party 在 DB 內部以 `raid_boss_options.id` 儲存 `target_name`，API 讀取時仍回傳玩家可讀的 BOSS 名稱與 `target_option_id`。
 
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` / `{ "error": "invalid match run id" }` ID 格式錯誤
+- `400` - `{ "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "GUILD_INVALID_MATCH_DRAFT", "error": "..." }` 提交的 `generated` 內容與草案驗證不符（角色非 active 成員 / 職業或等級不符 slot / `leader_character_id` 不在 assignments 中）
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非幹部或會長
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `404` - `{ "code": "GUILD_MATCH_DRAFT_NOT_FOUND", "error": "..." }` 草案不存在
+- `409` - `{ "code": "GUILD_MATCH_DRAFT_REVISION_CONFLICT", "error": "..." }` `draft_revision` 與目前草案不符
+- `500` - 伺服器錯誤
+
 ---
 
 ### GET /api/v1/guilds/:id/me/calendar
@@ -2876,6 +3402,13 @@ PUT 補充說明：
 ```
 
 前端使用 `party_id` 導向對應房間：`/?tab=MY_PARTY&party={party_id}&fromGuild={guild_id}`。
+
+**Error Codes:**
+- `400` - `{ "error": "invalid guild id" }` 公會 ID 格式錯誤
+- `401` - `{ "error": "invalid actor" }` 未認證
+- `403` - `{ "code": "INSUFFICIENT_PERMISSION", "error": "..." }` 非公會成員
+- `404` - `{ "code": "GUILD_NOT_FOUND", "error": "..." }` 公會不存在
+- `500` - 伺服器錯誤
 
 ---
 
@@ -3009,10 +3542,37 @@ PUT 補充說明：
   "room_id": "parties:global",
   "payload": { "count": 42 }
 }
+
+// 錯誤訊息（訂閱被拒 / 聊天頻率限制）
+{
+  "type": "error",
+  "code": "NOTIFY_WS_UNAUTHORIZED_ROOM",
+  "message": "unauthorized to subscribe to this room"
+}
+
+{
+  "type": "error",
+  "code": "NOTIFY_CHAT_RATE_LIMITED",
+  "message": "lobby chat rate limited",
+  "retry_after_ms": 4200
+}
+
+{
+  "type": "error",
+  "code": "NOTIFY_CHAT_TOO_LONG",
+  "message": "message too long (max 2000 characters)"
+}
 ```
 
 `auth_success` 後 server 已自動加入當前 identity 的 personal room；登入 actor 會是 `actor:{actorId}`，未登入 quick guest 則以 `payload.room_id` 回傳 deterministic personal room。client 需訂閱 `parties:global` 與該 personal room，並在 reconnect 後重送仍有 listener 的 `party:{partyId}` 訂閱。
 快速隊伍聊天仍以 `party:{partyId}` 作為房內主事件；後端會另外把同一個 `chat` payload 鏡射到可讀取聊天的 quick participant personal room，用於房外 toast，不會重複寫入聊天歷史。可讀取聊天的 quick participant 僅包含隊長與已加入的隊員，不包含 visitor 或 pending guest。
+
+**WebSocket 錯誤訊息（`type: "error"`）:**
+- `NOTIFY_WS_UNAUTHORIZED_ROOM` - 嘗試訂閱無權限的房間（非隊伍成員 / 非公會成員 / 未知房間格式）
+- `NOTIFY_CHAT_RATE_LIMITED` - 大廳聊天頻率限制（未登入者 10 秒 1 則，登入者 5 秒 1 則），附 `retry_after_ms`
+- `NOTIFY_CHAT_TOO_LONG` - 聊天內容超過長度限制（2000 字）
+- 內容為空（`errChatMessageEmpty`）或訊息寫入失敗（`errChatPersistFailed`）時，伺服器僅記錄 log 並靜默略過，不會回傳 `type: "error"` 訊息。
+- 連線數超過上限時，upgrade 請求本身會回 HTTP `429`（`{ "code": "RATE_002", "message": "WebSocket 連線數已達上限" }`，`apierror.CodeWSConnectionLimit`），而非透過已建立連線的 `type: "error"` 訊息。
 
 ---
 
@@ -3029,11 +3589,31 @@ PUT 補充說明：
 
 **自定義錯誤碼 (code 欄位):**
 
+> [!NOTE]
+> 下表為常見/跨端點共用錯誤碼的精選清單，非完整列表。各端點實際回傳的完整錯誤碼請見該端點的 **Error Codes** 小節。
+> 密碼相關錯誤碼目前有兩套並存的常數家族，依端點而異：`GET /parties/:id`、`POST /parties/:id/verify-password` 使用 `apierror` 套件的 `PARTY_001`（`CodePartyPasswordRequired`）／`PARTY_002`（`CodePartyInvalidPassword`）；`POST /parties/:id/applications` 與所有 `quick-*` 端點使用 `party` handler 套件內定義的字串常數 `PARTY_PASSWORD_REQUIRED`／`PARTY_INVALID_PASSWORD`。兩者語意相同但字面值不同，前端須依端點分別比對。
+
 | Code | 說明 |
 |------|------|
-| `PARTY_PASSWORD_REQUIRED` | 需要隊伍密碼才能查看 |
-| `PARTY_INVALID_PASSWORD` | 隊伍密碼錯誤 |
+| `PARTY_001` | 需要隊伍密碼才能查看（`GET /parties/:id`，`apierror.CodePartyPasswordRequired`） |
+| `PARTY_002` | 隊伍密碼錯誤（`POST /parties/:id/verify-password`，`apierror.CodePartyInvalidPassword`） |
+| `PARTY_PASSWORD_REQUIRED` | 需要隊伍密碼（申請加入 / 快速隊伍系列端點） |
+| `PARTY_INVALID_PASSWORD` | 隊伍密碼錯誤（申請加入 / 快速隊伍系列端點） |
+| `PARTY_NOT_FOUND` | 隊伍不存在 |
+| `PARTY_ALREADY_CLOSED` | 隊伍已關閉或已解散（read-only） |
+| `PARTY_GUILD_MEMBERSHIP_REQUIRED` | 公會隊伍要求呼叫者為該公會成員 |
+| `PARTY_QUICK_BUSY` | 快速隊伍併發鎖定中，可重試 |
 | `PARTY_SLOT_CONFLICT` | 編輯隊伍時，某個 slot 在同一期間被其他操作填入、換人或占用，必須先同步最新隊伍後再重新確認 |
+| `PARTY_REVISION_CONFLICT` | `PUT /parties/:id` 送出的 `revision` 與伺服器目前版本不符 |
+| `PARTY_IDLE_ACTION_NOT_FOUND` / `PARTY_IDLE_ACTION_NOT_PARTICIPANT` / `PARTY_IDLE_ACTION_ALREADY_CLOSED` | 閒置提醒相關動作（liveness / 解散 / 退出）的 stale no-op 狀態碼 |
+| `RATE_001` | 請求過於頻繁（全域寫入限流 / 聊天頻率限制，`apierror.CodeRateLimitExceeded`） |
+| `RATE_002` | WebSocket 連線數已達上限（`apierror.CodeWSConnectionLimit`） |
+| `RES_001` | 資源不存在（`apierror.CodeResourceNotFound`） |
+| `REQ_001` | 請求參數錯誤（`apierror.CodeBadRequest`） |
+| `GUILD_NOT_FOUND` / `GUILD_MEMBER_NOT_FOUND` / `GUILD_JOIN_REQUEST_NOT_FOUND` / `GUILD_ANNOUNCEMENT_NOT_FOUND` | 公會相關資源不存在 |
+| `INSUFFICIENT_PERMISSION` | 公會操作權限不足（角色階級不允許） |
+| `ALREADY_GUILD_MEMBER` / `ALREADY_IN_GUILD` | 已是公會成員 / 已加入公會或已有待審申請 |
+| `GUILD_MATCH_DRAFT_REVISION_CONFLICT` | 公會自動配對草案 `draft_revision` 與目前草案不符 |
 | `discord_merge_required` | Discord 已綁在另一個 actor，但目前狀態允許合併 |
 | `discord_merge_blocked` | Discord 已綁在另一個 actor，但 target/source 目前仍有 blocker，不能合併 |
 | `invalid_merge_token` | Discord merge token 已過期、已被使用或與目前登入 actor 不符 |
