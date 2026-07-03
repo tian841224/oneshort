@@ -374,7 +374,7 @@ Worker 生命週期:
 - `slot` 本身就是容量；`max_members` 為唯讀衍生值，永遠等於 `len(slots)`
 - `current_members` 代表實際隊伍人數，由所有 `is_filled=true` 的席位推導；隊長必須永遠佔用其中一格
 - 席位新增、更新、刪除與完整隊伍 snapshot 編輯預設只有隊長可操作；自動配對生成的公會隊伍額外允許公會 LEADER/OFFICER 管理
-- 席位可設定：職業(job_class)、等級範圍(min/max_level)、是否必填(is_required)
+- 席位可設定：職業(job_class)、等級範圍(min/max_level)、是否必填(is_required)；等級範圍固定為 **1～200**，見「十、全域欄位範圍規範」§10.1
 - 快速隊伍例外：slot 只代表空位開啟/關閉與已佔用狀態，不支援職業、等級、是否必填或空位備註；`PUT /parties/:id/quick-settings` 會清除或忽略這些條件，`max_members` 由保留的 slot 數量推導。
 - 席位可預填（建立時 `filled_by` 即指定角色）
 - 隊長可直接把自己擁有的角色指定到空 slot，不必先建立 pending application
@@ -516,3 +516,31 @@ CancelPendingRequests:
 - `POST /api/v1/bug-reports`
 - 儲存至 `bug_reports` 表
 - 欄位包含 `title`、`description`、選填 `contact`；目前正式路由註冊在 public group，通常不要求登入
+
+---
+
+## 十、全域欄位範圍規範 (Global Field Range Constraints)
+
+### 10.1 角色等級範圍：1～200
+
+Artale 遊戲角色等級上限為 **200**，因此所有「等級」相關欄位一律限制在 **1～200**（下限固定為 1），任何前端輸入框、篩選器與顯示 fallback 皆不可超出此範圍：
+
+| 欄位 | 所在資料表/型別 | 範圍 |
+|---|---|---|
+| 角色等級 | `characters.level`（`CreateCharacterInput.Level` / `UpdateCharacterInput.Level`） | 1～200 |
+| 隊伍最低等級 | `parties.min_level`（`CreatePartyInput` / `ReplacePartyInput` / `UpdatePartyInput` 的 `MinLevel`） | 1～200（可為 `null` 代表不限） |
+| 席位等級區間 | `party_slots.min_level` / `max_level`（`CreateSlotInput` / `ReplaceSlotInput` / `ReplaceSlotBaseInput` / `UpdateSlotInput`） | 1～200（可為 `null` 代表不限） |
+| 公會 BOSS 設定最低等級 | `guild_boss_configs.min_level`（`BossConfigInput.MinLevel`） | 1～200 |
+| 公會加入門檻 | `guilds.min_level`（`CreateGuildInput` / `UpdateGuildInput` 的 `MinLevel`） | **0**～200（`0` 為「無等級需求」哨兵值，其餘欄位下限固定為 1，不可用 0 代表不限） |
+
+**雙重把關（缺一不可）**：
+- **API 層**：以 gin `binding` tag 驗證（例如 `binding:"omitempty,min=1,max=200"`），見 `backend/internal/user/domain.go`、`backend/internal/party/domain.go`、`backend/internal/guild/domain.go`。
+- **DB 層**：以 `CHECK` constraint 驗證，見 `backend/migrations/0023_unify_character_profile_constraints.up.sql`（角色與訪客快照欄位）與 `backend/migrations/0046_unify_level_upper_bound.up.sql`（`guild_boss_configs` / `guilds` / `parties` / `party_slots`）。
+- 未來新增任何等級相關欄位，**必須同時補齊這兩層驗證**，範圍必須與本節一致，不得只做其中一層或各自寫死不同數字（例如曾經發生過的 `300`、`999`、或完全無上限）。
+- **前端唯一來源**：`frontend/src/lib/characterConstraints.ts` 的 `CHARACTER_LEVEL_MIN` / `CHARACTER_LEVEL_MAX`（與 `clampCharacterLevel()`）。任何等級輸入框（隊伍瀏覽篩選器、席位條件彈窗、公會 BOSS 設定）與顯示 fallback（例如未設定席位等級時的顯示區間）一律引用這兩個常數，禁止另外寫死數字。
+
+### 10.2 隊伍搜尋：房間名稱全域篩選
+
+- `/find` 頁面的房間名稱搜尋為**全域搜尋**：只要搜尋框有輸入文字，結果一律涵蓋所有房間類型（快速組隊／組隊任務／BOSS／團練），不受目前選中的房間類型 tab 限制。
+- 實作方式：前端在有搜尋文字時改用不帶 `type`/`quick` 參數呼叫 `GET /api/v1/parties`；後端 `ListParties` 在 `type`/`quick` 皆未帶入時本就回傳所有房間類型（見 `backend/internal/party/repository_party_read.go`），對應前端內部虛擬 tab `FIND_ALL`（`frontend/src/features/party/types.ts`，僅供前端內部使用，不會透過 `?tab=` URL 參數對外暴露）。
+- 房間類型 tab 於搜尋期間仍可點擊、視覺狀態保留，但不會即時篩選列表，需清空搜尋框才恢復依 tab 篩選。搜尋期間僅特定房間類型才有意義的次要篩選（目標下拉選單）會隱藏；等級區間／職業／僅顯示可加入等篩選為全域篩選，不受房間類型 tab 或搜尋狀態影響，一律位於搜尋列旁的「更多篩選」面板中。
