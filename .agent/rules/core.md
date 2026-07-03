@@ -36,12 +36,12 @@ trigger: always_on
    - **維護性**：單一責任、邊界清晰、命名與型別一致；是否增加重複碼、例外堆疊或隱性耦合。
    - **效能**：熱路徑、DB 查詢、I/O、前端渲染與 Bundle 大小影響；避免 N+1 與冗餘運算。
    - **安全性**：輸入信任邊界、權限與授權、注入 / XSS / CSRF / SSRF、敏感資料外洩風險。
-3. **決策落地**：選定方案的「理由與被拒方案」必須記入 PR 描述、commit body 或 `.omx/plans/` 對應規格文件，禁止只留下程式碼差異。
+3. **決策落地**：選定方案的「理由與被拒方案」必須記入 PR 描述、commit body 或 `~/.claude/plans/` 對應計畫文件，禁止只留下程式碼差異。
 
 **例外條款**
 
 - 僅限「生產緊急事故 hotfix」或「使用者明確指示 minimal patch」時，可暫採局部修正。
-- 須同步建立 follow-up 任務（PR 描述、commit body、`.omx/plans/` 或 issue tracker），於下一個迭代完成完整重構，不得無限期延後。
+- 須同步建立 follow-up 任務（PR 描述、commit body、`~/.claude/plans/` 計畫文件或 issue tracker），於下一個迭代完成完整重構，不得無限期延後。
 
 **驗證義務**
 
