@@ -55,3 +55,4 @@
 | 編號 | 標題 | 狀態 | 日期 | 相關模組 |
 |---|---|---|---|---|
 | [ADR-0001](0001-overlay-history-dismiss.md) | 行動版浮層（聊天 sheet／導覽抽屜）的關閉與瀏覽器歷史整合方式 | Accepted | 2026-07-04 | frontend-rwd / chat / shell |
+| [ADR-0003](0003-mobile-chat-sheet-close-button.md) | 行動版聊天／小工具 sheet 新增顯式關閉鈕；peek 狀態維持非模態 | Accepted | 2026-07-05 | frontend-rwd / chat |
