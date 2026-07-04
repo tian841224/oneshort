@@ -64,12 +64,15 @@ trigger: always_on
 
 ## 6. 分支命名
 
-| 類型 | Branch 格式 | Base | Worktree 目錄 |
+| 類型 | Branch 格式 | Base | Worktree 目錄（相對於 oneshort 根目錄） |
 |------|------|------|------|
-| 新功能 | `feature/<功能>` | `develop` | `..\\oneshort-{fe\|be}-worktrees\\feature-<功能>` |
-| 修復 | `fix/<問題>` | `develop` | `..\\oneshort-{fe\|be}-worktrees\\fix-<問題>` |
-| 緊急修復 | `hotfix/<問題>` | `main` | `..\\oneshort-{fe\|be}-worktrees\\hotfix-<問題>` |
-| 發版 | `release/<版號>` | `develop` | `..\\oneshort-{fe\|be}-worktrees\\release-<版號>` |
+| 新功能 | `feature/<功能>` | `develop` | `oneshort-{frontend\|backend}-worktrees\feature-<功能>` |
+| 修復 | `fix/<問題>` | `develop` | `oneshort-{frontend\|backend}-worktrees\fix-<問題>` |
+| 緊急修復 | `hotfix/<問題>` | `main` | `oneshort-{frontend\|backend}-worktrees\hotfix-<問題>` |
+| 發版 | `release/<版號>` | `develop` | `oneshort-{frontend\|backend}-worktrees\release-<版號>` |
+
+> [!NOTE]
+> Worktree 目錄是**巢狀於 oneshort 根目錄內、與 `frontend/`／`backend/` 同層**的路徑（例：`oneshort\oneshort-frontend-worktrees\feature-<功能>`），**不是** oneshort 根目錄的 sibling 目錄。這是既有實際慣例（`.claude/launch.json`、`frontend/HANDOFF.md`、`frontend/docs/e2e-scenarios.md` 皆採此路徑），且 Claude Code 的 `preview_start` 工具要求 launch.json 的 `cwd` 必須是 project root 內的相對路徑，無法指向 root 外的目錄。若已誤建於 root 外，用 `git worktree move` 搬到此路徑即可，不需重建。
 
 ## 7. BRANCH 模式
 
@@ -83,6 +86,13 @@ git -C frontend checkout -b feature/party-search
 ```powershell
 git -C frontend worktree add ..\oneshort-frontend-worktrees\feature-party-search -b feature/party-search develop
 ```
+
+```powershell
+git -C backend worktree add ..\oneshort-backend-worktrees\feature-party-search -b feature/party-search develop
+```
+
+> [!NOTE]
+> 指令中的 `..\` 是相對於 `-C frontend`／`-C backend` 切換後的子目錄，實際落地路徑是 oneshort 根目錄下的 `oneshort-frontend-worktrees\...`／`oneshort-backend-worktrees\...`（見第 6 節），並非 oneshort 根目錄的 sibling 目錄。
 
 若路徑含特殊字元，須以單引號包住。
 
