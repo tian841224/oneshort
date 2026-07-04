@@ -43,7 +43,7 @@
 | `['guilds', guildId, 'parties']` | 公會隊伍 | 公會隊伍建立、自動配對完成、隊伍成員事件 |
 | `['guilds', guildId, 'calendar', actorId]` | 我的公會行事曆 | 自動配對完成、公會隊伍建立、角色/隊伍成員事件 |
 | `['guilds', guildId, 'chat']` | 公會聊天室 | 送出訊息、聊天室歷史重抓 |
-| `['partyGuide', partyId]` | 隊伍攻略與 widget 狀態 | 攻略載入、`party.guide_state.updated`、玩家操作攻略工具 |
+| `['partyGuide', partyId]` | 隊伍攻略與 widget 狀態 | 攻略載入、`party.guide_state.updated`、玩家操作攻略工具、小工具同步 session |
 
 ### 1.3 隊伍攻略小工具狀態
 
@@ -51,6 +51,20 @@
 - 隊員點選 `answer_lookup` 題目時，widget state 以 `assignments: { questionId: memberId[] }` 記錄隊員抽到的題目；同一隊員切換題目時會從原題目移到新題目，避免一人同時標記多題。
 - 題目列需顯示已標記隊員的攻略顏色 chip，顏色來源為 `party_member_colors` 保留 widget state，並透過 `party.guide_state.updated` 即時同步給同房隊員。
 - `jump_box_sync` 依 `stage_count` 與 `boxes_per_stage` 產生跳箱格子，前台直接以獨立操作視窗顯示網格，避免隊伍攻略頁面需要上下捲動；隊員點格子時以 `assignments: { cellId: memberId[] }` 記錄，格子直接呈現對應隊員攻略顏色且不顯示角色名稱，同一隊員再點同格會取消標記。
+- **成員身分鍵**：所有 widget state（`assignments`、`party_member_colors`、`widget_sessions`）的成員識別一律使用「隊伍成員角色 id」（`slot.filled_by`；隊長為 `party.leader_id`）。渲染時須過濾掉已不在隊伍的成員 id。
+- **保留 widget_id**：`party_member_colors`（隊員攻略顏色）與 `widget_sessions`（小工具同步 session）是保留 id，不對應攻略內任何 widget block；後端 `UpdateState` 只驗證 id 格式與隊伍成員資格，不要求 id 存在於攻略中。
+
+### 1.4 攻略／小工具視窗與同步
+
+- **攻略顯示（重新設計）**：`GROUP` 隊伍的攻略與小工具是隊伍詳情頁的頂層分頁（`PartyDetailTabs`：隊伍資訊／待審申請／攻略／小工具）。快速隊伍不顯示這兩個分頁。
+- **桌機浮動視窗（≥900px `BP.bottomNav`）**：攻略分頁提供「展開為浮動視窗」，小工具清單以「開啟」把工具開成獨立浮動視窗（`react-rnd`）。視窗可自由拖曳、縮放、最小化（收到左下角 dock）、釘選（於視窗間置頂，不鎖定位置）。所有視窗與 dock 共用 `--z-float-window`（62，介於 `--z-overlay` 與 `--z-dropdown` 之間），視窗堆疊順序由 `PartyWindowsHost` 內 DOM 順序決定，不使用逐視窗 inline z-index。視窗位置／尺寸依隊伍存於 localStorage（`os.windows.party.v1`，LRU 上限 20 隊）。攻略圖片點擊可開全螢幕 lightbox（`--z-modal`）。
+- **手機（<900px）**：不使用浮動視窗；攻略維持頁內顯示，開啟小工具改用底部抽屜（`MobilePartyToolsSheet`，沿用聊天室 bubble→peek→full 抽屜），抽屜頂部以 chip 切換多個已開啟的工具。工具 bubble 疊在聊天 bubble 上方。
+- **小工具同步 session**：任一隊員開啟小工具，即在保留 id `widget_sessions` 建立或加入該工具的 session（存於既有攻略 state blob，走既有 `party.guide_state.updated` 廣播，零後端改動）。房內其他成員收到「{開啟者} 正在使用「XX」，是否同步開啟？」動作 toast：
+  - 去重鍵為 `session_id`（每次全新開啟才產生新 id；加入會 bump revision，故不可用 revision 當鍵）。
+  - 僅在 session「由無變有」的轉變時提示；進頁時已存在的 session 不主動提示，改由小工具清單的「進行中 · N 人」badge 供事後手動加入。
+  - 「略過」持久化該 `session_id` 到 `sessionStorage`，不再對同一 session 重複提示。
+  - 開啟者本人與已是參與者者不提示。
+- **session 生命週期**：接受即加入參與者並開啟視窗／抽屜；關閉視窗（或抽屜項目）即離開 session；最後一位參與者離開即結束 session；任何寫入都會剔除已離隊成員（gc-on-write）；CLOSED／唯讀隊伍不建立或加入 session。
 
 ---
 

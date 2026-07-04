@@ -1355,6 +1355,31 @@ PUT 補充說明：
 
 ---
 
+## 二之一、攻略與小工具 (Guides & Widgets)
+
+攻略模板由管理員撰寫，依 `raid_boss_option_id`（`BOSS` / `GROUP`）或 `target_map_id`（`TRAINING`）綁定目標；隊伍依其目標解析對應攻略。攻略內容含 widget 區塊，widget 的即時狀態存於 `party_guide_states`，以樂觀鎖 `revision` 控制並透過 WebSocket `party.guide_state.updated` 廣播給訂閱 `party:{id}` 的用戶端。
+
+### GET /api/v1/parties/:id/guide
+取得指定隊伍的攻略與所有 widget 狀態 **[需認證，隊伍成員]**
+
+**Response 200:** `{ "guide": GuideTemplate | null, "states": PartyGuideState[] | null }`
+
+### POST /api/v1/parties/:id/guide/state
+更新單一 widget 狀態 **[需認證，隊伍成員]**
+
+- Request：`{ "widget_id": string, "state": <任意 JSON>, "base_revision": number }`。
+- `widget_id` 只驗證格式 `^[a-zA-Z0-9_-]{1,64}$` 與隊伍成員資格，**不要求存在於攻略中**——保留 id `party_member_colors`（隊員顏色）與 `widget_sessions`（小工具同步 session）即以此機制存放。
+- `base_revision` 為樂觀鎖：與伺服器最新 `revision` 不符時回 `409`，body 帶最新狀態 `{ "latest": PartyGuideState }` 供前端 rebase 重送；建立新狀態時 `base_revision` 為 `0`。
+- **Response 200:** `PartyGuideState`（含遞增後的 `revision`）。成功後發送 `party.guide_state.updated` 至 `party:{id}`。
+
+### 管理員攻略端點 **[需認證，管理員]**
+- `GET /api/v1/admin/guides` — 列出所有可綁定攻略的 BOSS/GROUP 選項與地圖目標。
+- `GET /api/v1/admin/guides/by-boss/:bossOptionId`、`GET /api/v1/admin/guides/by-map/:mapId` — 取得指定目標的攻略。
+- `PUT /api/v1/admin/guides/by-boss/:bossOptionId`、`PUT /api/v1/admin/guides/by-map/:mapId` — 建立或覆寫攻略：`{ "title": string, "content": GuideContent, "base_version"?: number, "is_published"?: boolean }`。
+- `DELETE /api/v1/admin/guides/:guideId` — 刪除攻略模板。
+
+---
+
 ## 三、席位 (Slots)
 
 ### POST /api/v1/parties/:id/slots
@@ -3486,6 +3511,20 @@ PUT 補充說明：
     "applicant_name": "角色名稱"
   },
   "timestamp": "2024-01-01T12:00:00Z"
+}
+
+{
+  "type": "party.guide_state.updated",
+  "room_id": "party:uuid",
+  "payload": {
+    "party_id": "uuid",
+    "widget_id": "cnt-1",
+    "state": { "v": 1, "total": 3 },
+    "revision": 5,
+    "updated_by": "actor-uuid",
+    "updated_at": "2026-07-04T03:00:00Z"
+  },
+  "timestamp": "2026-07-04T03:00:00Z"
 }
 
 {

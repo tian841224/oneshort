@@ -38,6 +38,14 @@ OneShort 的核心模組，提供靈活且即時的遊戲組隊體驗。
 - **空缺職位靈活性**:
     - 每個 slot 可設定單一 `job_class` 或不限制職業，並可搭配等級上下限與備註。
 
+- **攻略與小工具（`GROUP` 隊伍）**:
+    - 隊伍詳情頁以頂層分頁呈現「隊伍資訊／待審申請／攻略／小工具」；攻略與小工具僅對 `GROUP` 隊伍的隊長與隊員顯示，快速隊伍不顯示。
+    - 攻略由管理員以攻略模板（`guide_templates`，依 `raid_boss_option_id` 或 `target_map_id` 綁定目標）撰寫，隊伍依目標解析對應攻略；內容支援標題、文字、清單、圖片、影片、表格、callout、章節與 widget 區塊。
+    - **桌機（≥900px）浮動視窗**：攻略與各小工具可展開成瀏覽器風格浮動視窗，支援拖曳、縮放、最小化（左下 dock）、釘選（視窗間置頂）；視窗位置尺寸依隊伍存 localStorage。攻略圖片可點擊開全螢幕檢視。
+    - **手機（<900px）**：攻略維持頁內顯示，小工具改用底部抽屜（沿用聊天室抽屜三態），抽屜頂部以 chip 切換多個已開啟工具。
+    - **小工具即時同步**：任一隊員開啟小工具即建立/加入該工具的同步 session，房內其他成員收到「是否同步開啟」動作提示；同意即加入並開啟，狀態透過 `party.guide_state.updated` 即時同步。詳見 [frontend-logic.md §1.3–1.4](../frontend-logic.md)。session 與工具狀態存於既有攻略 state（保留 id `widget_sessions`、`party_member_colors`），無專屬後端端點。
+    - **唯讀凍結**：`CLOSED` 等唯讀隊伍的攻略與小工具僅供檢視，不可建立/加入 session 或修改任何 widget 狀態（前端強制；後端 hardening 為 follow-up）。
+
 - **閒置隊伍生命週期**:
     - 閒置 1 小時先自動改為 `HIDDEN`，並發送 `party.idle_warning`。
     - 若持續閒置到 1 小時 55 分，會再送一次 `party.idle_warning` 最後提醒，告知 5 分鐘後將自動關閉。
