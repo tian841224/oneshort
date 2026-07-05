@@ -1,6 +1,6 @@
 # ADR-0003: 行動版聊天／小工具 sheet 新增顯式關閉鈕；peek 狀態維持非模態
 
-- 狀態: Accepted
+- 狀態: 「peek 狀態維持非模態」已 Superseded by [ADR-0007](0007-mobile-chat-sheet-peek-becomes-modal.md)；「新增顯式關閉鈕」決策本身仍 Accepted
 - 日期: 2026-07-05
 - 相關模組: frontend-rwd / chat（`MobileChatSheet`、`useMobileChatSheet`）
 - 相關文件: docs/decisions/0001-overlay-history-dismiss.md、.agent/rules/style.md §10

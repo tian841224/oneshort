@@ -55,5 +55,11 @@
 | 編號 | 標題 | 狀態 | 日期 | 相關模組 |
 |---|---|---|---|---|
 | [ADR-0001](0001-overlay-history-dismiss.md) | 行動版浮層（聊天 sheet／導覽抽屜）的關閉與瀏覽器歷史整合方式 | Accepted | 2026-07-04 | frontend-rwd / chat / shell |
-| [ADR-0003](0003-mobile-chat-sheet-close-button.md) | 行動版聊天／小工具 sheet 新增顯式關閉鈕；peek 狀態維持非模態 | Accepted | 2026-07-05 | frontend-rwd / chat |
+| [ADR-0002](0002-party-widget-renderer-coverage.md) | 隊伍前台補齊全部 widget 型別渲染器的架構（generic 元件 + config adapter） | Accepted | 2026-07-04 | frontend / guide-widgets / party |
+| [ADR-0003](0003-mobile-chat-sheet-close-button.md) | 行動版聊天／小工具 sheet 新增顯式關閉鈕；peek 狀態維持非模態 | 部分 Superseded by ADR-0007（peek 非模態部分）；關閉鈕決策仍 Accepted | 2026-07-05 | frontend-rwd / chat |
+| [ADR-0004](0004-widget-member-identity-and-colour-legend.md) | 隊伍小工具成員身分權威化（含隊長）、全員顏色預先分配與顏色對照區 | Accepted | 2026-07-05 | frontend / guide-widgets / party |
+| [ADR-0005](0005-mobile-chat-sheet-dedupe-close-and-dynamic-title.md) | 手機聊天室去除重複關閉鈕（改用既有返回鈕樣式）並顯示實際頻道名稱 | Accepted | 2026-07-05 | frontend-rwd / chat |
+| [ADR-0006](0006-party-member-colors-backend-contract-alignment.md) | `party_member_colors` 前後端契約對齊（放棄自創 schema，改用既有後端驗證格式） | Accepted | 2026-07-05 | frontend / guide-widgets / party |
+| [ADR-0007](0007-mobile-chat-sheet-peek-becomes-modal.md) | 手機聊天 sheet 的 peek 狀態改為模態（點外自動關閉），推翻 ADR-0003 該部分決策 | Accepted | 2026-07-05 | frontend-rwd / chat |
+| [ADR-0008](0008-find-mobile-chat-channel-switcher-parity.md) | `/find` 手機聊天 sheet 改用共用頻道切換內容，與其他頁面行為一致 | Accepted | 2026-07-05 | frontend-rwd / chat |
 | [ADR-0009](0009-silent-background-guide-state-writes.md) | 自動背景 guide-state 寫入（成員顏色）在雙重衝突時不彈出使用者錯誤提示 | Accepted | 2026-07-05 | frontend / guide-widgets / party |
