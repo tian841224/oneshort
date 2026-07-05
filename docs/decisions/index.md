@@ -56,3 +56,4 @@
 |---|---|---|---|---|
 | [ADR-0001](0001-overlay-history-dismiss.md) | 行動版浮層（聊天 sheet／導覽抽屜）的關閉與瀏覽器歷史整合方式 | Accepted | 2026-07-04 | frontend-rwd / chat / shell |
 | [ADR-0003](0003-mobile-chat-sheet-close-button.md) | 行動版聊天／小工具 sheet 新增顯式關閉鈕；peek 狀態維持非模態 | Accepted | 2026-07-05 | frontend-rwd / chat |
+| [ADR-0009](0009-silent-background-guide-state-writes.md) | 自動背景 guide-state 寫入（成員顏色）在雙重衝突時不彈出使用者錯誤提示 | Accepted | 2026-07-05 | frontend / guide-widgets / party |

@@ -53,6 +53,7 @@
 - `jump_box_sync` 依 `stage_count` 與 `boxes_per_stage` 產生跳箱格子，前台直接以獨立操作視窗顯示網格，避免隊伍攻略頁面需要上下捲動；隊員點格子時以 `assignments: { cellId: memberId[] }` 記錄，格子直接呈現對應隊員攻略顏色且不顯示角色名稱，同一隊員再點同格會取消標記。
 - **成員身分鍵**：所有 widget state（`assignments`、`party_member_colors`、`widget_sessions`）的成員識別一律使用「隊伍成員角色 id」（`slot.filled_by`；隊長為 `party.leader_id`）。渲染時須過濾掉已不在隊伍的成員 id。
 - **保留 widget_id**：`party_member_colors`（隊員攻略顏色）與 `widget_sessions`（小工具同步 session）是保留 id，不對應攻略內任何 widget block；後端 `UpdateState` 只驗證 id 格式與隊伍成員資格，不要求 id 存在於攻略中。
+- **背景寫入靜默失敗（ADR-0009）**：`useEnsureMemberColors`（房間進入時補色）與 `useMemberColors.ensureSelfColor`（伴隨其他小工具操作的順帶補色）都是非使用者直接操作的背景寫入，經 `useWidgetStateOp(widgetId, { silent: true })` 標記；即使 409 rebase 重試後仍衝突，也只同步最新狀態、不彈出「請再操作一次」錯誤提示（`entry` 依賴會在下次 store 更新時自動重試）。其餘使用者主動點擊觸發的 guide-state 寫入不受影響，雙重衝突仍會提示使用者重新操作。
 
 ### 1.4 攻略／小工具視窗與同步
 
