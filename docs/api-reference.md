@@ -1678,6 +1678,7 @@ PUT 補充說明：
 - `400` - `{ "code": "character_invalid_id", "error": "invalid character id" }` 角色 ID 格式錯誤
 - `400` - `{ "code": "user_invalid_request", "error": "..." }` 請求格式錯誤
 - `403` - `{ "code": "character_not_owned", "error": "character not owned" }` 角色不屬於目前使用者
+- `409` - `{ "code": "character_is_primary", "error": "無法停用目前的主要角色，請先設定其他角色為主要角色。" }` 嘗試停用（`is_active: false`）目前的主要角色，且該使用者還有其他可設為主要的啟用中角色；若這是使用者唯一的啟用中角色，則允許停用。可透過 `PUT /api/v1/actors/me/current-character`（帶 `character_id`）改設其他角色為主要角色後再重試
 - `500` - `{ "code": "user_internal_error", "error": "failed to update character" }` 伺服器錯誤
 
 ---
@@ -1690,6 +1691,7 @@ PUT 補充說明：
 **Error Codes:**
 - `400` - `{ "code": "character_invalid_id", "error": "invalid character id" }` 角色 ID 格式錯誤
 - `403` - `{ "code": "character_not_owned", "error": "character not owned" }` 角色不屬於目前使用者
+- `409` - `{ "code": "character_is_primary", "error": "無法刪除目前的主要角色，請先設定其他角色為主要角色。" }` 嘗試刪除目前的主要角色，且該使用者還有其他可設為主要的啟用中角色；若這是使用者唯一的啟用中角色，則允許刪除。可透過 `PUT /api/v1/actors/me/current-character`（帶 `character_id`）改設其他角色為主要角色後再重試
 - `500` - `{ "code": "user_internal_error", "error": "failed to delete character" }` 伺服器錯誤
 
 ---
