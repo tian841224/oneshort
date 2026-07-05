@@ -32,7 +32,8 @@ backend PR #65（`fix(user): prevent deactivating or deleting the actor's primar
 - guard 只在「操作會讓角色從啟用變停用」且「actor 還有其他啟用中角色可接手 primary」時才擋下；若 actor 只有這一個啟用中角色，允許停用/刪除（不會被永久卡死）。
 - 0 rows affected 時，用一次額外的 `EXISTS` 查詢（`diagnoseCharacterWriteBlock`）區分回傳 `ErrCharacterNotOwned` 還是 `ErrCharacterIsPrimary`，維持既有 API 錯誤碼语意不變。
 - `internal/user/usecase.go` 移除呼叫端的 `is_primary` 前置檢查，改為單純轉發 repository 回傳的 sentinel error。
-- 新增 `internal/user/repository_integration_test.go`（`//go:build integration`），以真實 DB 驗證：(a) 有替代角色時擋下停用/刪除、(b) 唯一角色時允許、(c) 只改其他欄位不受影響、(d) 與 `auth.UpdateCurrentCharacter` 併發競態下，actor 的主要角色永遠不會被停用（20 次迭代）。
+- `UpdateCharacter`／`SoftDeleteCharacter` 在評估 guard 前，先對該 actor 的**全部** character rows 下 `SELECT ... FOR UPDATE` 鎖（與 `auth.UpdateCurrentCharacter` 同一套作法）。原因：guard 內的 `EXISTS(其他 is_active=TRUE 的角色)` 子查詢本身若不上鎖，只保護「被寫入的那一列」，不保護它讀取來判斷的「其他列」——例如同時「停用主要角色 A（靠 EXISTS 檢查 B 是否還在）」與「刪除 A 唯一的替代角色 B（B 非 primary，guard 恆放行）」，兩者若都只看到對方停用/刪除前的狀態，可能雙雙成功。加上這道鎖後，兩個操作會針對同一 actor 的角色列完全序列化，後執行的一方一定會看到前者已提交的最新狀態。
+- 新增 `internal/user/repository_integration_test.go`（`//go:build integration`），以真實 DB 驗證：(a) 有替代角色時擋下停用/刪除、(b) 唯一角色時允許、(c) 只改其他欄位不受影響、(d) 與 `auth.UpdateCurrentCharacter` 併發競態下，actor 的主要角色永遠不會被停用（20 次迭代）、(e) 併發「停用主要角色」與「刪除其唯一替代角色」時，兩邊回傳的錯誤與 DB 實際狀態一致（不會有「回傳成功但其實沒寫入」或反之的 torn 結果，20 次迭代）。
 - `docs/api-reference.md` 與 `internal/user/handler.go` 的 swagger 註解同步補上 `409 character_is_primary`，並重新執行 `swag init` 產生 `docs/docs.go`／`docs/swagger.json`／`docs/swagger.yaml`。
 
 ## 理由 (Rationale)
@@ -51,6 +52,7 @@ backend PR #65（`fix(user): prevent deactivating or deleting the actor's primar
 
 - API 契約新增 `409 character_is_primary`（僅在停用/刪除操作、且存在其他可替代角色時觸發），已同步更新 `docs/api-reference.md` 與 swagger 產物。
 - 唯一角色的 actor 現在可以正常停用/刪除自己唯一的角色；若未來要禁止「actor 完全沒有角色」這個終態，需要另外設計（例如串接帳號刪除流程），不在本次決策範圍內。
+- **已知且接受的邊界情況**：允許「唯一啟用角色」被停用/刪除是本次決策的核心目的，因此使用者仍可能透過兩個各自合法的操作（無論是依序呼叫、或併發）讓自己的啟用角色數變成 0——例如先刪除替代角色 B（B 非 primary，一律放行），A 因此變成唯一啟用角色，此時再停用 A 也會被允許。這與 master 現況（目前完全沒有 guard，本就可以任意停用/刪除到 0 個角色）並無退步，且已在本 ADR 明確排除「保證 actor 至少有 1 個啟用角色」這個更大的不變量，故不視為本次修正的缺陷；本次新增的 `FOR UPDATE` 鎖只保證兩個操作之間**序列化、不會有 torn 寫入**，不保證「不會一起把角色數清零」。
 - `internal/auth` 的 primary 切換行為未變動，本次修正只是讓 `internal/user` 端正確地與其序列化，不影響 `auth` 既有 API。
 
 ## Supersedes / Superseded by
