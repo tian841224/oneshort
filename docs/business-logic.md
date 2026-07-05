@@ -450,10 +450,11 @@ ReplaceParty (`PUT /parties/:id`):
 
 ---
 
-## 五、已移除模組
+## 五、已移除模組與相關殘留設定
 
-- `guild/raid` 模組已於 quick-login parity phase4 從前後端與文件移除。
-- `raid_boss_options` 仍保留，僅作為 `BOSS` / `GROUP` 隊伍的目標選項資料來源。
+- `raid` 模組已於 quick-login parity phase4 從前後端與文件移除。
+- `raid_boss_options` 仍保留，僅作為 `BOSS` / `GROUP` 隊伍的目標選項資料來源，不代表 Raid 模組仍存在。
+- `guild` 模組已於 2026-04-28 重新導入，**為現行功能**，不適用本節「已移除」狀態；詳見 `docs/features/guild.md`，本文件後續公會相關規則（如「三、席位管理」§3.1 自動配對生成隊伍的公會 LEADER/OFFICER 管理放寬、「十、全域欄位範圍規範」§10.1 表格中 `guild_boss_configs.min_level` 等公會欄位範圍）皆為現行行為。
 
 ---
 
