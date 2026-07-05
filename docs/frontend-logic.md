@@ -43,7 +43,7 @@
 | `['guilds', guildId, 'parties']` | 公會隊伍 | 公會隊伍建立、自動配對完成、隊伍成員事件 |
 | `['guilds', guildId, 'calendar', actorId]` | 我的公會行事曆 | 自動配對完成、公會隊伍建立、角色/隊伍成員事件 |
 | `['guilds', guildId, 'chat']` | 公會聊天室 | 送出訊息、聊天室歷史重抓 |
-| `['partyGuide', partyId]` | 隊伍攻略與 widget 狀態 | 攻略載入、`party.guide_state.updated`、玩家操作攻略工具 |
+| `['partyGuide', partyId]` | 隊伍攻略與 widget 狀態 | 攻略載入、`party.guide_state.updated`、玩家操作攻略工具、小工具同步 session |
 
 ### 1.3 隊伍攻略小工具狀態
 
@@ -51,6 +51,30 @@
 - 隊員點選 `answer_lookup` 題目時，widget state 以 `assignments: { questionId: memberId[] }` 記錄隊員抽到的題目；同一隊員切換題目時會從原題目移到新題目，避免一人同時標記多題。
 - 題目列需顯示已標記隊員的攻略顏色 chip，顏色來源為 `party_member_colors` 保留 widget state，並透過 `party.guide_state.updated` 即時同步給同房隊員。
 - `jump_box_sync` 依 `stage_count` 與 `boxes_per_stage` 產生跳箱格子，前台直接以獨立操作視窗顯示網格，避免隊伍攻略頁面需要上下捲動；隊員點格子時以 `assignments: { cellId: memberId[] }` 記錄，格子直接呈現對應隊員攻略顏色且不顯示角色名稱，同一隊員再點同格會取消標記。
+- **成員身分鍵**：所有 widget state（`assignments`、`party_member_colors`、`widget_sessions`）的成員識別一律使用「隊伍成員角色 id」（`slot.filled_by`；隊長為 `party.leader_id`）。渲染時須過濾掉已不在隊伍的成員 id。
+- **權威成員清單須含隊長（ADR-0004）**：隊長是隊伍成員但**未必佔用 filled slot**（後端 `deriveCurrentMembersFromSlots` 會另計隊長），因此前台供渲染過濾用的「現有成員清單」（`PartyWidgetContext.members`）必須是「filled slots ＋ 隊長 `leader_id` ＋ acting self」的去重合併（`mergeWidgetMembers`），否則隊長以 `leader_id` 寫入的認領/顏色會被過濾層靜默丟棄，造成「小工具點了沒反應」。
+- **顏色預先分配（ADR-0004）**：`party_member_colors` 由 `useEnsureMemberColors` 在攻略隊伍載入時，對權威成員清單一次補齊（不再只在首次互動時懶分配），確保每位成員（含隊長）都有穩定顏色；操作 idempotent、409-rebase-safe，僅成員且非唯讀時寫入。「隊伍資訊」分頁頂部的 `MemberColorLegend` 以此顏色顯示「色票 ↔ 名稱／職業」對照。
+- **背景寫入靜默失敗（ADR-0009）**：`useEnsureMemberColors`（房間進入時補色）與 `useMemberColors.ensureSelfColor`（伴隨其他小工具操作的順帶補色）都是非使用者直接操作的背景寫入，經 `useWidgetStateOp(widgetId, { silent: true })` 標記；即使 409 rebase 重試後仍衝突，也只同步最新狀態、不彈出「請再操作一次」錯誤提示（`entry` 依賴會在下次 store 更新時自動重試）。其餘使用者主動點擊觸發的 guide-state 寫入不受影響，雙重衝突仍會提示使用者重新操作。
+- **`party_member_colors` wire 格式（ADR-0006）**：必須對齊後端 `validatePartyMemberColorsState` 的既定契約：`{ version: 1, assignments: { [memberId]: { color_key: GuideMemberColorKey, assigned_at: string } } }`；`color_key` 僅接受後端 `knownPartyMemberColorKeys` 的 10 個固定值（`guide-red/orange/yellow/green/cyan/blue/violet/pink/stone/lime`），前端 `GUIDE_MEMBER_COLOR_HEX`（`memberColors.ts`）負責把色鍵映射成實際渲染用 hex。不得自創欄位名或直接寫入任意 hex——後端 `DisallowUnknownFields()` 會拒絕不符合此格式的寫入，曾因此造成顏色永遠無法持久化（每次重新整理都讀回未分配狀態）。
+- **保留 widget_id**：`party_member_colors`（隊員攻略顏色）與 `widget_sessions`（小工具同步 session）是保留 id，不對應攻略內任何 widget block；後端 `UpdateState` 只驗證 id 格式與隊伍成員資格，不要求 id 存在於攻略中。
+- **全型別覆蓋（ADR-0002）**：前台 `WidgetWindowBody` 對應後端 `knownWidgetTypes` 與 admin 授權面板的**全部 20 種** widget，管理員設計的工具不再落到「即將推出」占位。實作以少數共用狀態模型驅動：
+  - `assignments`（成員↔目標＋成員顏色）：`answer_lookup`（一人一題）、`jump_box_sync`／`shared_toggle_board`／`image_marker_board`（多目標亮燈）、`assignment_board`／`toy101_door_assign`、`rj_door_numbers`（一人一路線）。
+  - `checklist`（項目↔成員，全隊共用勾選）：`shared_progress`（checklist 模式）、`rj_perfect_check`（依 phase 分組）、`gw_reward_handoff`（單一確認）、`toy101_class_check`（必要職業）。
+  - `counter` 單值：`gw_ticket_pool`／`gw_phase1_quota`／`rj_guard_tally`；`MultiCounterState` 每項計數：`shared_progress`（counter 模式）。
+  - `SequenceState` 有序記錄：`sequence_recorder`。純本地：`preset_solver`（`goddess_400` 對照表計算器與步驟清單）、`toy101_box_jump`（跳箱序列參考）。
+- **`answer_lookup` 欄位契約**：題目文字欄位為 `question`（對齊後端 validator 與 admin 授權），前端 parser 另讀舊 `prompt` 欄位作為相容 fallback。
+
+### 1.4 攻略／小工具視窗與同步
+
+- **攻略顯示（重新設計）**：`GROUP` 隊伍的攻略與小工具是隊伍詳情頁的頂層分頁（`PartyDetailTabs`：隊伍資訊／待審申請／攻略／小工具）。快速隊伍不顯示這兩個分頁。
+- **桌機浮動視窗（≥900px `BP.bottomNav`）**：攻略分頁提供「展開為浮動視窗」，小工具清單以「開啟」把工具開成獨立浮動視窗（`react-rnd`）。視窗可自由拖曳、縮放、最小化（收到左下角 dock）、釘選（於視窗間置頂，不鎖定位置）。所有視窗與 dock 共用 `--z-float-window`（62，介於 `--z-overlay` 與 `--z-dropdown` 之間），視窗堆疊順序由 `PartyWindowsHost` 內 DOM 順序決定，不使用逐視窗 inline z-index。視窗位置／尺寸依隊伍存於 localStorage（`os.windows.party.v1`，LRU 上限 20 隊）。攻略圖片點擊可開全螢幕 lightbox（`--z-modal`）。
+- **手機（<900px）**：不使用浮動視窗；攻略維持頁內顯示，開啟小工具改用底部抽屜（`MobilePartyToolsSheet`，沿用聊天室 bubble→peek→full 抽屜），抽屜頂部以 chip 切換多個已開啟的工具。工具 bubble 疊在聊天 bubble 上方。
+- **小工具同步 session**：任一隊員開啟小工具，即在保留 id `widget_sessions` 建立或加入該工具的 session（存於既有攻略 state blob，走既有 `party.guide_state.updated` 廣播，零後端改動）。房內其他成員收到「{開啟者} 正在使用「XX」，是否同步開啟？」動作 toast：
+  - 去重鍵為 `session_id`（每次全新開啟才產生新 id；加入會 bump revision，故不可用 revision 當鍵）。
+  - 僅在 session「由無變有」的轉變時提示；進頁時已存在的 session 不主動提示，改由小工具清單的「進行中 · N 人」badge 供事後手動加入。
+  - 「略過」持久化該 `session_id` 到 `sessionStorage`，不再對同一 session 重複提示。
+  - 開啟者本人與已是參與者者不提示。
+- **session 生命週期**：接受即加入參與者並開啟視窗／抽屜；關閉視窗（或抽屜項目）即離開 session；最後一位參與者離開即結束 session；任何寫入都會剔除已離隊成員（gc-on-write）；CLOSED／唯讀隊伍不建立或加入 session。
 
 ---
 

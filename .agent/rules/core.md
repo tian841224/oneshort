@@ -15,7 +15,7 @@ trigger: always_on
 
 ## 2. 啟動前確認
 
-修改 `frontend/` 或 `backend/` 前，**必須先詢問使用者採 `BRANCH` 或 `WORKTREE`**。未確認前，不得建立 branch / worktree 或修改子專案。
+修改 `frontend/` 或 `backend/` 前，**必須先詢問使用者採 `BRANCH` 或 `WORKTREE`**。未確認前，不得建立 branch / worktree 或修改子專案。根目錄協調性文件變更不受此限，見 [§6.1](#61-根目錄協調性文件-worktree)。
 
 ## 3. 架構優先原則
 
@@ -36,12 +36,12 @@ trigger: always_on
    - **維護性**：單一責任、邊界清晰、命名與型別一致；是否增加重複碼、例外堆疊或隱性耦合。
    - **效能**：熱路徑、DB 查詢、I/O、前端渲染與 Bundle 大小影響；避免 N+1 與冗餘運算。
    - **安全性**：輸入信任邊界、權限與授權、注入 / XSS / CSRF / SSRF、敏感資料外洩風險。
-3. **決策落地**：選定方案的「理由與被拒方案」必須記入 PR 描述、commit body 或 `.omx/plans/` 對應規格文件，禁止只留下程式碼差異。
+3. **決策落地**：選定方案的「理由與被拒方案」必須記入 PR 描述、commit body 或 `~/.claude/plans/` 對應計畫文件，禁止只留下程式碼差異。
 
 **例外條款**
 
 - 僅限「生產緊急事故 hotfix」或「使用者明確指示 minimal patch」時，可暫採局部修正。
-- 須同步建立 follow-up 任務（PR 描述、commit body、`.omx/plans/` 或 issue tracker），於下一個迭代完成完整重構，不得無限期延後。
+- 須同步建立 follow-up 任務（PR 描述、commit body、`~/.claude/plans/` 計畫文件或 issue tracker），於下一個迭代完成完整重構，不得無限期延後。
 
 **驗證義務**
 
@@ -70,9 +70,22 @@ trigger: always_on
 | 修復 | `fix/<問題>` | `develop` | `oneshort-{frontend\|backend}-worktrees\fix-<問題>` |
 | 緊急修復 | `hotfix/<問題>` | `main` | `oneshort-{frontend\|backend}-worktrees\hotfix-<問題>` |
 | 發版 | `release/<版號>` | `develop` | `oneshort-{frontend\|backend}-worktrees\release-<版號>` |
+| 根目錄協調性文件 | `docs/<主題>`（或依 [§9](#9-commit-messageconventional-commits) 適用的 type，如 `chore/<主題>`） | `develop` | `oneshort-worktrees\<type>-<主題>` |
 
 > [!NOTE]
 > Worktree 目錄是**巢狀於 oneshort 根目錄內、與 `frontend/`／`backend/` 同層**的路徑（例：`oneshort\oneshort-frontend-worktrees\feature-<功能>`），**不是** oneshort 根目錄的 sibling 目錄。這是既有實際慣例（`.claude/launch.json`、`frontend/HANDOFF.md`、`frontend/docs/e2e-scenarios.md` 皆採此路徑），且 Claude Code 的 `preview_start` 工具要求 launch.json 的 `cwd` 必須是 project root 內的相對路徑，無法指向 root 外的目錄。若已誤建於 root 外，用 `git worktree move` 搬到此路徑即可，不需重建。
+
+### 6.1 根目錄協調性文件 Worktree
+
+根目錄協調性文件（`.agent/`、`docs/`、`AGENTS.md`，見 [§1](#1-repository-邊界)）的 branch / worktree 命名沿用上表 `<type>-<主題>` 規則，但巢狀於 oneshort 根目錄下的 `oneshort-worktrees\<type>-<主題>`，**不區分** frontend / backend，因此不套用 §8 `-C frontend`／`-C backend` 的路徑換算，直接在 oneshort 根目錄執行即可：
+
+```powershell
+git worktree add oneshort-worktrees\docs-<主題> -b docs/<主題> develop
+```
+
+已知先例：分支 `docs/party-approval-visibility`（base `develop`，對應 worktree 目錄 `oneshort-worktrees\docs-party-approval-visibility`）——已完成並合併，worktree 已清理。
+
+此類變更僅限文件、無執行期程式碼，風險與影響範圍低於 frontend/backend，**不受 [§2](#2-啟動前確認) BRANCH／WORKTREE 確認門檻限制**：可直接建立 branch 或 worktree 後開始修改，不需事先詢問使用者採 BRANCH 或 WORKTREE；但仍須遵循 [§3.1](#31-修正方案評估準則) 修正方案評估與 §5 base branch 規範。
 
 ## 7. BRANCH 模式
 

@@ -30,7 +30,7 @@
 ## 3. 自動配對
 
 - 會長與幹部可在 `/guilds/:id/match` dry-run 或產生配對草案。
-- 會長可維護每個 BOSS 的啟用狀態、最低等級、人數上限與 job slot 模板。
+- 會長可維護每個 BOSS 的啟用狀態、最低等級（1～200，見 `docs/business-logic.md` §10.1 全域欄位範圍規範）、人數上限與 job slot 模板。
 - 成員在 `/guilds/:id/me/preferences` 維護 BOSS、30 分鐘時段格與可參戰角色。
 - 成員在公會首頁的行事曆由 `/guilds/:id/me/calendar` 提供；後端會以目前 actor 的所有 active 角色查詢未來 7 天內已指派 slot 的 BOSS 公會隊伍，回傳 `scheduled_at`、`target_name`、`character_name`、`character_code` 與 `party_id`。
 - `time_slots` 為 Monday-first：slot `0` 是週一 00:00，slot `13` 是週一 06:30；後端以台灣時間下個週一 00:00 作為 cycle start 後存 UTC `scheduled_at`。
