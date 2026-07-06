@@ -428,6 +428,10 @@ Mobile:
 6. **行動殼與內容單欄共用斷點**：「shell 行動化（收側欄＋出底部導覽，`bottomNav` 900）」與「內容頁／navbar 單欄化／簡化」必須用同一斷點（900），不可讓內容頁停在較低斷點（640/768）— 否則 768–899 會出現「行動殼包桌機內容」死區（hover 預覽在觸控失效、欄寬被擠）。需依容器寬度（非視窗）收合的版面用 `@container`（如 create-party），其顯示／隱藏一律由同一 container query 控制，勿混入 viewport JS gate。
 7. **觸控互動 fallback**：依賴拖曳或 hover 的互動必須提供觸控 tap 替代（用 `e.pointerType` 分流，touch 走 `onClick` 切換、mouse/pen 才拖曳）。可捲動表面上的互動格子／控制項**不可**用 `touch-action: none`（會吃掉頁面捲動）— 改用 `manipulation` 或 `pan-y`。任何「唯一操作入口」不可只放在 hover 顯示的元素上。
 8. **版面用 CSS 而非 JS 量測**：能用 `@media`／`@container` 表達的版面切換（雙欄／單欄、顯示／隱藏、尺寸階）**不要**用 JS 量測 viewport（`useState`+`useEffect` 讀 `innerWidth/Height`）後切換 — SSR／首載會先以預設值渲染再跳版（CLS）。改用 CSS 讓首次 paint 即正確；靜態裝飾（如插畫 SVG）總是渲染、用 CSS 隱藏。只有 CSS 無法表達時（依資料數量、需 `getBoundingClientRect`）才用 JS，並配 `useIsMobile` 或穩定初值。
+9. **`flex-direction` 換向時必重設 `flex-basis`**：桌機 row 方向的 `flex: 1 1 <寬度px>`，在手機 @media 改成 `column` 後，該 basis 會變成**高度**，把區塊撐出數百 px 空白（2026-07 `/find` 篩選列實案：兩層 `flex: 1 1 260px` 在 639px 斷點疊出 ~520px 死空間）。任何把容器改成 `flex-direction: column` 的斷點覆寫，**必須**同時寫 `flex-basis: auto`（或改用 `min-width` 表達桌機寬度需求）。
+10. **行動輸入框字級 ≥16px**：iOS Safari 對 `font-size < 16px` 的 `input`/`select`/`textarea` 聚焦時會強制整頁縮放（跳版）。觸控斷點（≤899px 或 `pointer: coarse`）下表單控制項字級一律 ≥16px；禁止用 `maximum-scale`／`user-scalable=no` 壓制（違反無障礙）。
+11. **觸控補償條件必含 `pointer: coarse`**：44px 熱區補償若只綁寬度斷點（如 `@media (max-width: 899px)`），寬度 ≥900px 的觸控平板（iPad 橫向）會漏掉。補償規則一律寫 `@media (pointer: coarse), (max-width: 899px)`（`.os-btn--icon`、`.os-panel-collapse-trigger` 為正確範例；`.os-icon-btn` 曾漏掉 coarse 條件）。
+12. **`viewport-fit=cover` 不可移除**：`env(safe-area-inset-*)` 在 iOS 上只有當 `layout.tsx` 的 `export const viewport` 含 `viewportFit: 'cover'` 時才有值，否則全站 safe-area 留白（含 `--os-bottom-nav-h`）靜默失效。改動 layout.tsx metadata/viewport 時必須保留此設定，並以實測 meta 內容驗證。
 
 ## 11. Golden Rules
 
@@ -446,6 +450,7 @@ Before adding or changing any UI:
 11. If new visual assets are involved, did they follow `oneshort-asset-generation` and avoid copyrighted game artwork?
 12. Are responsive values (breakpoints, grid templates, touch sizes, bottom-nav clearance, z-index) driven by shared tokens/classes (`BP`, `.os-btn--icon`, `--os-bottom-nav-h`, `--z-*`) and never hardcoded inline, so `@media` can still override? (見 §10 Responsive Invariants)
 13. 版面重排時是否「只改排列、未刪任何原本顯示的資訊或操作」，且版面屬性走 class/token（非 inline）、空/載入/錯誤狀態用共用元件？（見 §12 版面實作純度）
+14. 涉及行動版的修改，是否已依 §13 執行靜態掃描＋實測走訪，並以證據（截圖/量測值）回報？（見 §13 手機版實測審查、skill `mobile-rwd-audit`）
 
 ## 12. 版面實作純度（Layout Implementation Integrity）
 
@@ -497,5 +502,47 @@ Before adding or changing any UI:
 
 1. `npx tsc --noEmit` 與 `npm run build` 通過。
 2. 對照 §12.1 資訊保全清單，逐項確認無資訊 / 操作遺漏。
-3. RWD 在 375 / 768 / 1024 / 1440 檢查：無水平溢位、無首載跳版（CLS）、觸控目標 ≥44、底部固定列清除正確。
+3. RWD 在 375 / 768 / 1024 / 1440 檢查：無水平溢位、無首載跳版（CLS）、觸控目標 ≥44、底部固定列清除正確。修改範圍涉及行動版版面時，依 [§13 手機版實測審查](#13-手機版實測審查mobile-audit) 執行實測，不得只憑目視。
 4. 合併回 `develop` 後 `npm run test:e2e`。
+
+## 13. 手機版實測審查（Mobile Audit）
+
+本節把 2026-07 全站手機版審查的方法固化為標準流程。**任何修改行動版版面、觸控行為、斷點、固定元素或表單的任務，完成後必須執行本節審查**；全站性審查（如發版前）則完整跑一輪。工具與腳本見專案 skill `mobile-rwd-audit`（`.claude/skills/mobile-rwd-audit/`）。
+
+### 13.1 靜態掃描（對照 §10 不變式）
+
+用 Grep 掃 `frontend/src`，每一項都要回報「有違規（附檔案:行號）」或「已掃描、無違規」：
+
+| 檢查項 | 對應不變式 | 掃描線索 |
+|---|---|---|
+| inline 響應式版面屬性 | #2 | `style={{` 內含 `display`/`flexDirection`/`gridTemplate*`/`width`/`gap` |
+| 裸斷點 / 裸 `innerWidth` | #1 | `matchMedia`、`innerWidth` 未經 `BP`；@media 值不在 {639,767,899,1199,640,768,900,1200,1600} |
+| JS 量測切版 | #8 | `useState`+`useEffect` 讀 viewport 後切換版面 |
+| flex 換向未重設 basis | #9 | `flex-direction: column` 的 @media 覆寫，其子項桌機定義 `flex: 1 1 <px>` |
+| sub-44 觸控目標 | #3 | 互動 class 固定尺寸 <44 且無 `.os-touch-*`／coarse min-* 補償 |
+| 補償漏 `pointer: coarse` | #11 | 44px 補償規則只有 `max-width` 條件 |
+| 輸入框 <16px | #10 | `.os-input` 等控制項 `font-size` 宣告 |
+| 底部清除魔術數字 | #4 | `padding-bottom`/`bottom` 寫死 56/64/72/76/80/100 |
+| 裸 z-index | #5 | 非 `var(--z-*)` 的 z-index（局部堆疊 0/1/-1 加註解可豁免） |
+| `touch-action: none` | #7 | 每一處都要有「拖曳/捲動分離」註解與 tap 替代 |
+| viewport 設定 | #12 | `layout.tsx` 的 `export const viewport` 含 `viewportFit: 'cover'` |
+
+### 13.2 動態實測（Playwright 走訪）
+
+前置：dev 前端（3000）與後端（8080）運行中。**只對 dev 環境執行**，腳本會建立 quick-login 測試帳號與臨時隊伍/公會（結束時自動刪除）。
+
+1. 以 iPhone 模擬（375×812、DPR 3、`isMobile`+`hasTouch`、iOS UA）走訪**全部路由**與 overlay（底部導覽、建立選單 sheet、QuickCreateWizard、聊天 sheet、導覽抽屜、通知面板、使用者選單）。
+2. 每頁量測並留證據（截圖 + JSON）：
+   - `document.documentElement.scrollWidth > clientWidth` → 水平溢位（P0/P1）
+   - 互動元素 bounding box <44×44（注意 `.os-touch-target` 的 `::before` 擴張量不到 rect，需人工複核）
+   - 渲染字級 <12px 的文字、<16px 的輸入框
+   - fixed/sticky 元素清單（檢查互疊與內容遮擋）
+   - `meta[name=viewport]` 實際內容
+3. 以 390 / 430 / 768px 抽查核心頁（find、create、history），特別驗證 768–899「行動殼包桌機內容」死區（#6）。
+4. 已知誤報，判讀時排除：跑馬燈與可捲 tab 列在 overflow 容器內的「超界」；Next dev tools 左下黑色「N」圓鈕；快速導航觸發的 rate-limit toast。
+
+### 13.3 分級與回報
+
+- **P0** 跑板/功能不可用 → **P1** 違反 §10/§12 硬性規範 → **P2** HIG/checklist 體驗問題 → **P3** 優化建議。
+- 每條 finding 必附：頁面、現象、證據（截圖或量測值）、檔案:行號、建議修法（優先引用既有 token/class）。**禁止無證據的印象式斷言**；subagent 回報的違規必須親自複核原始碼後才可列入（曾有 `.os-icon-btn` 誤報案例——補償規則在另一個 @media 區塊）。
+- 回報結尾附全域 skill `frontend-rwd-uiux-standards` checklist §16 的【RWD 檢查結果】，不適用項標註原因。
