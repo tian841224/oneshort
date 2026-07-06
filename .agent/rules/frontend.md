@@ -49,3 +49,6 @@ npm run build            # 構建驗證（大型改動建議）
 - **觸控目標 ≥44×44**：用 `.os-btn--icon` / `.os-icon-btn`，勿寫 sub-44 的 inline 尺寸。
 - **底部清除用 `var(--os-bottom-nav-h)`**（含 safe-area），禁止寫死 `72/76/80`。
 - **z-index 走 `--z-*` scale**，不寫任意數字。
+- **`flex-direction` 換向必重設 `flex-basis`**：桌機 `flex: 1 1 <px>` 在 column 斷點會變成高度 basis 撐出大片空白（見 style.md §10 #9）。
+- **行動輸入框字級 ≥16px**（iOS 聚焦縮放）；**觸控補償條件必含 `pointer: coarse`**，不可只綁寬度斷點（§10 #10/#11）。
+- **行動版修改完成後必跑手機版實測審查**：依 [style.md §13](style.md) 與專案 skill `mobile-rwd-audit`（`.claude/skills/mobile-rwd-audit/`）執行靜態掃描＋Playwright 走訪（375/390/430/768），以截圖與量測值回報，不得只憑目視。
