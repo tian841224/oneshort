@@ -20,7 +20,7 @@ backend PR #65（`fix(user): prevent deactivating or deleting the actor's primar
    - 安全性：可正確關閉競態視窗。
 2. **把 guard 條件折入既有 UPDATE 陳述式的 WHERE 子句，讓「檢查」與「寫入」變成同一個原子陳述式**（採用此方案）：`UPDATE ... WHERE id=$1 AND actor_id=$2 AND NOT (is_primary AND <正在停用> AND EXISTS(其他啟用角色))`，寫入本身已經隱含用該列的 row lock 序列化，只有在 0 rows affected 時才額外查一次區分「不擁有／不存在」vs「被 guard 擋下」。
    - 維護性：改動集中在 `repository.go` 既有的 `UpdateCharacter`／`SoftDeleteCharacter`，`usecase.go` 只需移除失效的前置檢查，介面與交易邊界維持原樣（`UpdateCharacter` 已有 `WithTx`，`SoftDeleteCharacter` 維持單一陳述式）。
-   - 效能：happy path 不需要額外查詢；guard 觸發時才多一次診斷讀取。
+   - 效能：happy path 需在既有交易內新增一次 `SELECT ... FOR UPDATE`（鎖定該 actor 全部角色列，通常僅 1–3 列）；guard 觸發時才再多一次診斷讀取。
    - 安全性：`UPDATE` 陳述式對目標列的鎖與 `auth.UpdateCurrentCharacter` 的 `FOR UPDATE` 鎖是同一張表同一列，Postgres 會自然序列化兩者，寫入時一定讀到最新已提交的 `is_primary`／其他角色狀態，不需要額外的跨套件鎖協議。
 3. **拒絕方案：一律允許停用/刪除主要角色，交由前端或使用者自行承擔「暫時沒有主要角色」的狀態**：維護性最簡單，但違反 `idx_characters_primary_per_actor` 想維持的「至少要有明確主要角色可用」意圖，且會讓 `auth.SelectCurrentCharacter` 的容錯排序邏輯（`ORDER BY is_primary DESC`）長期依賴隱性 fallback，不建議。
 
@@ -41,7 +41,7 @@ backend PR #65（`fix(user): prevent deactivating or deleting the actor's primar
 依 core.md §3.1 三大前提（安全性 > 維護性 > 效能）：
 - **安全性優先**：方案 2 讓「檢查」與「寫入」在同一個陳述式內對同一列求值，天然利用 Postgres 的列鎖與 `auth.UpdateCurrentCharacter` 既有的 `FOR UPDATE` 鎖序列化，不需要新增跨套件鎖協議即可關閉原始 TOCTOU 視窗，安全性等同方案 1 但複雜度更低。
 - **維護性**：改動範圍侷限在 repository 既有函式內，不需要調整 `Repository` 介面的交易邊界慣例；同時修正「唯一角色卡死」問題後，不需要另外設計「允許例外」的旁路 API。
-- **效能**：happy path（未觸發 guard）不增加查詢；只有在 guard 擋下時才多一次診斷查詢，成本可接受。
+- **效能**：happy path 在既有交易內新增一次 `SELECT ... FOR UPDATE`（鎖定該 actor 全部角色列，用於關閉 TOCTOU 視窗，見決策第 5 點），成本可接受；只有在 guard 擋下時才再多一次診斷查詢。
 
 ## 被拒絕方案與原因 (Rejected Alternatives)
 

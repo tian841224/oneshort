@@ -26,9 +26,11 @@ description: OneShort 手機版 RWD 實測審查。修改任何行動版版面�
 ### Step 2：動態實測
 
 ```powershell
-node .claude/skills/mobile-rwd-audit/audit.cjs            # 全站走訪
-$env:AUDIT_ROUTES='/find,/parties/create'; node .claude/skills/mobile-rwd-audit/audit.cjs   # 只跑指定路由
+node .codex/skills/mobile-rwd-audit/audit.cjs            # 全站走訪
+$env:AUDIT_ROUTES='/find,/parties/create'; node .codex/skills/mobile-rwd-audit/audit.cjs   # 只跑指定路由
 ```
+
+（Claude Code 從 `.claude/skills/mobile-rwd-audit/audit.cjs` 執行；兩份為同步副本，見 AGENTS.md「Skill 來源」。）
 
 環境變數（皆有預設值）：`AUDIT_BASE`（http://localhost:3000）、`AUDIT_API`（http://localhost:8080/api/v2/）、`AUDIT_OUT`（輸出目錄，預設 skill 目錄下 `audit-out/`，已被 git 忽略，勿提交）、`AUDIT_ROUTES`（逗號分隔，預設全部）、`AUDIT_SKIP_DETAIL=1`（跳過建立臨時 party/guild）、`AUDIT_PERSONA_CODE`／`AUDIT_PERSONA_PIN`（預設 RW1ED78 / 123456，重用既有稽核帳號避免累積新帳號）。
 

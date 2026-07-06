@@ -7,7 +7,21 @@ const fs = require('fs');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const FRONTEND = path.join(ROOT, 'frontend');
-const { chromium, request } = require(path.join(FRONTEND, 'node_modules', '@playwright/test'));
+// This skill deliberately reuses the frontend project's own Playwright install
+// (frontend/package.json has @playwright/test as a devDependency) instead of
+// requiring a separate top-level install. That only resolves when running from
+// a full local oneshort checkout with frontend/ present and `npm install` already
+// run there -- fail with an actionable message instead of a bare MODULE_NOT_FOUND
+// when that precondition isn't met (e.g. a single-repo checkout without frontend/).
+const PLAYWRIGHT_PATH = path.join(FRONTEND, 'node_modules', '@playwright', 'test');
+if (!fs.existsSync(PLAYWRIGHT_PATH)) {
+  throw new Error(
+    `mobile-rwd-audit: expected Playwright at ${PLAYWRIGHT_PATH}. This skill runs against the ` +
+      `frontend/ sibling repo's own install -- checkout frontend/ alongside this repo and run ` +
+      `\`npm install\` there first (see .agent/rules/core.md §1 for the repo layout).`,
+  );
+}
+const { chromium, request } = require(PLAYWRIGHT_PATH);
 
 const BASE = process.env.AUDIT_BASE || 'http://localhost:3000';
 const API = process.env.AUDIT_API || 'http://localhost:8080/api/v2/';
