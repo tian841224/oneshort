@@ -36,12 +36,13 @@ trigger: always_on
    - **維護性**：單一責任、邊界清晰、命名與型別一致；是否增加重複碼、例外堆疊或隱性耦合。
    - **效能**：熱路徑、DB 查詢、I/O、前端渲染與 Bundle 大小影響；避免 N+1 與冗餘運算。
    - **安全性**：輸入信任邊界、權限與授權、注入 / XSS / CSRF / SSRF、敏感資料外洩風險。
-3. **決策落地**：選定方案的「理由與被拒方案」必須記入 PR 描述、commit body 或 `~/.claude/plans/` 對應計畫文件，禁止只留下程式碼差異。
+3. **決策落地（強制記錄為 ADR）**：選定方案的「理由與被拒方案」必須依 [docs/decisions/index.md](../../docs/decisions/index.md) 的規則新增一份 ADR 文件並更新索引表，這是可被下一個 session 讀到的**唯一權威記錄**；PR 描述、commit body 或 `~/.claude/plans/` 計畫文件可以補充細節，但不能取代 ADR。
+4. **修改前必查 ADR**：修改任何模組前，先依 [docs-router.md](docs-router.md) 的規則檢查 `docs/decisions/index.md` 是否已有該模組的決策；若有，必須先讀取並遵守，不得在不知情下重複調整或推翻先前決策。需要正式推翻時，依該索引文件的「推翻舊決策」流程（標記 Superseded、新增新 ADR 並註明理由），不得直接覆蓋。
 
 **例外條款**
 
 - 僅限「生產緊急事故 hotfix」或「使用者明確指示 minimal patch」時，可暫採局部修正。
-- 須同步建立 follow-up 任務（PR 描述、commit body、`~/.claude/plans/` 計畫文件或 issue tracker），於下一個迭代完成完整重構，不得無限期延後。
+- 須同步建立 follow-up 任務（PR 描述、commit body、`~/.claude/plans/` 計畫文件或 issue tracker），於下一個迭代完成完整重構，不得無限期延後；即便是暫時性局部修正，只要涉及方案取捨仍須依上述規則建立 ADR。
 
 **驗證義務**
 

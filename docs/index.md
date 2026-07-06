@@ -30,6 +30,11 @@
 ## 🛠️ 4. 系統改善與開發規劃 (Maintenance & Planning)
 對未來的技術優化與功能擴展進行整理與規劃。若新增 roadmap 或 refactor plan，請先建立對應文件再加入本索引，避免索引指向不存在的路徑。
 
+## 📝 4a. 設計決策紀錄 (Design Decision Records)
+所有非顯而易見的架構/方案取捨決策，皆以 ADR 形式記錄，修改對應模組前必須先讀取並遵守。
+
+- **[決策索引 (Decisions Index)](./decisions/index.md)**：ADR 命名規則、範本、推翻舊決策流程與完整索引表。
+
 ---
 
 ## 📖 5. 系統完整文件 (Comprehensive System Docs)
