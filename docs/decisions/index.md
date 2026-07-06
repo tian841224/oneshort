@@ -64,3 +64,4 @@
 | [ADR-0008](0008-find-mobile-chat-channel-switcher-parity.md) | `/find` 手機聊天 sheet 改用共用頻道切換內容，與其他頁面行為一致 | Accepted | 2026-07-05 | frontend-rwd / chat |
 | [ADR-0009](0009-silent-background-guide-state-writes.md) | 自動背景 guide-state 寫入（成員顏色）在雙重衝突時不彈出使用者錯誤提示 | Accepted | 2026-07-05 | frontend / guide-widgets / party |
 | [ADR-0010](0010-character-primary-guard-atomicity.md) | 角色刪除／停用的 primary 保護改為原子化 SQL 條件，並允許唯一角色停用 | Accepted | 2026-07-05 | backend / user |
+| [ADR-0011](0011-guild-preference-auto-schedule-persistence.md) | 公會成員偏好正規化在無 BOSS/時段選擇時不再誤丟 `auto_schedule` | Accepted | 2026-07-06 | backend / guild |
