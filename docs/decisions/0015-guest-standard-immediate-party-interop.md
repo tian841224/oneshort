@@ -1,4 +1,4 @@
-# ADR-0012: 訪客帳號與登入帳號整合——一般即時隊伍互通
+# ADR-0015: 訪客帳號與登入帳號整合——一般即時隊伍互通
 
 - 狀態: Accepted（部分推翻 [docs/features/guest-mode-plan.md](../features/guest-mode-plan.md) 的 Locked Decisions）
 - 日期: 2026-07-07

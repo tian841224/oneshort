@@ -1029,7 +1029,7 @@ PUT 補充說明：
 
 ---
 
-### 訪客一般即時隊伍互通 (Guest Standard Party Interop, [ADR-0012](decisions/0012-guest-standard-immediate-party-interop.md))
+### 訪客一般即時隊伍互通 (Guest Standard Party Interop, [ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md))
 
 以下 `guest-*` 端點只適用「一般即時公開隊伍」（`scheduled_at=null`、非公會、非 quick）。已登入使用者呼叫同一端點會直接委派給對應的一般 actor 端點，行為等價；未登入訪客則以 `quick_guest_token` cookie（24h HttpOnly）識別，帳號不落 Postgres，資料以 Redis snapshot 呈現（`leader_guest_*`、`filled_by_is_guest`、`applicant_is_guest`/`guest_applicant` 欄位）。
 
