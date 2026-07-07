@@ -56,7 +56,7 @@ OneShort 的核心模組，提供靈活且即時的遊戲組隊體驗。
     - 隊伍若在自動隱藏後仍沒有新更新，系統會在總閒置滿 2 小時時自動改為 `CLOSED`。
     - `CLOSED` 為最終唯讀狀態，只供查詢，不可重新顯示、解散、調整容量或修改任何 slot 資料。
 
-- **訪客（未登入）參與一般即時隊伍**（[ADR-0015](../decisions/0012-guest-standard-immediate-party-interop.md)）:
+- **訪客（未登入）參與一般即時隊伍**（[ADR-0015](../decisions/0015-guest-standard-immediate-party-interop.md)）:
     - 未登入訪客（以 `quick_guest_token` cookie 識別，帳號本身不落 Postgres）可以建立、申請、擔任隊長於**一般即時公開隊伍**（`scheduled_at IS NULL`、非公會、非 quick）；排程隊伍、公會隊伍不開放訪客。
     - 訪客建隊/申請走獨立的 `guest-*` 端點（`POST /parties/guest`、`POST /parties/{id}/guest-applications` 等，見 [api-reference.md](../api-reference.md)），已登入使用者呼叫這些端點時會直接委派給一般的 `CreateParty`/`Apply` 流程，行為等價。
     - 訪客隊長擁有與 actor 隊長對等的管理能力：審核/接受/拒絕申請、踢除成員、關團、閒置確認、修改安全欄位（不含排程與成員異動以外的設定）。

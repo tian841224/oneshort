@@ -2,7 +2,7 @@
 
 ## Implementation Status (2026-07-07 校正：ADR-0015 推翻部分 Locked Decisions)
 
-> ⚠️ **本段以下的「Locked Decisions」表格，其互通性/聊天/`allow_guest_players` 相關條目已被 [ADR-0015](../decisions/0012-guest-standard-immediate-party-interop.md) 正式推翻**：訪客現在可以建立/申請一般即時公開隊伍、可以擔任隊長、可以雙向申請登入者的隊伍（反之亦然），v1 已納入訪客聊天，且 `allow_quick_login_players` 語意已擴張為同時涵蓋訪客。詳見下方「ADR-0015 後的現況」段落；本節以下（Implementation Status 2026-06-25 校正之後）保留作為 quick-guest 系統的歷史脈絡，不再是完整現況。
+> ⚠️ **本段以下的「Locked Decisions」表格，其互通性/聊天/`allow_guest_players` 相關條目已被 [ADR-0015](../decisions/0015-guest-standard-immediate-party-interop.md) 正式推翻**：訪客現在可以建立/申請一般即時公開隊伍、可以擔任隊長、可以雙向申請登入者的隊伍（反之亦然），v1 已納入訪客聊天，且 `allow_quick_login_players` 語意已擴張為同時涵蓋訪客。詳見下方「ADR-0015 後的現況」段落；本節以下（Implementation Status 2026-06-25 校正之後）保留作為 quick-guest 系統的歷史脈絡，不再是完整現況。
 
 ## ADR-0015 後的現況（2026-07-07）
 
@@ -17,7 +17,7 @@
 | 登入後自動認領 | `POST /parties/guest-claim`，登入時前端自動呼叫 |
 | `allow_quick_login_players` | 語意擴張為「允許未綁 Discord 的參與者（quick-login actor + 訪客）」，未新增欄位 |
 
-完整設計、資料模型、被拒方案見 [ADR-0015](../decisions/0012-guest-standard-immediate-party-interop.md)。quick party（獨立系統，`is_quick=true`）行為不變，見下方 v1 規格與現況表。
+完整設計、資料模型、被拒方案見 [ADR-0015](../decisions/0015-guest-standard-immediate-party-interop.md)。quick party（獨立系統，`is_quick=true`）行為不變，見下方 v1 規格與現況表。
 
 ## Implementation Status (2026-06-25 校正)
 
@@ -68,7 +68,7 @@ OneShort 現行正式身分模型已收斂到 `actor + current_character`。後�
 
 ### Out Of Scope For V1
 
-- ~~guest 申請 actor-owned party~~ **已由 [ADR-0015](../decisions/0012-guest-standard-immediate-party-interop.md) 推翻**：訪客現在可以申請一般即時隊伍，無論隊長是訪客或登入者。
+- ~~guest 申請 actor-owned party~~ **已由 [ADR-0015](../decisions/0015-guest-standard-immediate-party-interop.md) 推翻**：訪客現在可以申請一般即時隊伍，無論隊長是訪客或登入者。
 - ~~guest websocket 訂閱、guest personal room、guest notifications~~ **已由 ADR-0015 推翻**：訪客的個人房通知已可送達（沿用 quick party 既有的 token-hash 導出 UUID 機制）。
 - ~~guest chat membership 或 guest chat history~~ **已由 ADR-0015 推翻**：v1 已納入訪客聊天（不含歷史訊息持久化以外的既有聊天機制）。
 - guest application migration；訪客登入後若曾申請其他隊伍，v1 要求重新以 actor 身分申請。**已由 ADR-0015 推翻**：登入時 `POST /parties/guest-claim` 會自動改寫待審申請的申請人身分，不需要重新申請。
@@ -80,7 +80,7 @@ OneShort 現行正式身分模型已收斂到 `actor + current_character`。後�
 
 ## Locked Decisions
 
-> 下表為 quick-guest 系統原始設計時的決定；標註「已推翻」的條目其現況見 [ADR-0015](../decisions/0012-guest-standard-immediate-party-interop.md)，此處保留原文供歷史對照。
+> 下表為 quick-guest 系統原始設計時的決定；標註「已推翻」的條目其現況見 [ADR-0015](../decisions/0015-guest-standard-immediate-party-interop.md)，此處保留原文供歷史對照。
 
 | 項目 | 決定 | 現況 |
 |------|------|------|

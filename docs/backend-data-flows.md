@@ -465,7 +465,7 @@ Redis-only 立即隊伍補充：
 - cancel、delete party、idle auto-expire 會同步刪除對應 `application:party:*`，並從 `actor:app_refs:*` 移除 `partyID:applicationID`。
 - cancel 不呼叫 refreshRecruitUntil；取消不代表隊伍有新活動。
 
-### 2.4A 訪客一般即時隊伍互通資料流（[ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md)）
+### 2.4A 訪客一般即時隊伍互通資料流（[ADR-0015](decisions/0015-guest-standard-immediate-party-interop.md)）
 
 ```
 POST /parties/guest（訪客建立）:

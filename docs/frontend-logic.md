@@ -138,7 +138,7 @@ Quick Login：
 6. `discord_only`：阻止 quick login，提示改用 Discord
 7. 成功後寫入 `{ actor, current_character }`，優先導回開啟登入視窗前的站內畫面，無記錄時導回首頁
 
-### 2.2A 登入後訪客隊伍認領（[ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md)）
+### 2.2A 登入後訪客隊伍認領（[ADR-0015](decisions/0015-guest-standard-immediate-party-interop.md)）
 
 1. Quick Login 成功（`LoginEntryPanel.handleQuickLogin`）與 Discord **登入**成功（`auth/discord/callback/page.tsx`，僅限一般登入，**不含**帳號綁定 `intent=link`，因為綁定不會有訪客身分需要遷移）之後，皆會呼叫 `claimGuestPartiesAfterLogin(queryClient)`（`src/lib/auth/claimGuestParties.ts`）。
 2. 該函式呼叫 `partyApi.claimGuest()`（`POST /api/v1/parties/guest-claim`）；沒有 `quick_guest_token` cookie 時後端回 204，前端直接略過。

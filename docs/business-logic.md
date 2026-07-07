@@ -207,7 +207,7 @@ Apply (申請加入):
      - `character_id` 必填，需通過角色所有權驗證
   2. 取得隊伍資訊
      - 若 `allow_quick_login_players=false`，且 actor `linked_providers` 只有 `quick_login`、未綁 `discord` → 直接拒絕
-     - `allow_quick_login_players=false` 同時也會擋下訪客（未登入 guest）申請；語意已擴張為「允許未綁 Discord 的參與者」，見 [ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md) 與下方 §2.10
+     - `allow_quick_login_players=false` 同時也會擋下訪客（未登入 guest）申請；語意已擴張為「允許未綁 Discord 的參與者」，見 [ADR-0015](decisions/0015-guest-standard-immediate-party-interop.md) 與下方 §2.10
   3. 密碼驗證（若需要）：
      - 隊長帳號擁有者免密碼
      - 其他人需提供正確密碼（比對明文）
@@ -365,7 +365,7 @@ Worker 生命週期:
 - 最後提醒：閒置 1 小時 55 分
 - 自動關閉：總閒置 2 小時
 
-### 2.10 訪客（未登入）互通（[ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md)）
+### 2.10 訪客（未登入）互通（[ADR-0015](decisions/0015-guest-standard-immediate-party-interop.md)）
 
 **適用範圍**：只有「一般即時公開隊伍」（`scheduled_at IS NULL`、`guild_id IS NULL`、`is_quick=false`）開放訪客參與；排程隊伍、公會隊伍不開放（訪客 session 24h TTL 與未來時間承諾矛盾；公會功能本就要求登入）。
 
@@ -506,7 +506,7 @@ CancelPendingRequests:
 - `is_scheduled=true` 的 activity_lock 記錄標記為預約
 - 活動開始時才轉為正式佔用
 
-### 6.3 訪客排他鎖（[ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md)）
+### 6.3 訪客排他鎖（[ADR-0015](decisions/0015-guest-standard-immediate-party-interop.md)）
 
 訪客沒有 `characters` 資料列，`activity_presence_locks.character_id` 有 FK 約束，無法直接沿用本節機制。訪客改用 Redis 鎖 `quick:guest:activity:{guestID}`（`SET NX`，TTL 2 小時，語意對應本節 `expires_at` 預設值）；申請/接受/踢人/離隊時的鎖分支一律依「申請人／成員自身」是否為訪客（`applicant_is_guest`/`filled_by_is_guest`）決定走 DB 排他鎖或 Redis 訪客鎖，與隊伍本身是訪客還是 actor 建立無關——訪客可以申請 actor 的隊伍、actor 也可以申請訪客的隊伍，兩種組合都必須各自正確處理。詳見 §2.10。
 
