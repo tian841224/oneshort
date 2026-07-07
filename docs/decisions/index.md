@@ -66,3 +66,4 @@
 | [ADR-0010](0010-character-primary-guard-atomicity.md) | 角色刪除／停用的 primary 保護改為原子化 SQL 條件，並允許唯一角色停用 | Accepted | 2026-07-05 | backend / user |
 | [ADR-0011](0011-guild-preference-auto-schedule-persistence.md) | 公會成員偏好正規化在無 BOSS/時段選擇時不再誤丟 `auto_schedule` | Accepted | 2026-07-06 | backend / guild |
 | [ADR-0012](0012-guide-widget-write-serialization.md) | 前端 guide-widget 寫入改為單一 widget 序列化佇列，取代逐次獨立 mutate | Accepted | 2026-07-07 | frontend / guide-widgets / party |
+| [ADR-0013](0013-update-party-viewer-capabilities.md) | `UpdateParty`（PATCH /parties/{id}）回應補上 `ViewerCapabilities`，修正隱藏隊伍後隊長按鈕消失 | Accepted | 2026-07-07 | backend / party |
