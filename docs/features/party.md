@@ -56,6 +56,14 @@ OneShort 的核心模組，提供靈活且即時的遊戲組隊體驗。
     - 隊伍若在自動隱藏後仍沒有新更新，系統會在總閒置滿 2 小時時自動改為 `CLOSED`。
     - `CLOSED` 為最終唯讀狀態，只供查詢，不可重新顯示、解散、調整容量或修改任何 slot 資料。
 
+- **訪客（未登入）參與一般即時隊伍**（[ADR-0012](../decisions/0012-guest-standard-immediate-party-interop.md)）:
+    - 未登入訪客（以 `quick_guest_token` cookie 識別，帳號本身不落 Postgres）可以建立、申請、擔任隊長於**一般即時公開隊伍**（`scheduled_at IS NULL`、非公會、非 quick）；排程隊伍、公會隊伍不開放訪客。
+    - 訪客建隊/申請走獨立的 `guest-*` 端點（`POST /parties/guest`、`POST /parties/{id}/guest-applications` 等，見 [api-reference.md](../api-reference.md)），已登入使用者呼叫這些端點時會直接委派給一般的 `CreateParty`/`Apply` 流程，行為等價。
+    - 訪客隊長擁有與 actor 隊長對等的管理能力：審核/接受/拒絕申請、踢除成員、關團、閒置確認、修改安全欄位（不含排程與成員異動以外的設定）。
+    - 訪客與登入使用者可以**雙向互相申請對方的隊伍**（訪客申請 actor 建立的隊伍、actor 申請訪客建立的隊伍皆合法），`allow_quick_login_players=false` 時兩者皆會被擋下（語意已擴張為涵蓋訪客，見 ADR-0012）。
+    - 訪客可以在其參與的一般即時隊伍中收發聊天訊息，資料層以 Redis snapshot（`leader_guest_*`、`filled_by_is_guest`、`applicant_is_guest`/`guest_applicant` 欄位）呈現，不新增 DB schema。
+    - **登入自動認領**：訪客登入（quick-login 或 Discord）後，前端會呼叫 `POST /parties/guest-claim`，把訪客名下的一般即時隊伍與 quick party 身分改寫為登入帳號；per-party best-effort，單一隊伍認領失敗（無目前角色、活動衝突等）不影響其他隊伍。
+
 ---
 
 ## 2. 前後端組件對應 (Code Mapping)
@@ -64,11 +72,13 @@ OneShort 的核心模組，提供靈活且即時的遊戲組隊體驗。
 - **Domain**: `backend/internal/party/domain.go` (Entity: `Party`, `Slot`, `Application`)。
 - **Usecase**: `backend/internal/party/usecase.go` (核心邏輯: `CreateParty`, `Apply`, `ReviewApplication`, `ReplaceParty`)。
 - **Repository**: `backend/internal/party/repository.go` (SQL Query、Redis immediate party cache 與 Transaction 管理)。
+- **訪客互通**（ADR-0012）：`backend/internal/party/usecase_guest_party.go`（建隊/申請）、`usecase_guest_party_management.go`（隊長管理）、`usecase_guest_claim.go`（登入認領）、`handler_guest_party.go`／`handler_guest_party_management.go`／`handler_guest_claim.go`（HTTP 層）。
 
 ### **前端 (Frontend)**
 - **Page**: `frontend/src/app/(main)/_components/PartyHome.tsx` 與 lazy-loaded workspace。
 - **Components**: `frontend/src/components/party/` (Cards, Forms, SlotList, Detail/Edit views)。
 - **Store**: 基於 TanStack Query 的 `['party']` 系列 hooks。
+- **訪客互通**（ADR-0012）：`frontend/src/lib/api/partyApi.ts`（`createGuest`/`applyAsGuest`/`claimGuest` 等）、`frontend/src/hooks/useViewerIdentity.ts`、`frontend/src/lib/auth/claimGuestParties.ts`（登入後自動認領）。訪客建隊/申請的完整 UI（`QuickGuestIdentityPrompt` 擴充職業/等級、建隊頁與隊伍卡片渲染）為後續 UI 專案，資料層已就緒。
 
 ---
 

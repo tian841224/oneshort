@@ -465,6 +465,65 @@ Redis-only 立即隊伍補充：
 - cancel、delete party、idle auto-expire 會同步刪除對應 `application:party:*`，並從 `actor:app_refs:*` 移除 `partyID:applicationID`。
 - cancel 不呼叫 refreshRecruitUntil；取消不代表隊伍有新活動。
 
+### 2.4A 訪客一般即時隊伍互通資料流（[ADR-0012](decisions/0012-guest-standard-immediate-party-interop.md)）
+
+```
+POST /parties/guest（訪客建立）:
+1. quickViewerFromRequestWithProfile：解析 JWT（登入者直接委派給 CreateParty）或 quick_guest_token cookie
+   → EnsureQuickGuestProfile 寫入/更新 Redis `quick:guest:{sha256(token)}` hash（display_name/job_class_id/level）
+2. CreateStandardPartyAsGuest：
+   - 強制 scheduled_at=null、guild_id=null、visibility=PUBLIC、is_quick=false
+   - leader_slot_order 對應 slot 的 FilledBy 設為 guestID（quickGuestIdentityID(tokenHash)）
+   - 取得 Redis 鎖 quick:guest:activity:{guestID}（SET NX，TTL 2h，值=partyID）；已被其他仍開啟的隊伍佔用則回 409
+3. repository.CreateParty 的 Redis-only 分支寫入 party:data:*，並在 party.LeaderGuestID/LeaderGuestName/LeaderGuestJob/LeaderGuestLevel 填入快照；
+   syncCharacterPartyRefs 會自動把 guestID 收進 character:member_party_refs:{guestID}（供登入認領反查）
+4. 設定 Set-Cookie: quick_guest_token（若為新建立的訪客身分）
+
+POST /parties/:id/guest-applications（訪客申請）:
+1. 同上解析 viewer；隊伍必須是 !IsQuick && ScheduledAt=nil && GuildID=nil && Visibility=PUBLIC
+2. ApplyAsGuest：allow_quick_login_players=false 直接拒絕；密碼驗證同 actor 流程
+3. join_requires_approval=false：
+   - 取得 quick:guest:activity:{guestID} 鎖（衝突回 409）
+   - repository.CreateApplication 的 guest 分支：Application.ApplicantID=guestID、ApplicantIsGuest=true、
+     GuestApplicant={display_name,job_class,level}，寫入 party:apps:{partyID} list + actor:app_refs:{guestID} set
+     （**不**寫入 character:app_party_refs zset，該索引只在後續 Accept/Reject/Cancel 時才由
+     replaceRedisApplicationListWithTTL 補上；登入認領因此改讀 actor:app_refs，見 §2.7B）
+   - AcceptApplication：loadApplicantProfile 依 ApplicantIsGuest 從 GuestApplicant 合成 profile（不查 characters 表）；
+     assignFilledSlot 設 FilledByIsGuest=true；通知走 personalRoomID(&guestID)（"actor:{guestID}" 房間格式與真實
+     actor 通知共用同一 room-id scheme，通知 hub 不需要另外辨識訪客）
+4. join_requires_approval=true：只建立 PENDING 申請，不取鎖（鎖只在 Accept 時才需要）
+```
+
+**隊長端（審核/踢人/關團/閒置確認/設定）**：`guest-*` 系列端點共用 actor 版本的核心變異邏輯（`reviewApplicationCore`、`KickSlotMember` 的 Redis 分支等），差異只在權限判定（`isGuestLeader` 比對 `party.LeaderGuestID` vs `isActorLeader` 走 DB 驗證）。**關鍵修正**：`joinOngoingActivity`/`leaveOngoingActivity(ForApplicant)`/`cancelCompetingPendingApplications` 一律依申請人/成員**自身**的 `ApplicantIsGuest`/`FilledByIsGuest` 決定走 DB `activity_presence_locks` 或 Redis 訪客鎖，與隊伍隊長是誰無關——訪客申請 actor 隊伍、actor 申請訪客隊伍都必須各自正確處理（否則會在 DB 排他鎖對訪客 UUID 執行 INSERT 時 FK 違反）。
+
+### 2.7B POST /parties/guest-claim（登入後認領訪客隊伍）
+
+```
+1. 需認證（Auth 群組）；middleware.GetIdentity(c) 取得登入者 identity，token, _ := c.Cookie("quick_guest_token")
+   無 cookie → 204
+2. tokenHash = quickGuestTokenHash(token)；guestID = quickGuestIdentityID(tokenHash)
+3. 找出訪客名下的隊伍：
+   a. 一般即時隊伍：character:member_party_refs:{guestID}（隊長/成員）∪ actor:app_refs:{guestID}（待審申請，
+      解析 "partyID:appID" 取 partyID）——兩者皆為既有索引，無需新增訪客專屬索引
+   b. quick party：無反查索引可用（QuickParticipants/QuickApplications 從未寫入 character:member_party_refs），
+      改為 ZRANGE party:list:immediate 取得所有目前開啟的即時隊伍 ID，repository.GetQuickPartiesByIDs 批次 MGET
+      後逐一比對 TokenHash == tokenHash
+4. 去重後逐一處理（per-party best-effort，個別失敗互不影響）：
+   - claimStandardParty：lockQuickParty(partyID) → GetParty →
+     * 為隊長 → 無目前角色則 skip(NO_CHARACTER)；exclusion.JoinActivity 失敗則 skip(ACTIVITY_CONFLICT)；
+       成功則 LeaderID/LeaderUserID=登入角色、清空 LeaderGuest*、隊長 slot 改寫（FilledByIsGuest=false）
+     * 為一般成員 → 同上檢查；slot 職業/等級不符 → 仍完成改寫，回應加 warning(SLOT_REQUIREMENT_MISMATCH)，不逐出
+     * saveQuickImmediateParty 持久化後，若鎖仍指向本隊伍才釋放 quick:guest:activity:{guestID}
+   - claimStandardApplication：repository.ClaimGuestApplication 直接改寫 party:apps:{partyID} 內對應項目的
+     ApplicantID/ApplicantIsGuest/Character/GuestApplicant，並把 actor:app_refs 從 guestID 搬到登入者 actorID
+     （不需要活動鎖，pending 申請本就未持有鎖）
+   - claimQuickParty：改寫 QuickParticipants/QuickApplications 內 TokenHash 從訪客 hash 改為 "actor:"+actorID；
+     若登入者已用自己身分獨立存在於同一 party，去重時保留登入者身分、捨棄訪客重複項目
+5. 回傳 { claimed[], skipped[], warnings[] }；成功後清除 quick_guest_token cookie
+```
+
+**冪等性**：已認領的隊伍在下一次呼叫時，其 Redis 反查索引/TokenHash 已不再指向該訪客身分，掃描階段自然不會再找到，故重複呼叫此端點是安全的。
+
 ### 2.5.1 Slot 編輯 API（新增 / 更新 / 刪除）
 
 ```

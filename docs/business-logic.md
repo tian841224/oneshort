@@ -207,6 +207,7 @@ Apply (申請加入):
      - `character_id` 必填，需通過角色所有權驗證
   2. 取得隊伍資訊
      - 若 `allow_quick_login_players=false`，且 actor `linked_providers` 只有 `quick_login`、未綁 `discord` → 直接拒絕
+     - `allow_quick_login_players=false` 同時也會擋下訪客（未登入 guest）申請；語意已擴張為「允許未綁 Discord 的參與者」，見 [ADR-0012](decisions/0012-guest-standard-immediate-party-interop.md) 與下方 §2.10
   3. 密碼驗證（若需要）：
      - 隊長帳號擁有者免密碼
      - 其他人需提供正確密碼（比對明文）
@@ -364,6 +365,26 @@ Worker 生命週期:
 - 最後提醒：閒置 1 小時 55 分
 - 自動關閉：總閒置 2 小時
 
+### 2.10 訪客（未登入）互通（[ADR-0012](decisions/0012-guest-standard-immediate-party-interop.md)）
+
+**適用範圍**：只有「一般即時公開隊伍」（`scheduled_at IS NULL`、`guild_id IS NULL`、`is_quick=false`）開放訪客參與；排程隊伍、公會隊伍不開放（訪客 session 24h TTL 與未來時間承諾矛盾；公會功能本就要求登入）。
+
+**訪客身分**：以 `quick_guest_token` cookie（24h HttpOnly）識別，帳號本身完全不落 Postgres；訪客資料（暱稱、職業、等級）只存在於 Redis `quick:guest:{sha256(token)}` hash 與該隊伍的 Redis snapshot（`leader_guest_*`、`filled_by_is_guest`、`applicant_is_guest`/`guest_applicant` 欄位）。
+
+**訪客可執行的操作**（皆有對應 `guest-*` 端點，已登入使用者呼叫同一端點會直接委派給一般流程）：
+- 建立一般即時公開隊伍並自動擔任隊長。
+- 申請/加入一般即時公開隊伍——雙向皆可：訪客可申請 actor 建立的隊伍，actor 也可申請訪客建立的隊伍。
+- 隊長身分下的所有管理操作：審核/接受/拒絕申請、踢除成員、關團、閒置確認、修改安全欄位（`PATCH`/`PUT guest-settings`，不含排程與「新增非既有成員」以外的成員異動）。
+- 在其參與的隊伍中收發聊天。
+
+**活動排他鎖**：訪客沒有 `characters` 資料列，無法使用 `activity_presence_locks`（`character_id` 有 FK 約束）。改用 Redis 鎖 `quick:guest:activity:{guestID}`（`SET NX`，TTL 2 小時，語意對應 `activity_presence_locks.expires_at` 預設值）：值為目前佔用的 party ID；鎖衝突時檢查所持有的隊伍是否仍開啟，已關閉/不存在則視為過期並接管。
+
+**登入自動認領**：訪客登入（quick-login 或 Discord OAuth）成功後，前端會呼叫 `POST /parties/guest-claim`（需登入態，伺服器端讀取 `quick_guest_token` cookie），把訪客名下的一般即時隊伍與 quick party 身分改寫為登入帳號：
+- 訪客為隊長 → 通過 `activity_presence_locks` 檢查後，`leader_id`/`leader_user_id` 改為登入角色，清空 `leader_guest_*`
+- 訪客為一般成員 → 同上檢查後改寫該 slot；若角色不符合 slot 的職業/等級限制，**不逐出**，只在回應中標記 `SLOT_REQUIREMENT_MISMATCH` 警告
+- 訪客有待審申請 → 直接改寫申請人身分，不需要重新申請
+- 每個隊伍各自獨立判定（per-party best-effort）：單一隊伍認領失敗（無目前角色 `NO_CHARACTER`、活動衝突 `ACTIVITY_CONFLICT`、隊伍已關閉 `PARTY_CLOSED`、鎖忙碌 `LOCK_BUSY`）不影響其他隊伍；整個操作是冪等的，可安全重試
+
 ---
 
 ## 三、席位管理 (Slots)
@@ -484,6 +505,10 @@ CancelPendingRequests:
 - `scheduled_at` 在未來 → 加入時**不**佔用排他鎖
 - `is_scheduled=true` 的 activity_lock 記錄標記為預約
 - 活動開始時才轉為正式佔用
+
+### 6.3 訪客排他鎖（[ADR-0012](decisions/0012-guest-standard-immediate-party-interop.md)）
+
+訪客沒有 `characters` 資料列，`activity_presence_locks.character_id` 有 FK 約束，無法直接沿用本節機制。訪客改用 Redis 鎖 `quick:guest:activity:{guestID}`（`SET NX`，TTL 2 小時，語意對應本節 `expires_at` 預設值）；申請/接受/踢人/離隊時的鎖分支一律依「申請人／成員自身」是否為訪客（`applicant_is_guest`/`filled_by_is_guest`）決定走 DB 排他鎖或 Redis 訪客鎖，與隊伍本身是訪客還是 actor 建立無關——訪客可以申請 actor 的隊伍、actor 也可以申請訪客的隊伍，兩種組合都必須各自正確處理。詳見 §2.10。
 
 ---
 

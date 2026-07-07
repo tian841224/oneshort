@@ -1,5 +1,24 @@
 # OneShort 訪客快速使用 (Guest Mode) v1 規劃
 
+## Implementation Status (2026-07-07 校正：ADR-0012 推翻部分 Locked Decisions)
+
+> ⚠️ **本段以下的「Locked Decisions」表格，其互通性/聊天/`allow_guest_players` 相關條目已被 [ADR-0012](../decisions/0012-guest-standard-immediate-party-interop.md) 正式推翻**：訪客現在可以建立/申請一般即時公開隊伍、可以擔任隊長、可以雙向申請登入者的隊伍（反之亦然），v1 已納入訪客聊天，且 `allow_quick_login_players` 語意已擴張為同時涵蓋訪客。詳見下方「ADR-0012 後的現況」段落；本節以下（Implementation Status 2026-06-25 校正之後）保留作為 quick-guest 系統的歷史脈絡，不再是完整現況。
+
+## ADR-0012 後的現況（2026-07-07）
+
+在既有 quick-guest（quick party）系統之外，訪客現在**額外**可以參與「一般即時隊伍」（`internal/party` 的 `CreateParty`/`Apply` 家族，`scheduled_at IS NULL && guild_id IS NULL` 的 Redis-only 即時公開隊伍）：
+
+| 能力 | 現況 |
+|---|---|
+| 訪客建立一般即時隊伍（含當隊長） | `POST /parties/guest`；強制 immediate/public/非 quick，見 ADR-0012 |
+| 訪客申請一般即時隊伍（含申請登入者的隊伍） | `POST /parties/{id}/guest-applications` |
+| 訪客隊長管理（審核/踢人/關團/閒置確認/設定） | `/parties/{id}/guest-*` 系列端點 |
+| 訪客聊天 | v1 已納入（`usecase_lookup.go` guest 分支） |
+| 登入後自動認領 | `POST /parties/guest-claim`，登入時前端自動呼叫 |
+| `allow_quick_login_players` | 語意擴張為「允許未綁 Discord 的參與者（quick-login actor + 訪客）」，未新增欄位 |
+
+完整設計、資料模型、被拒方案見 [ADR-0012](../decisions/0012-guest-standard-immediate-party-interop.md)。quick party（獨立系統，`is_quick=true`）行為不變，見下方 v1 規格與現況表。
+
 ## Implementation Status (2026-06-25 校正)
 
 > ⚠️ 本段先前宣稱於 `feature/guest-mode-v1` 分支實作 v1——但該分支在 frontend / backend 兩個 repo（含 origin）**都不存在**，`internal/guest`、`guestProfileStore.ts` 等規格命名的檔案也從未進入 git 歷史。先前敘述視為**過期 / 未採用的設計提案**。
@@ -49,27 +68,29 @@ OneShort 現行正式身分模型已收斂到 `actor + current_character`。後�
 
 ### Out Of Scope For V1
 
-- guest 申請 actor-owned party。
-- guest websocket 訂閱、guest personal room、guest notifications。
-- guest chat membership 或 guest chat history。
-- guest application migration；訪客登入後若曾申請其他隊伍，v1 要求重新以 actor 身分申請。
-- scheduled party、guild party、password party 的 guest 建立或加入。
-- 新增 `allow_guest_players` DB 欄位；v1 保留現有 `allow_quick_login_players` 語意不變。
-- 跨裝置還原訪客資料、訪客頭像、訪客資料長期保存、TTL 延長 UI。
+- ~~guest 申請 actor-owned party~~ **已由 [ADR-0012](../decisions/0012-guest-standard-immediate-party-interop.md) 推翻**：訪客現在可以申請一般即時隊伍，無論隊長是訪客或登入者。
+- ~~guest websocket 訂閱、guest personal room、guest notifications~~ **已由 ADR-0012 推翻**：訪客的個人房通知已可送達（沿用 quick party 既有的 token-hash 導出 UUID 機制）。
+- ~~guest chat membership 或 guest chat history~~ **已由 ADR-0012 推翻**：v1 已納入訪客聊天（不含歷史訊息持久化以外的既有聊天機制）。
+- guest application migration；訪客登入後若曾申請其他隊伍，v1 要求重新以 actor 身分申請。**已由 ADR-0012 推翻**：登入時 `POST /parties/guest-claim` 會自動改寫待審申請的申請人身分，不需要重新申請。
+- scheduled party、guild party、password party 的 guest 建立或加入。**password party 部分已由 ADR-0012 推翻**（訪客可申請有密碼保護的一般即時隊伍）；scheduled/guild party 仍維持排除。
+- ~~新增 `allow_guest_players` DB 欄位；v1 保留現有 `allow_quick_login_players` 語意不變~~ **語意本身已由 ADR-0012 擴張**：`allow_quick_login_players` 現在同時涵蓋「未綁 Discord 的 actor」與「訪客」，但確實未新增新欄位（與本條「不新增欄位」的字面決定一致，只是語意範圍變了）。
+- 跨裝置還原訪客資料、訪客頭像、訪客資料長期保存、TTL 延長 UI。（此條不受 ADR-0012 影響，仍為 Out of Scope）
 
 ---
 
 ## Locked Decisions
 
-| 項目 | 決定 |
-|------|------|
-| 身分模型 | 新增 `Principal(kind=actor\|guest\|anonymous)` 作為 optional identity contract |
-| 儲存策略 | guest session/profile/party 放 Redis + localStorage，TTL 4h；不新增匿名 guest Postgres 寫入 |
-| v1 互通性 | 只支援 actor 申請或加入 guest-owned party；guest 不能申請 actor-owned party |
-| 訪客 party 限制 | 強制 immediate public party，`scheduled_at = null`，不支援 guild/password |
-| 訪客登入後 | guest-owned Redis party 改成 actor-owned immediate Redis party；沿用 immediate Redis party 生命週期 |
-| Quick Login | 不改 `allow_quick_login_players` 行為，不把 guest 當 quick-login actor |
-| Realtime | v1 不改 notify hub subscriber model，不新增 guest websocket |
+> 下表為 quick-guest 系統原始設計時的決定；標註「已推翻」的條目其現況見 [ADR-0012](../decisions/0012-guest-standard-immediate-party-interop.md)，此處保留原文供歷史對照。
+
+| 項目 | 決定 | 現況 |
+|------|------|------|
+| 身分模型 | 新增 `Principal(kind=actor\|guest\|anonymous)` 作為 optional identity contract | 未採用此命名；實際落地為 `pkg/identity.Identity{Kind: actor\|discord\|guest}`（見上方 Implementation Status 2026-06-25 校正） |
+| 儲存策略 | guest session/profile/party 放 Redis + localStorage，TTL 4h；不新增匿名 guest Postgres 寫入 | 仍成立，ADR-0012 未變動此點；quick-guest session TTL 實際為 24h（`quickGuestSessionTTL`），非本文件原訂的 4h |
+| v1 互通性 | 只支援 actor 申請或加入 guest-owned party；guest 不能申請 actor-owned party | **已由 ADR-0012 推翻**：雙向皆可申請 |
+| 訪客 party 限制 | 強制 immediate public party，`scheduled_at = null`，不支援 guild/password | **password 部分已由 ADR-0012 推翻**（訪客可申請/建立有密碼的一般即時隊伍）；immediate/public/非 guild 仍成立 |
+| 訪客登入後 | guest-owned Redis party 改成 actor-owned immediate Redis party；沿用 immediate Redis party 生命週期 | 仍成立，並由 ADR-0012 新增了對應的一般即時隊伍認領流程（`POST /parties/guest-claim`） |
+| Quick Login | 不改 `allow_quick_login_players` 行為，不把 guest 當 quick-login actor | **語意已由 ADR-0012 擴張**：`allow_quick_login_players` 現在也同時阻擋/放行訪客申請一般即時隊伍 |
+| Realtime | v1 不改 notify hub subscriber model，不新增 guest websocket | 仍成立（未新增獨立的 guest websocket），但**訪客聊天已由 ADR-0012 納入**一般即時隊伍 |
 
 ---
 
