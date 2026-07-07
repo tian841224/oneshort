@@ -138,6 +138,17 @@ Quick Login：
 6. `discord_only`：阻止 quick login，提示改用 Discord
 7. 成功後寫入 `{ actor, current_character }`，優先導回開啟登入視窗前的站內畫面，無記錄時導回首頁
 
+### 2.2A 登入後訪客隊伍認領（[ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md)）
+
+1. Quick Login 成功（`LoginEntryPanel.handleQuickLogin`）與 Discord **登入**成功（`auth/discord/callback/page.tsx`，僅限一般登入，**不含**帳號綁定 `intent=link`，因為綁定不會有訪客身分需要遷移）之後，皆會呼叫 `claimGuestPartiesAfterLogin(queryClient)`（`src/lib/auth/claimGuestParties.ts`）。
+2. 該函式呼叫 `partyApi.claimGuest()`（`POST /api/v1/parties/guest-claim`）；沒有 `quick_guest_token` cookie 時後端回 204，前端直接略過。
+3. 有認領結果時：
+   - 清除本機 `quickPartySession`（`clearQuickPartySession()`）與訪客暱稱（`persistQuickGuestDisplayName('')`）。
+   - `claimed.length > 0` → 顯示成功 toast「已將 N 個訪客隊伍轉移到你的帳號。」
+   - `skipped.length > 0` → 顯示提示 toast，請使用者至隊伍頁面確認（活動衝突、無目前角色等原因不逐一列出）。
+   - 呼叫 `queryClient.invalidateQueries()`（無 filter，全量失效）讓所有隊伍相關查詢重新抓取最新資料。
+4. 此呼叫是 best-effort：任何失敗（含網路錯誤）都只在 console 留下警告，**不會**中斷已完成的登入流程或顯示錯誤 toast，避免讓使用者以為登入失敗。
+
 ### 2.3 登出
 
 1. 點擊「登出」按鈕
@@ -221,9 +232,11 @@ URL 參數 `?tab=` 控制顯示模式：
 | `FIND_TRAINING` | 練功地圖清單 |
 | `MY_PARTY` | 我的隊伍；未登入且本瀏覽器有 `quick_active_party` host/member session 時，只顯示該快速隊伍，pending 不顯示 |
 | `MY_APPLICATIONS` | 我的申請；未登入且本瀏覽器有 pending quick session 時，顯示一筆 synthetic 待審申請 |
-| `CREATE_PARTY` | 建立一般隊伍；需要登入 |
+| `CREATE_PARTY` | 建立一般隊伍；目前 UI 仍需要登入（見下方 ADR-0015 現況說明） |
 
 一般隊伍與快速隊伍建立流程的頻道欄位皆為必填，前端輸入層只允許 1~4 位數字，送出前需符合 `1~9999`，不得用 `CH. 01` 類顯示字串轉換成 API payload。
+
+> **ADR-0015 現況**：後端已支援訪客建立/申請一般即時公開隊伍（`partyApi.createGuest`/`applyAsGuest` 等，見 [api-reference.md](../api-reference.md) 訪客一般即時隊伍互通章節），但**此頁與下方 §3.5/§3.6 描述的「需登入」UI 目前尚未改動**——訪客建立/申請一般隊伍的實際頁面（`CREATE_PARTY` tab 解鎖、`QuickGuestIdentityPrompt` 擴充職業/等級欄位、PartyCard 訪客渲染）為後續 UI 專案的範圍，本節其餘「需登入」相關描述在該專案完成前仍反映現況。已落地的部分只有登入後自動認領（§2.2A）與資料/API 層。
 
 ### 3.3 PartyCard 顯示邏輯
 

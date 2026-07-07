@@ -1029,6 +1029,217 @@ PUT 補充說明：
 
 ---
 
+### 訪客一般即時隊伍互通 (Guest Standard Party Interop, [ADR-0015](decisions/0012-guest-standard-immediate-party-interop.md))
+
+以下 `guest-*` 端點只適用「一般即時公開隊伍」（`scheduled_at=null`、非公會、非 quick）。已登入使用者呼叫同一端點會直接委派給對應的一般 actor 端點，行為等價；未登入訪客則以 `quick_guest_token` cookie（24h HttpOnly）識別，帳號不落 Postgres，資料以 Redis snapshot 呈現（`leader_guest_*`、`filled_by_is_guest`、`applicant_is_guest`/`guest_applicant` 欄位）。
+
+### POST /api/v1/parties/guest
+訪客建立一般即時公開隊伍並自動擔任隊長 **[免登入；登入者呼叫時等價於 `POST /parties`]**
+
+**Request Body:**
+```json
+{
+  "type": "GROUP",
+  "title": "速刷炎魔",
+  "target_name": "炎魔",
+  "channel": "7",
+  "max_members": 4,
+  "recruit_until": "2026-07-07T13:00:00Z",
+  "active_until": "2026-07-08T13:00:00Z",
+  "slots": [
+    { "slot_order": 1, "job_class": null, "min_level": null, "max_level": null, "is_required": false },
+    { "slot_order": 2, "job_class": null, "min_level": null, "max_level": null, "is_required": false }
+  ],
+  "leader_slot_order": 1,
+  "guest_display_name": "遊客名稱",
+  "guest_job_class_id": 3,
+  "guest_level": 120
+}
+```
+
+**說明:**
+- 後端強制 `scheduled_at=null`、`guild_id=null`、`visibility=PUBLIC`、`is_quick=false`，即便請求帶了排程/公會欄位也會被忽略。
+- `guest_display_name`／`guest_job_class_id`／`guest_level` 三者皆須提供（或先前已透過其他 `guest-*` 呼叫存在 Redis session 中）；缺少時回 400。
+- `leader_slot_order` 指定哪個 slot 是隊長席位（預設 1），該 slot 不可預先指定 `filled_by`。
+- 訪客一次只能持有一場進行中的即時活動（Redis 鎖 `quick:guest:activity:{guestID}`），衝突回 409。
+
+**Response 201:** `{ "party": Party, "slots": Slot[] }`（`party.leader_guest_id`/`leader_guest_name`/`leader_guest_job`/`leader_guest_level` 已填）
+
+**Error Codes:**
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_APPLICATION_VALIDATION_FAILED", "error": "..." }` 欄位驗證失敗（含 `leader_slot_order` 無對應 slot、slot 預填角色）
+- `400` - `{ "code": "PARTY_GUEST_PROFILE_REQUIRED", "error": "..." }` 訪客暱稱/職業/等級未齊備
+- `409` - `{ "code": "PARTY_APPLICATION_ACTIVITY_CONFLICT", "error": "..." }` 訪客已在其他進行中活動
+- `500` - `{ "code": "PARTY_CREATE_FAILED", "error": "..." }` 伺服器錯誤
+
+---
+
+### POST /api/v1/parties/:id/guest-applications
+訪客申請一般即時公開隊伍 **[免登入；登入者呼叫時等價於 `POST /parties/:id/applications`]**
+
+**Request Body:**
+```json
+{
+  "target_slot_id": "uuid",
+  "join_password": "123456",
+  "guest_display_name": "遊客名稱",
+  "guest_job_class_id": 3,
+  "guest_level": 120
+}
+```
+
+**說明:**
+- 隊伍必須是即時、公開、非 quick；`allow_quick_login_players=false` 時拒絕（語意已擴張為同時涵蓋訪客與未綁 Discord actor）。
+- 訪客申請 actor 建立的隊伍、actor 申請訪客建立的隊伍皆合法（雙向互通）。
+- `join_requires_approval=false` 時自動接受並取得 slot；`=true` 時建立 PENDING 申請待隊長審核。
+
+**Response 201:** `Application`（`applicant_is_guest=true`、`guest_applicant` 填暱稱/職業/等級）
+
+**Error Codes:**
+- `400` - `{ "code": "PARTY_INVALID_REQUEST", "error": "..." }` 請求格式錯誤
+- `400` - `{ "code": "PARTY_GUEST_PROFILE_REQUIRED", "error": "..." }` 訪客資料未齊備
+- `403` - `{ "code": "PARTY_GUEST_IMMEDIATE_ONLY", "error": "..." }` 目標隊伍非「即時公開非 quick」
+- `403` - `{ "code": "PARTY_PASSWORD_REQUIRED", "error": "..." }` / `{ "code": "PARTY_INVALID_PASSWORD", "error": "..." }` 密碼相關
+- `409` - `{ "code": "PARTY_QUICK_LOGIN_NOT_ALLOWED", "error": "..." }` `allow_quick_login_players=false`
+- `409` - `{ "code": "PARTY_APPLICATION_ACTIVITY_CONFLICT", "error": "..." }` 訪客已在其他進行中活動
+- `409` - `{ "code": "PARTY_ALREADY_IN_PARTY", "error": "..." }` / `{ "code": "PARTY_FULL", "error": "..." }` 已在隊或已滿
+
+---
+
+### GET /api/v1/parties/:id/guest-applications
+訪客隊長查看申請列表 **[訪客隊長 cookie；登入者呼叫時等價於 `GET /parties/:id/applications`]**
+
+**Response 200:** `Application[]`
+
+**Error Codes:**
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 非此隊伍隊長
+- `403` - `{ "code": "PARTY_GUEST_IMMEDIATE_ONLY", "error": "..." }` 非即時公開非 quick 隊伍
+- `404` - `{ "code": "PARTY_NOT_FOUND", "error": "..." }` 隊伍不存在
+
+---
+
+### PATCH /api/v1/parties/:id/guest-applications/:appId
+訪客隊長審核申請 **[訪客隊長 cookie；登入者呼叫時等價於 `PATCH /parties/:id/applications/:appId`]**
+
+**Request Body:** `{ "action": "accept" }`（`accept` / `reject`）
+
+**說明:**
+- 申請人可能是訪客或 actor，審核邏輯與活動鎖分支依申請人自身身分（`applicant_is_guest`）判斷，與隊伍隊長是誰無關。
+
+**Response 200:** `{ "status": "success" }`
+
+**Error Codes:** 同 `PATCH /parties/:id/applications/:appId`，另加 `403` - `{ "code": "PARTY_GUEST_IMMEDIATE_ONLY", "error": "..." }`
+
+---
+
+### DELETE /api/v1/parties/:id/guest-applications/me
+訪客取消自己的待審申請 **[免登入，quick_guest_token cookie；登入者呼叫時等價於一般取消申請]**
+
+**Response 204**
+
+**Error Codes:**
+- `404` - `{ "code": "PARTY_APPLICATION_NOT_FOUND", "error": "..." }` 找不到待審申請
+
+---
+
+### POST /api/v1/parties/:id/guest-slots/:slotId/kick
+訪客隊長／成員移除槽位 **[訪客隊長或槽位本人 cookie；登入者呼叫時等價於 `POST /parties/:id/slots/:slotId/kick`]**
+
+**說明:**
+- 隊長可踢出其他任意成員（含 actor 成員）；非隊長訪客只能移除自己的槽位（自願離開）。
+- 隊長不可透過此端點移除自己的隊長槽位。
+
+**Response 204**
+
+**Error Codes:**
+- `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }` 無權限踢出該槽位
+- `403` - `{ "code": "PARTY_LEADER_CANNOT_KICK_SELF", "error": "..." }` 嘗試移除隊長槽位
+- `409` - `{ "code": "PARTY_ALREADY_CLOSED", "error": "..." }` 隊伍已關閉
+
+---
+
+### DELETE /api/v1/parties/:id/guest-membership
+訪客離開隊伍 **[免登入，quick_guest_token cookie；登入者呼叫時等價於 `DELETE /parties/:id/my-membership`]**
+
+**說明:**
+- 隊長呼叫等同解散隊伍（`guest-close`）；一般成員呼叫等同移除自己的槽位。
+
+**Response 204**
+
+**Error Codes:** 同 idle-action 系列（`PARTY_IDLE_ACTION_NOT_FOUND`／`PARTY_IDLE_ACTION_ALREADY_CLOSED`／`PARTY_IDLE_ACTION_NOT_PARTICIPANT`），另加 `403` - `{ "code": "PARTY_GUEST_IMMEDIATE_ONLY", "error": "..." }`
+
+---
+
+### POST /api/v1/parties/:id/guest-close
+訪客隊長關閉隊伍 **[訪客隊長 cookie；登入者呼叫時等價於 `DELETE /parties/:id`]**
+
+**Response 204**
+
+**Error Codes:** 同 idle-action 系列，另加 `403` - `{ "code": "PARTY_LEADER_ONLY", "error": "..." }`
+
+---
+
+### POST /api/v1/parties/:id/guest-liveness
+訪客確認隊伍存續 **[訪客參與者 cookie；登入者呼叫時等價於 `POST /parties/:id/liveness`]**
+
+**Response 200:** `{ "status": "confirmed" }`
+
+**Error Codes:** 同 idle-action 系列
+
+---
+
+### PATCH /api/v1/parties/:id/guest-settings
+訪客隊長更新隊伍安全設定 **[訪客隊長 cookie；登入者呼叫時等價於 `PATCH /parties/:id`]**
+
+**說明:**
+- 只允許更新標題、備註、頻道、密碼、是否需審核、`allow_quick_login_players` 等安全欄位；`scheduled_at`/`scheduled_at_is_now` 一律拒絕（`PARTY_GUEST_IMMEDIATE_ONLY`）。
+
+**Response 200:** `Party`
+
+**Error Codes:** 同 `PATCH /parties/:id`，另加 `403` - `{ "code": "PARTY_GUEST_IMMEDIATE_ONLY", "error": "..." }`
+
+---
+
+### PUT /api/v1/parties/:id/guest-settings
+訪客隊長取代隊伍設定 **[訪客隊長 cookie；登入者呼叫時等價於 `PUT /parties/:id`]**
+
+**說明:**
+- `scheduled_at`/`scheduled_at_is_now` 一律拒絕。
+- `slots[].filled_by` 只能設為隊伍**現有成員**（訪客隊長無法像 actor 隊長一樣以「本人擁有其他角色」放行未參與者），欲加入新成員必須走申請/接受流程。
+
+**Response 200:** `Party`
+
+**Error Codes:** 同 `PUT /parties/:id`，另加 `403` - `{ "code": "PARTY_GUEST_IMMEDIATE_ONLY", "error": "..." }`
+
+---
+
+### POST /api/v1/parties/guest-claim
+登入後認領訪客隊伍 **[需認證]**
+
+**說明:**
+- 伺服器端讀取 `quick_guest_token` cookie（前端不需、也無法讀取此 HttpOnly cookie 的內容），把訪客名下的一般即時隊伍與 quick party 身分改寫為目前登入使用者；每筆隊伍各自 best-effort，單一失敗不影響其他隊伍，整個操作冪等可重試。
+- 沒有訪客 cookie 時回 204。
+- 認領成功後會清除 `quick_guest_token` cookie。
+
+**Response 200:**
+```json
+{
+  "claimed": [{ "party_id": "uuid", "kind": "standard", "role": "leader" }],
+  "skipped": [{ "party_id": "uuid", "reason": "ACTIVITY_CONFLICT" }],
+  "warnings": [{ "party_id": "uuid", "code": "SLOT_REQUIREMENT_MISMATCH" }]
+}
+```
+- `kind`: `"quick"` | `"standard"`；`role`: `"leader"` | `"member"` | `"applicant"`
+- `skipped[].reason`: `NO_CHARACTER`（登入者無目前角色）／`ACTIVITY_CONFLICT`（已在其他進行中活動）／`PARTY_CLOSED`／`LOCK_BUSY`
+- `warnings[].code`: `SLOT_REQUIREMENT_MISMATCH`（角色不符合原 slot 職業/等級限制，仍完成認領，不自動逐出）
+
+**Response 204:** 無訪客 cookie
+
+**Error Codes:**
+- `500` - `{ "code": "PARTY_INTERNAL_ERROR", "error": "failed to claim guest parties" }` 伺服器錯誤
+
+---
+
 ### POST /api/v1/parties/:id/applications
 申請加入隊伍 **[需認證]**
 
