@@ -67,6 +67,7 @@ ADR-0014/ADR-0015 已經讓 `PartyDetailScreen.tsx`（隊伍詳情頁）與 `Cre
    - `handleApply`：未登入時，若 `party.canApplyAsGuest && !party.locked` 則 `router.push('/parties/{id}')`；否則維持 `requireLogin(...)`。
    - `handlePickCharacter`：保留既有 `!isAuthenticated` 防禦性 guard（理論上已不可達，因為 `handleApply` 不會再讓未登入使用者進到 `picker` 狀態），加註解說明。
    - `openPartyDetail` 的鎖定隊伍分支：不修改，加註解說明查證結論（見「背景」段落）並指向本 ADR。
+6. `src/app/find/_components/PartyPreview.tsx`：新增 `isAuthenticated` prop，非 quick 隊伍的 `canApply` 依此分流——已登入沿用 `hasEligibleSlot(party, currentUser)`，未登入改用 `party.canApplyAsGuest === true`，不再用訪客的假身分（`GUEST_CHARACTER`）判斷是否啟用申請按鈕（見下方「已知後續第 3 點的修正」，此為 reviewer 審查抓出、同批修正的問題，不是原始三方案分析涵蓋的範圍）。
 
 ## 理由 (Rationale)
 
@@ -85,12 +86,22 @@ ADR-0014/ADR-0015 已經讓 `PartyDetailScreen.tsx`（隊伍詳情頁）與 `Cre
 
 ## 影響 (Consequences)
 
-- **前端影響範圍**：`src/lib/design/parties.ts`、`src/lib/partyDisplay.ts`、`src/app/parties/[id]/_components/PartyDetailScreen.tsx`（純重構，行為不變）、`src/components/shell/Sidebar.tsx`、`src/components/shell/MobileBottomNav.tsx`、`src/app/find/_components/FindPartyScreen.tsx`。無 API 契約變更、無新增依賴。
-- **測試**：新增 `computeCanApplyAsGuest`/`Party.canApplyAsGuest` 的單元測試（`src/lib/partyDisplay.test.ts`）；`FindPartyScreen.test.tsx` 新增「訪客申請合格一般隊伍時導向詳情頁而非跳登入」「公會/鎖定隊伍仍維持登入攔截」案例；`src/components/shell/authControls.test.tsx` 既有斷言「建隊選單顯示登入後使用提示」的測試已更新為「不再顯示提示、直接導頁」，並新增已登入使用者的對照案例。
+- **前端影響範圍**：`src/lib/design/parties.ts`、`src/lib/partyDisplay.ts`、`src/app/parties/[id]/_components/PartyDetailScreen.tsx`（純重構，行為不變）、`src/components/shell/Sidebar.tsx`、`src/components/shell/MobileBottomNav.tsx`、`src/app/find/_components/FindPartyScreen.tsx`、`src/app/find/_components/PartyPreview.tsx`、`src/app/guilds/[id]/_components/GuildDetailClient.tsx`（新增 `isAuthenticated` prop傳遞，見下方「已知後續第 3 點的修正」）。無 API 契約變更、無新增依賴。
+- **測試**：新增 `computeCanApplyAsGuest`/`Party.canApplyAsGuest` 的單元測試（`src/lib/partyDisplay.test.ts`）；`FindPartyScreen.test.tsx` 新增「訪客申請合格一般隊伍時導向詳情頁而非跳登入」「公會/鎖定隊伍仍維持登入攔截」案例；`src/components/shell/authControls.test.tsx` 既有斷言「建隊選單顯示登入後使用提示」的測試已更新為「不再顯示提示、直接導頁」，並新增已登入使用者的對照案例；新增 `PartyPreview.guestEligibility.test.tsx`，刻意不 mock `hasEligibleSlot`/`isSlotEligible`（`PartyPreview.test.tsx` 既有測試把它們整組 mock 成恆真/簡化版，會掩蓋真實資格判斷的迴歸），驗證訪客對指定職業/等級門檻隊伍的真實可點擊行為。
 - **已知後續（未在本次處理，記錄以避免遺失）**：
   1. 後端若要讓訪客也能瀏覽/申請鎖定的一般即時隊伍，需要新增一個訪客可用的密碼驗證路徑（例如擴充 `GetPartyForViewer` 接受一次性密碼參數，或新增類似 `GuestApply` 已支援的「密碼隨請求一起送」模式的訪客專用 verify 端點）；這是後端任務，不在本次 frontend-only 修正範圍內。
   2. `/find` 列表頁訪客申請目前是「導頁到詳情頁」而非原地完成；若未來要做成原地完成（如方案 2 所述），需要在有完整回歸測試覆蓋 ADR-0014 已修正過的 race-condition/stale-closure 案例的前提下再評估。
-  3. `FindPartyScreen.tsx` 頂層的 `currentUser`（未登入時固定為 `GUEST_CHARACTER`：`cls:"guest", lv:1`，只帶暱稱）同時被 `PartyPreview.tsx` 拿去做 `hasEligibleSlot` 判斷是否啟用「申請加入」按鈕——這個判斷沒有使用訪客實際的職業/等級（`useQuickGuestProfile`），與 `PartyDetailScreen.tsx` 用真實訪客職業/等級判斷資格不一致。這是查證時發現的既有落差，不在本次列出的 4 個入口點範圍內（本次的按鈕在測試環境中確實可點擊並觸發 `handleApply`，`hasEligibleSlot` 判斷只在真實瀏覽器對「非任意職業空位」的隊伍才會讓按鈕維持 disabled），因此不在本次修正範圍內處理，記錄以避免遺失；若要修，同樣應該重用本 ADR 抽出的 `computeCanApplyAsGuest`/訪客職業等級來源，避免又長出第三套資格判斷。
+
+### 已知後續第 3 點的修正（2026-07-09，reviewer 抓出並同批修正）
+
+原「已知後續」第 3 點記錄的落差——`PartyPreview.tsx` 用 `hasEligibleSlot(party, currentUser)` 判斷「申請加入」按鈕是否可點擊，未登入訪客的 `currentUser` 卻是固定的 `GUEST_CHARACTER`（`cls:"guest", lv:1`）——經 reviewer 審查指出，這其實與本次任務要解決的症狀是同一類問題：真實瀏覽器情境下，只要隊伍有任何指定職業或 `lvMin > 1` 的空位（絕大多數一般隊伍皆是如此），`isSlotEligible` 就會判定不合格，按鈕會被 `disabled` 且 `onClick` 設為 `undefined`——訪客實質上仍然點不到，`handleApply` 的導頁修正永遠不會被觸發。已在同一輪修正：
+
+- `PartyPreview.tsx` 新增 `isAuthenticated: boolean` prop；`canApply` 對非 quick 隊伍改為：已登入時沿用 `hasEligibleSlot(party, currentUser)`（不變）；未登入時改用 `party.canApplyAsGuest === true`（即本 ADR 抽出的 `computeCanApplyAsGuest`），完全不再讀 `currentUser`/`hasEligibleSlot`，因此訪客是否有設定真實職業/等級與此按鈕的可點擊性無關（申請時的實際資格驗證仍在導頁後的詳情頁 `partyApi.applyAsGuest` 完成）。
+- 未合格時的 disabled 文案與 tooltip 依 `isAuthenticated` 分流：已登入沿用「無符合角色」；未登入改為「此隊伍暫不開放訪客申請」，不再誤導成「角色不符」。
+- 呼叫端（`FindPartyScreen.tsx` 兩處 `<PartyPreview>`、`GuildDetailClient.tsx` 一處）新增傳入 `isAuthenticated`（皆已有現成的 `useAuth().isAuthenticated`，guild 隊伍必屬公會、`canApplyAsGuest` 恆為 false，故該處新增此 prop 不影響其既有的已登入資格判斷行為）。
+- 新增測試 `PartyPreview.guestEligibility.test.tsx`：不 mock `hasEligibleSlot`/`isSlotEligible`，用一個限定「戰士職業 + `lvMin:150`」的隊伍分別驗證「`canApplyAsGuest:true` 時未登入訪客按鈕可點擊」「`canApplyAsGuest:false` 時未登入訪客按鈕停用且文案正確」「已登入 actor 的真實角色資格判斷不受 `canApplyAsGuest` 影響」。既有 `PartyPreview.test.tsx`（`hasEligibleSlot` 整組 mock 成恆真）的測試訊號本身無法證明修正有效——因為即使程式碼仍是修正前的版本，該檔案的 mock 也會讓斷言通過；這正是本次新增獨立測試檔、刻意不 mock 的原因。
+
+此點已解決，行為與 `PartyDetailScreen.tsx` 的資格判斷完全一致（同一個 `computeCanApplyAsGuest`），不再是已知落差。
 
 ## Supersedes / Superseded by
 
