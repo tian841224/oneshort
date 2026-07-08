@@ -11,6 +11,7 @@
    - 新增新 ADR，並在其中註明 `Supersedes ADR-MMMM` 與推翻理由。
    - 索引表同步更新兩筆記錄的狀態。
 4. **索引同步**：新增/推翻 ADR 時，必須同步更新下方索引表，否則視為未完成。
+5. **文件過期同步**：本節第 3 點只處理「新 ADR 推翻舊 ADR」；更廣義的「文件過期必須同步更新或移除」規則（涵蓋 ADR 已知後續補註、相關規格文件因決策而過期等情境）見 [core.md §3](../../.agent/rules/core.md#3-架構優先原則)。
 
 ## 命名規則
 
@@ -69,3 +70,4 @@
 | [ADR-0013](0013-update-party-viewer-capabilities.md) | `UpdateParty`（PATCH /parties/{id}）回應補上 `ViewerCapabilities`，修正隱藏隊伍後隊長按鈕消失 | Accepted | 2026-07-07 | backend / party |
 | [ADR-0014](0014-guest-party-interop-frontend-ui.md) | 訪客帳號建立/申請/管理一般即時隊伍的前端 UI 實作（身分收集元件、建隊畫面、申請流程、隊長操作、成員訪客標籤） | Accepted | 2026-07-07 | frontend / party / auth |
 | [ADR-0015](0015-guest-standard-immediate-party-interop.md) | 訪客帳號與登入帳號整合：訪客可建立/申請/擔任一般即時隊伍隊長，登入時自動認領 | Accepted（部分推翻 guest-mode-plan.md Locked Decisions） | 2026-07-07 | backend / party / auth；frontend / party / auth |
+| [ADR-0016](0016-guest-party-entry-point-parity.md) | 訪客一般隊伍入口一致性修正：Sidebar/MobileBottomNav 建隊選單、/find 申請入口比照 `canApplyAsGuest`（抽出共用判斷函式，補齊 ADR-0014/0015 遺留缺口） | Accepted | 2026-07-09 | frontend / party / auth |
