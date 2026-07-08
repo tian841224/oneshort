@@ -90,6 +90,7 @@ ADR-0014/ADR-0015 已經讓 `PartyDetailScreen.tsx`（隊伍詳情頁）與 `Cre
 - **已知後續（未在本次處理，記錄以避免遺失）**：
   1. 後端若要讓訪客也能瀏覽/申請鎖定的一般即時隊伍，需要新增一個訪客可用的密碼驗證路徑（例如擴充 `GetPartyForViewer` 接受一次性密碼參數，或新增類似 `GuestApply` 已支援的「密碼隨請求一起送」模式的訪客專用 verify 端點）；這是後端任務，不在本次 frontend-only 修正範圍內。
   2. `/find` 列表頁訪客申請目前是「導頁到詳情頁」而非原地完成；若未來要做成原地完成（如方案 2 所述），需要在有完整回歸測試覆蓋 ADR-0014 已修正過的 race-condition/stale-closure 案例的前提下再評估。
+  3. `FindPartyScreen.tsx` 頂層的 `currentUser`（未登入時固定為 `GUEST_CHARACTER`：`cls:"guest", lv:1`，只帶暱稱）同時被 `PartyPreview.tsx` 拿去做 `hasEligibleSlot` 判斷是否啟用「申請加入」按鈕——這個判斷沒有使用訪客實際的職業/等級（`useQuickGuestProfile`），與 `PartyDetailScreen.tsx` 用真實訪客職業/等級判斷資格不一致。這是查證時發現的既有落差，不在本次列出的 4 個入口點範圍內（本次的按鈕在測試環境中確實可點擊並觸發 `handleApply`，`hasEligibleSlot` 判斷只在真實瀏覽器對「非任意職業空位」的隊伍才會讓按鈕維持 disabled），因此不在本次修正範圍內處理，記錄以避免遺失；若要修，同樣應該重用本 ADR 抽出的 `computeCanApplyAsGuest`/訪客職業等級來源，避免又長出第三套資格判斷。
 
 ## Supersedes / Superseded by
 
