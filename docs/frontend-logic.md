@@ -248,7 +248,7 @@ PartyCard 顯示規則:
   - 卡片上的目標顯示會移除 `兼具` 字樣
   - 若卡片標題已直接使用 target_name，則不重複再顯示一次目標
   - `我的隊伍` 卡片右上角會在成員數 badge 上方顯示房間狀態 badge（招募中 / 隱藏 / 關閉）；其中 `招募中` 僅顯示文字，`隱藏 / 關閉` 保留 icon
-  - 類型標籤 (BOSS/TRAINING/GROUP)
+  - 卡片不再顯示類型標籤 (BOSS/TRAINING/GROUP) chip；類型資訊改由左側類型 Logo 傳達
   - 當前/最大成員數 (current_members/max_members)
   - 職業席位預覽（前 N 個）
   - 密碼鎖圖示（join_requires_password=true）
