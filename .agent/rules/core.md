@@ -23,6 +23,7 @@ trigger: always_on
 - 除非正式規格，否則不為單一功能撰寫硬編碼特例。
 - 商業邏輯或 API 行為異動時，程式碼與文件必須同步更新。
 - 若現有架構不適合新需求，應先提出重構方案，不持續堆疊例外。
+- **文件過期必須同步更新或移除**：任何文件（規格文件、ADR 的「已知後續」段落、README 等）內容一旦被新內容取代或修改，必須同步更新該文件或移除過期段落，不得留下與現況矛盾的內容誤導後續讀者。這比 [docs/decisions/index.md](../../docs/decisions/index.md) 「強制規則」第 3 點（ADR 推翻 ADR 的流程）更廣義，涵蓋「ADR 的已知後續被完成後要回頭補註」「ADR 相關規格文件因新決策過期時要同步修正」等情境。範例見 [docs/features/guest-mode-plan.md](../../docs/features/guest-mode-plan.md)（ADR-0015 推翻部分內容後，該文件明確標註「已由 ADR-0015 推翻」並更新現況表）與 [ADR-0014](../../docs/decisions/0014-guest-party-interop-frontend-ui.md)（由 ADR-0016 補註「後續更新」段落）。
 
 ### 3.1 修正方案評估準則
 

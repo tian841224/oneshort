@@ -82,6 +82,15 @@
 - **API 契約**：無新增後端契約（沿用訪客資料層決策已定義的 `guest-*` 端點）；前端型別已在資料層任務完成，本次未修改 `src/lib/types/party.ts`。
 - **前端影響範圍**：`QuickGuestIdentityPrompt.tsx`、`CreatePartyScreen.tsx`（新增分流，不變更既有已登入行為）、`PartyDetailScreen.tsx`（新增訪客分支，`role`/`viewer_capabilities` 既有邏輯不變）、`usePartyMutations.ts`／`usePartyApplications.ts`（新增可選參數，預設值維持既有行為不變）。
 
+## 後續更新（2026-07-09，見 ADR-0016）
+
+實測發現本 ADR 落地的終點畫面（`PartyDetailScreen.tsx`／`CreatePartyScreen.tsx`）雖然正確支援訪客，但周邊的導覽/列表入口從未接上這個能力，訪客點擊後仍被攔下跳登入：
+
+- `Sidebar.tsx`／`MobileBottomNav.tsx` 的「建立隊伍 › 一般隊伍」選單項目一律登入攔截，即使該項目從未帶 `guild_id`。
+- `FindPartyScreen.tsx` 的 `handleApply`（隊伍預覽面板申請按鈕）／`handlePickCharacter`（選角送出）從未比照本 ADR 建立的 `canApplyAsGuest` 判斷。
+
+已由 [ADR-0016](0016-guest-party-entry-point-parity.md) 補齊：抽出共用的 `computeCanApplyAsGuest` 純函式（`src/lib/partyDisplay.ts`）作為單一權威來源，`PartyDetailScreen.tsx` 的既有判斷改為讀取該共用結果（純重構，行為不變），並讓上述入口點比照放行。ADR-0016 也查證並記錄了「鎖定隊伍 + 訪客」目前仍受限於後端能力（`GetPartyForViewer`/`VerifyPartyPassword` 尚無訪客可用路徑），維持登入攔截是如實反映現況、非前端遺漏。
+
 ## Supersedes / Superseded by
 
 不推翻任何既有 ADR-0001～0013；補齊訪客資料層決策（`docs/guest-party-interop` 分支，尚未合併）標記為「後續 UI 專案」的部分。
