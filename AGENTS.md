@@ -8,15 +8,17 @@
 |------|------|------|
 | [core.md](.agent/rules/core.md) | always_on | 邊界、Git Flow、架構原則、反思機制 |
 | [docs-router.md](.agent/rules/docs-router.md) | always_on | 任務導向文件路由；只讀命中的關聯文件 |
+| [learning.md](.agent/rules/learning.md) | always_on | 自我學習迴圈：教訓擷取、記憶蒸餾、升級與修剪 |
 | [backend.md](.agent/rules/backend.md) | `backend/**/*` | 後端架構、驗證、完成條件 |
 | [frontend.md](.agent/rules/frontend.md) | `frontend/**/*` | 前端技術棧、驗證、完成條件 |
 | [style.md](.agent/rules/style.md) | UI/UX 任務 | 前端設計語言、視覺樣式與 Golden Rules |
 
 ## 強制啟動載入（Codex / Gemini 適用）
 
-> 開始任何任務前，必須先依序讀取以下兩個檔案，再繼續：
+> 開始任何任務前，必須先依序讀取以下三個檔案，再繼續：
 > 1. `.agent/rules/core.md`
 > 2. `.agent/rules/docs-router.md`
+> 3. `.agent/rules/learning.md`
 
 讀完後，依 docs-router.md 的路由表，只載入當前任務命中的關聯文件。
 

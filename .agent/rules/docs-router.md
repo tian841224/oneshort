@@ -53,6 +53,7 @@ trigger: always_on
 | 任務類型 | 關鍵文件 | 目的 |
 |---|---|---|
 | Git 操作 / Branch / Worktree | [.agent/rules/core.md](core.md) | 遵循 Git Flow 與任務清理流程 |
+| 記錄教訓 / 記憶蒸餾 / 週期回顧 / 自我學習 | [learning.md](learning.md)（專案特化，權威為全域 `~/.claude/rules/learning.md`）+ [.agent/learning/MEMORY.md](../learning/MEMORY.md) + `learn`／`evolve` skills | 依自我學習迴圈擷取教訓、蒸餾記憶、升級為規則／技能／ADR 並修剪過時條目；通用教訓進全域、OneShort 特定進 `.agent/learning/` |
 
 > [!IMPORTANT]
 > 在修改程式碼前，請務必先使用目前環境可用的檔案讀取工具，讀取上述命中的文件。未命中的文件不要預先載入。

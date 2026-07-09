@@ -6,9 +6,12 @@
 
 # Agent / AI governance files
 !AGENTS.md
+!CLAUDE.md
 !.agent/
 !.agent/rules/
 !.agent/rules/**
+!.agent/learning/
+!.agent/learning/**
 !.codex/
 !.codex/skills/
 !.codex/skills/**

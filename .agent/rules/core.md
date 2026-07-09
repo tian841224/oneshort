@@ -150,4 +150,5 @@ git -C backend worktree add ..\oneshort-backend-worktrees\feature-party-search -
 1. 找出根因，不僅修表面症狀。
 2. 依 [§3.1 修正方案評估準則](#31-修正方案評估準則) 比較可行方案後選定最佳解，禁止以最小修補繞過根因。
 3. 將避免方式記錄在本次 PR / commit / plan / issue；只有前後端程式錯誤需要長期追蹤時，才另外更新 troubleshooting 文件。
-4. 確保未來不重複同樣錯誤。
+4. 根因若是可概括的錯誤假設，依自我學習迴圈的擷取觸發（[learning.md](learning.md) 專案特化，權威為全域 `~/.claude/rules/learning.md` §2）把教訓寫入對應 inbox：OneShort 特定→`.agent/learning/inbox.md`，跨專案通用→全域 `~/.claude/memory/inbox.md`。
+5. 確保未來不重複同樣錯誤。
