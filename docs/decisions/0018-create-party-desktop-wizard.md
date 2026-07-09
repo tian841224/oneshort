@@ -34,18 +34,25 @@
 - **安全性**：無關（純 UI 呈現與表單驗證流程調整，不涉及權限或資料邊界）。
 - **代價**：桌機版原本「所有欄位一眼可見、Ctrl+F 全部找得到」的攤平體驗改變為分步；但配合常駐預覽欄與 `StepDots` 進度指示，可讀性與掃視成本反而下降，符合 style.md 精簡調性。
 
+### 方案 3：抽出一個吃掉全部驗證邏輯的巨型共用 hook（含 `handleSubmit` 的完整欄位驗證規則），登入版與訪客版都呼叫它
+
+- 把 `goToStep2`/`goToStep4`/`handleSubmit` 內所有欄位檢查邏輯（type/target/channel/schedule/leaderCharacter/slots）都收進同一個共用 hook，內部用 `isGuest`、`hasCharacterPicker` 等 flag 區分登入版與訪客版兩種模式。
+- **維護性**：形式上「完全不重複」，但登入版與訪客版的驗證欄位本質不同——登入版有 `leaderCharacter`（選角色）、訪客版有 `identity`（訪客身分卡，且欄位對應到不同 step 編號），硬塞進同一個 hook 會產生大量 `if (isGuest) {...} else {...}` 分支，本質上只是把「重複的驗證邏輯」換成「集中的條件地獄」，並未真的降低耦合——這正是 [ADR-0016](0016-guest-party-entry-point-parity.md) 明確評估並避開過的 leaky abstraction 模式（該 ADR 拒絕了「抽出共用互動 hook」方案，理由是訪客申請與登入申請的互動狀態機本質不同，硬共用會提高回歸風險）。
+- **效能／安全性**：與方案 2 無差異。
+- **代價**：一旦兩個畫面都依賴同一個巨型 hook，未來要拆開需要同時改動兩個呼叫點，回滾難度中等。**否決**：與方案 2 相比，用「集中條件分支」換取表面零重複，違反 ADR-0016 已建立的判斷原則（有本質差異的兩份邏輯，優先選風險更低、邊界更清楚的封裝方式，而非為形式一致犧牲耦合度）。方案 2 的 `useWizardFieldErrors` 只吃「欄位錯誤記錄＋捲動＋切步驟」這個裝置/角色無關的純機制，驗證規則本身（哪個欄位何時檢查什麼）留在各自畫面，才是真正不製造虛假共用的做法。
+
 ## 決策 (Decision)
 
 採用方案 2：
 
 1. `src/hooks/useStepFlow.ts`（既有，原本只給手機版用）：不變，桌機版直接重用同一支 hook。
-2. `src/hooks/useWizardFieldErrors.ts`（新增）：從 `CreatePartyScreen.tsx` 抽出的裝置無關欄位錯誤/捲動定位機制，`fieldErrors`/`setFieldErrors`/`clearFieldError`/`registerFieldRef`/`scrollToField`/`failField`，供桌機與手機共用。
+2. `src/hooks/useWizardFieldErrors.ts`（新增）：從 `CreatePartyScreen.tsx` 抽出的裝置無關欄位錯誤/捲動定位機制，`fieldErrors`/`setFieldErrors`/`clearFieldError`/`registerFieldRef`/`scrollToField`/`failField`，供桌機與手機共用。欄位名稱是泛型參數（`useWizardFieldErrors<TField>`，登入版用 `CreatePartyFieldName`、訪客版用 `CreatePartyGuestFieldName`），hook 本身完全不知道「這個欄位具體要檢查什麼規則」，只負責記錄錯誤與捲動/切步驟。關鍵改動：`scrollToField` 拿掉原本只有手機版才需要的 `isMobile` 判斷分支，改成無條件 `if (step !== targetStep) setStep(targetStep)`——桌機版現在也分頁了，這個判斷必須對兩種裝置一致生效。
 3. `src/app/parties/create/_components/CreatePartyWizardNav.tsx`（新增）：純展示型 StepDots + 上一步/下一步導覽列，只給桌機版用（`!isMobile &&` 掛載）；`onNext` 在最後一步留空，因為送出交由常駐可見的 `PreviewColumn` 按鈕（或側欄擠窄時的 `.os-create-preview-bar`）負責，不是 wizard nav 的職責。
 4. `CreatePartyScreen.tsx`：
    - `DESKTOP_WIZARD_STEP_COUNT = 3`（基本資料／規則／職缺），與手機版 `CREATE_PARTY_STEP_COUNT = 4`（多一步預覽）分開常數管理，因為兩者在桌機/手機下語意不同（見上）。
-   - `.os-create-party-layout` 從 3 欄（`globals.css`）收斂為 2 欄：`minmax(0,1fr) minmax(240px,320px)`（wizard 欄 | 常駐預覽欄）。
-   - 若視窗在 mobile→desktop 切換時 `step` 停在 4（僅手機合法），加一個 effect 把 `step` 夾回 `DESKTOP_WIZARD_STEP_COUNT`，避免桌機版 wizard 欄「整個空掉」（none of `showBasicCard`/`showRulesCard`/`showSlots` 為真）。
-5. `GuestCreatePartyScreen.tsx`（ADR-0015）同步接上 `useWizardFieldErrors` + `CreatePartyWizardNav`，桌機 4 步、手機維持既有單頁攤平不變。
+   - `.os-create-party-layout` 從 3 欄（`globals.css`）收斂為 2 欄：`minmax(0,1fr) minmax(240px,320px)`（wizard 欄 | 常駐預覽欄）。新增 `.os-create-party-wizard`（flex column）、`.os-create-party-wizard__form-bounds`（`max-width: 560px`，限制表單閱讀寬度；560px 而非規劃初期估計的 480px，是因為 `SlotsColumn` 的 slot 列（大頭貼、姓名、等級、1-2 個操作按鈕）在 480px 下略嫌侷促，560px 與 codebase 既有幾個 modal/card 寬度同一量級）、`.os-create-wizard-nav`（flex space-between + 上邊框分隔線）；並在既有 `@container shell-main (max-width: 899px)` 收合區塊內加一條 `.os-create-party-wizard__form-bounds { max-width: none; }`，避免手機版表單卡片被意外限制寬度。
+   - 若視窗在 mobile→desktop 切換時 `step` 停在 4（僅手機合法），加一個 effect 把 `step` 夾回 `DESKTOP_WIZARD_STEP_COUNT`（`if (!isMobile && step > 3) setStep(3)`），避免桌機版 wizard 欄「整個空掉」（none of `showBasicCard`/`showRulesCard`/`showSlots` 為真）。
+5. `GuestCreatePartyScreen.tsx`（ADR-0015）同步接上 `useWizardFieldErrors` + `CreatePartyWizardNav`，桌機 4 步、手機維持既有單頁攤平不變。額外新增「已有身分時桌面自動跳過第一頁」：`useQuickGuestProfile` 的 `isHydrated` 旗標配合一個只觸發一次的 `useRef` guard，僅在「載入當下讀到的已存身分」判斷一次是否 `setStep(2)`，之後不論身分怎麼變都不會再被強制跳頁。
 6. `tests/e2e/fixtures.ts` 的 `createPartyViaUi` 與 `guest-party-interop.e2e.ts`／`guild-management.e2e.ts` 既有 E2E 場景，改為明確依序點擊「下一步」推進桌機 wizard 各 step，不再假設所有欄位同時掛載於 DOM。
 
 ## 理由 (Rationale)
@@ -60,6 +67,7 @@
 ## 被拒絕方案與原因 (Rejected Alternatives)
 
 - **方案 1（摺疊卡片收斂密度，不分步）**：沒有解決「訪客建隊畫面需要重造一份欄位驗證/捲動定位邏輯」的重複問題，且讓桌機/手機維持兩套不同的導覽心智模型，長期可維護性低於方案 2，故不採用。
+- **方案 3（巨型共用 hook 吃掉全部驗證規則）**：形式上零重複，但用大量 `if (isGuest)` 分支換取「共用」的假象，實際上提高了耦合與遺漏風險，且與 [ADR-0016](0016-guest-party-entry-point-parity.md) 已建立的判斷原則（安全性/維護性優先於形式一致）相悖，故不採用。
 
 ## 影響 (Consequences)
 
@@ -68,7 +76,7 @@
 - **已知後續（未在本次處理，記錄以避免遺失）**：
   1. 手機版走到 step4（隊伍預覽）時，桌機版沿用的 `.os-create-preview-panel` 欄位在 `@container shell-main (max-width: 899px)` 下會被隱藏，而手機版原本設計的替代方案 `.os-create-preview-bar` 又被 `!isMobile` 條件擋住——兩者交集導致手機 step4 內容區空白。此為本次桌機化重構遺留的手機端回歸，已由 [ADR-0020](0020-mobile-step4-preview-visibility.md) 修正。
   2. `GuestCreatePartyScreen.tsx` 手機版目前沒有分步 wizard（維持單頁攤平），與 `CreatePartyScreen.tsx` 手機版的 4 步 wizard 體驗不一致；若未來要統一，需要另外評估。
-  3. **跨分支 ADR-0018 內容重複（待處理）**：`docs/create-party-desktop-wizard` 分支（commit e5d3fbc）針對同一支 `feature/create-party-desktop-wizard` 前端分支，獨立提交了另一版措辭與範圍都不同的 `0018-create-party-desktop-wizard.md`（未收斂桌機版基本資料／規則欄，維持 4 步；並記錄了 560px 表單寬度與訪客已存身分自動跳頁等本文未提及的細節）。兩分支合併進 develop 前需人工比對取捨；另外前端分支後續 commit `dc61592`（merge basic-info+rules step，訪客桌機版已改為 3 步）也尚未被任一版本記錄，屬於待補的後續決策缺口。
+  3. **跨分支 ADR-0018 內容重複（已解決）**：`docs/create-party-desktop-wizard` 分支（commit e5d3fbc）針對同一支 `feature/create-party-desktop-wizard` 前端分支，曾獨立提交過另一版措辭與範圍略有不同的 `0018-create-party-desktop-wizard.md`；兩者描述的是同一個決策（僅細節詳略與寫作時間點不同），已把該版本中未被本文涵蓋的細節（方案 3 巨型 hook 的 ADR-0016 式拒絕理由、560px 表單寬度理由、`isMobile` 從 `scrollToField` 移除、訪客已有身分時桌面自動跳頁邏輯）合併進本文，並移除該分支上的重複檔案，本文為 ADR-0018 的唯一權威版本。前端分支後續 commit `dc61592`（merge basic-info+rules step，訪客桌機版已改為 3 步）發生在兩份草稿之後，已補記錄於 [ADR-0023](0023-create-party-wizard-step-merge-and-nav-reposition.md)。
 
 ## Supersedes / Superseded by
 
