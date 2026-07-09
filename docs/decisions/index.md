@@ -71,3 +71,4 @@
 | [ADR-0014](0014-guest-party-interop-frontend-ui.md) | 訪客帳號建立/申請/管理一般即時隊伍的前端 UI 實作（身分收集元件、建隊畫面、申請流程、隊長操作、成員訪客標籤） | Accepted | 2026-07-07 | frontend / party / auth |
 | [ADR-0015](0015-guest-standard-immediate-party-interop.md) | 訪客帳號與登入帳號整合：訪客可建立/申請/擔任一般即時隊伍隊長，登入時自動認領 | Accepted（部分推翻 guest-mode-plan.md Locked Decisions） | 2026-07-07 | backend / party / auth；frontend / party / auth |
 | [ADR-0016](0016-guest-party-entry-point-parity.md) | 訪客一般隊伍入口一致性修正：Sidebar/MobileBottomNav 建隊選單、/find 申請入口比照 `canApplyAsGuest`（抽出共用判斷函式，補齊 ADR-0014/0015 遺留缺口） | Accepted | 2026-07-09 | frontend / party / auth |
+| [ADR-0017](0017-job-classes-seed-cleanup.md) | `job_classes` 參考表殭屍列清理：一次性 migration 清除舊制 1-13 id ＋ `seedJobClasses()` 改為自帶同步清理語意，附部署前置稽核查詢 | Accepted | 2026-07-09 | backend / party / auth / user / guild |
