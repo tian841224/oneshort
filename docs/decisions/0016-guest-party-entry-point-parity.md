@@ -103,6 +103,18 @@ ADR-0014/ADR-0015 已經讓 `PartyDetailScreen.tsx`（隊伍詳情頁）與 `Cre
 
 此點已解決，行為與 `PartyDetailScreen.tsx` 的資格判斷完全一致（同一個 `computeCanApplyAsGuest`），不再是已知落差。
 
+## 後續追蹤：`/find` 建立隊伍 CTA 的登入攔截（2026-07-09，使用者實測回報）
+
+使用者實測目前訪客建隊/找隊流程後，回報 `src/app/find/_components/FindPartyScreen.tsx` 的 `onNavigateCreate`（供頁面右上角與空狀態「建立隊伍」CTA 使用，非快速隊伍分頁）點擊後仍會跳登入，即使目的頁 `CreatePartyScreen.tsx` 早已透過 `!auth.isAuthenticated && !guildId` 分流到完整支援訪客建立的 `GuestCreatePartyScreen`。
+
+這與本 ADR 修正 Sidebar/MobileBottomNav「一般隊伍」建隊選單項目是**同一種遺漏模式**（訪客資格判斷/入口能力沒有同步套用到所有消費端），不是新的方案取捨，故不另開三方案分析，直接沿用本 ADR 決策模式修正：
+
+- `createPartyHrefForTab(tab)` 產生的網址一律不帶 `guild_id`（`PartyTab` 型別本身也沒有任何公會限定分頁，`createTab` 只會是 `FIND_PARTY`/`FIND_QUICK`/`FIND_BOSS`/`FIND_TRAINING`），已查證過 quick 分頁本就走 `openQuickCreate()`（另一支函式，已支援訪客），故 `onNavigateCreate` 只會被非 quick 分頁呼叫，移除這裡的 `requireLogin` 攔截不會誤放行公會隊伍建立。
+- 修法：`onNavigateCreate` 移除 `if (!isAuthenticated) { requireLogin(...); return; }` 分支，一律 `router.push(createHref)`，未登入時目的頁的既有訪客分流會接手。
+- 測試：`FindPartyScreen.test.tsx` 既有斷言「非 quick 分頁建立隊伍會 requireLogin」的案例已更新為「直接導頁、不呼叫 requireLogin」。
+
+此修正範圍與本 ADR 決策 4（Sidebar/MobileBottomNav）同性質，記錄於此以避免未來重複踩坑，不影響本 ADR 已記錄的其他決策與已知後續。
+
 ## Supersedes / Superseded by
 
 不推翻任何既有 ADR；補齊 ADR-0014/ADR-0015 遺留的入口一致性缺口。ADR-0014 已加註後續更新，指向本 ADR。
