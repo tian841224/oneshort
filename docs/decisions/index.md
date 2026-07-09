@@ -71,4 +71,4 @@
 | [ADR-0014](0014-guest-party-interop-frontend-ui.md) | 訪客帳號建立/申請/管理一般即時隊伍的前端 UI 實作（身分收集元件、建隊畫面、申請流程、隊長操作、成員訪客標籤） | Accepted | 2026-07-07 | frontend / party / auth |
 | [ADR-0015](0015-guest-standard-immediate-party-interop.md) | 訪客帳號與登入帳號整合：訪客可建立/申請/擔任一般即時隊伍隊長，登入時自動認領 | Accepted（部分推翻 guest-mode-plan.md Locked Decisions） | 2026-07-07 | backend / party / auth；frontend / party / auth |
 | [ADR-0016](0016-guest-party-entry-point-parity.md) | 訪客一般隊伍入口一致性修正：Sidebar/MobileBottomNav 建隊選單、/find 申請入口比照 `canApplyAsGuest`（抽出共用判斷函式，補齊 ADR-0014/0015 遺留缺口） | Accepted | 2026-07-09 | frontend / party / auth |
-| [ADR-0017](0017-guest-create-party-mobile-submit-entry.md) | 訪客建立隊伍畫面新增手機版 step wizard 送出入口（比照 `CreatePartyScreen.tsx` 既有手機 wizard 機制，修正手機版無法觸及送出按鈕的問題） | Accepted | 2026-07-09 | frontend-rwd / party / auth |
+| [ADR-0022](0022-guest-create-party-mobile-submit-entry.md) | 訪客建立隊伍畫面新增手機版 step wizard 送出入口（比照 `CreatePartyScreen.tsx` 既有手機 wizard 機制，修正手機版無法觸及送出按鈕的問題）——原編號 ADR-0017，因與已合併進 backend develop 的 `job_classes` 清理 ADR 撞號而改編號 | Accepted | 2026-07-09 | frontend-rwd / party / auth |

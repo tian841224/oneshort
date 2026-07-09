@@ -1,9 +1,10 @@
-# ADR-0017: 訪客建立隊伍畫面新增手機版 step wizard 送出入口
+# ADR-0022: 訪客建立隊伍畫面新增手機版 step wizard 送出入口
 
 - 狀態: Accepted
 - 日期: 2026-07-09
 - 相關模組: frontend-rwd / party / auth
 - 相關文件: docs/decisions/0014-guest-party-interop-frontend-ui.md, docs/decisions/0015-guest-standard-immediate-party-interop.md, docs/decisions/0016-guest-party-entry-point-parity.md
+- **編號變更記錄**：原編號 ADR-0017，因與另一支同源分支（`docs/guest-party-followup-bugfixes`）已合併進 backend `develop` 的 `0017-job-classes-seed-cleanup.md`（不同主題，純屬同批分叉獨立搶號）撞號，且該側已在 `backend/migrations/0047_prune_stale_job_classes.up.sql` 的 3 處註解中硬編碼引用 `ADR-0017`（已合併入 backend develop，改動成本遠高於本文件），故本文件改編號為 ADR-0022；`GuestCreatePartyScreen.tsx`（分支 `fix/guest-mobile-create-submit`）內 3 處 `ADR-0017` 註解已同步更新為 `ADR-0022`。
 
 ## 背景 (Context)
 
