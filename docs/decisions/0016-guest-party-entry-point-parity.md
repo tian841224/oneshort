@@ -115,6 +115,18 @@ ADR-0014/ADR-0015 已經讓 `PartyDetailScreen.tsx`（隊伍詳情頁）與 `Cre
 
 此修正範圍與本 ADR 決策 4（Sidebar/MobileBottomNav）同性質，記錄於此以避免未來重複踩坑，不影響本 ADR 已記錄的其他決策與已知後續。
 
+## 後續更新（2026-07-10）
+
+使用者回報：一個「開放訪客登入」（`allow_quick_login_players=true`）的隊伍，訪客申請仍跳登入頁、空位仍顯示登入提示。追查根因後發現這不是既有已知後續（本 ADR §「已知後續」第 1 點）的重演，而是一個新的落差：**建立/編輯隊伍表單完全沒有阻止「排程隊伍」或「鎖定（需密碼）隊伍」同時開啟「開放訪客登入」**，導致隊伍本身的設定就自相矛盾——`allow_quick_login_players=true`，但排程隊伍（訪客資料無處存放）與鎖定隊伍（`GetPartyForViewer` 對未加入訪客一律 403、`verify-password` 端點要求已登入 actor，見本 ADR「背景」段落的查證）架構上訪客本來就無法申請。修正分兩部分：
+
+1. **`computeCanApplyAsGuest`（`src/lib/partyDisplay.ts`）新增鎖定隊伍排除**：新增 `if (p.join_requires_password) return false;`，並改寫原本「鎖定隊伍刻意不排除」的註解——原註解引用本 ADR 的調查結論說明為何故意保留，現在依同一份調查結論（鎖定隊伍對未加入訪客是後端死路）改為排除，是依 ADR-0016 自己記錄的發現做的後續修正，**不是推翻本 ADR 的決策**，不需要新開 ADR 或標記 Superseded。
+2. **建立/編輯隊伍表單新增「排程/鎖定 vs 開放訪客登入」互斥防呆**，避免資料層面出現矛盾組合，而不是只在讀取端補一次判斷：
+   - `BasicInfoColumn.tsx` 的 `RuleRow` 新增 `disabled`/`disabledHint` props；「允許快速登入玩家」列在 `form.locked || form.scheduleType === "scheduled"` 時停用（視覺變暗、點擊不觸發 `onChange`、`aria-disabled`、desc 文案替換為說明原因）。
+   - `CreatePartyScreen.tsx`／`GuestCreatePartyScreen.tsx` 的 `setField`：切換 `locked` 為 `true` 時連帶把 `quickJoin` 設為 `false`；`CreatePartyScreen.tsx` 另外在 `scheduleType` 切為 `"scheduled"` 時也連帶清空 `quickJoin`（`GuestCreatePartyScreen.tsx` 無排程欄位，不需要）。
+   - `StandardPartySettingsModal.tsx`（隊伍設定編輯 modal，本身沒有「允許快速登入玩家」UI 開關）：`submit` 組 payload 時，若這次儲存會讓隊伍落入 `roomType === 'password'` 或 `partyType === 'BOSS' && scheduleType === 'scheduled'`，強制 `allow_quick_login_players: false`，避免既有隊伍透過編輯流程繞過表單防呆、產生矛盾資料。
+
+此修正沒有推翻本 ADR 任何決策，也不影響上方「已知後續」第 1、2 點（後端訪客密碼驗證路徑、`/find` 原地完成申請）仍未處理的狀態。
+
 ## Supersedes / Superseded by
 
 不推翻任何既有 ADR；補齊 ADR-0014/ADR-0015 遺留的入口一致性缺口。ADR-0014 已加註後續更新，指向本 ADR。

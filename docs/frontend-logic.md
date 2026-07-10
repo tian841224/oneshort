@@ -342,6 +342,7 @@ QuickPartyDetailView:
   - 未登入點選可申請空缺時觸發登入流程，登入後返回原隊伍
   - 若一般隊伍 `allow_quick_login_players=true`，未登入使用者可從「任意職業 / 不限職業」空缺直接開始；前端記住原本點選的空缺，快速登入或登入完成返回後以目前角色和該 slot 送出申請
   - 密碼隊伍 → 顯示密碼輸入框
+  - 鎖定（`join_requires_password=true`）隊伍一律視為訪客不可直接申請，即使 `allow_quick_login_players=true` 也一樣：`computeCanApplyAsGuest` 排除鎖定隊伍（ADR-0016 2026-07-10 後續更新），空缺顯示「登入後申請」而非可直接開始
 
 [已登入/非成員]:
   - 查看詳情（無 channel）
