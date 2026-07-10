@@ -790,13 +790,16 @@ PUT 補充說明：
   "join_password": "123456",
   "channel": "7",
   "show_channel_on_card": true,
-  "guest_display_name": "遊客名稱"
+  "guest_display_name": "遊客名稱",
+  "guest_job_class_id": 112,
+  "guest_level": 150
 }
 ```
 
 **說明:**
 - `room_type` 必填，`OPEN` / `APPROVAL` / `PASSWORD` 三選一；`PASSWORD` 房需附 `join_password`（最長 6 碼）。
 - 未登入呼叫時會建立 quick guest identity（cookie），`guest_display_name` 作為遊客顯示名稱（最長 20 字）。
+- `guest_job_class_id`/`guest_level` 選填，僅用來讓 HOST slot 的訪客顯示卡片帶職業/等級快照（回應 `slots[].filled_by_job`/`filled_by_level`/`filled_by_is_guest`），前端渲染方式比照一般隊伍訪客成員；不影響加入判斷（見 `quick-join` 說明）。兩者需同時提供才會生效，缺任一項時維持舊行為（僅顯示暱稱）。
 - 建立者自動成為快速隊伍 HOST participant。
 
 **Response 201:** `QuickPartyResponse`（`{ "party": Party, "viewer_capabilities": {...}, "guest": {...} }`）
@@ -850,7 +853,9 @@ PUT 補充說明：
 {
   "guest_display_name": "遊客名稱",
   "slot_order": 2,
-  "join_password": "123456"
+  "join_password": "123456",
+  "guest_job_class_id": 112,
+  "guest_level": 150
 }
 ```
 
@@ -858,8 +863,8 @@ PUT 補充說明：
 - `quick-join` 是快速隊伍唯一的加入/申請操作；前端列表預覽的「加入隊伍」與詳情空位列都必須呼叫此 endpoint。
 - OPEN 房直接加入最低可用空位；若指定 `slot_order`，該空位必須存在且可用。
 - PASSWORD 房需要正確 `join_password`，成功後加入空位並回傳成員能力。
-- APPROVAL 房只建立 pending application，不自動佔位，也不應自動導向成員視角。
-- 快速隊伍 slot 不支援職業、等級或是否必填條件；加入判斷只看空位是否開啟且未佔用。
+- APPROVAL 房只建立 pending application，不自動佔位，也不應自動導向成員視角；申請當下提供的 `guest_job_class_id`/`guest_level` 會隨申請一併保存，待 HOST 核准時原封不動套用到最終佔用的空位（訪客沒有 characters 列可查，核准當下無法重新索取）。
+- 快速隊伍 slot 不支援職業、等級或是否必填條件；加入判斷只看空位是否開啟且未佔用。`guest_job_class_id`/`guest_level` 純粹是佔用後的顯示快照（同 `POST /parties/quick`），不會篩選誰能加入。
 
 **Response 200:** `QuickPartyResponse`
 

@@ -396,7 +396,7 @@ Worker 生命週期:
 - `current_members` 代表實際隊伍人數，由所有 `is_filled=true` 的席位推導；隊長必須永遠佔用其中一格
 - 席位新增、更新、刪除與完整隊伍 snapshot 編輯預設只有隊長可操作；自動配對生成的公會隊伍額外允許公會 LEADER/OFFICER 管理
 - 席位可設定：職業(job_class)、等級範圍(min/max_level)、是否必填(is_required)；等級範圍固定為 **1～200**，見「十、全域欄位範圍規範」§10.1
-- 快速隊伍例外：slot 只代表空位開啟/關閉與已佔用狀態，不支援職業、等級、是否必填或空位備註；`PUT /parties/:id/quick-settings` 會清除或忽略這些條件，`max_members` 由保留的 slot 數量推導。
+- 快速隊伍例外：slot 本身（需求定義）只代表空位開啟/關閉與已佔用狀態，不支援職業、等級、是否必填或空位備註等**加入條件**；`PUT /parties/:id/quick-settings` 會清除或忽略這些條件，`max_members` 由保留的 slot 數量推導。這與**佔用者顯示快照**（`filled_by_job`/`filled_by_level`/`filled_by_is_guest`）是兩回事：訪客佔位者若在建立/加入/申請時提供完整職業+等級（`guest_job_class_id`+`guest_level`，見 API Reference `POST /parties/quick`、`POST /parties/:id/quick-join`），會存到該席位供前端比照一般隊伍訪客樣式渲染；缺任一項則維持只顯示暱稱的舊行為，兩者都不影響誰能加入。
 - 席位可預填（建立時 `filled_by` 即指定角色）
 - 隊長可直接把自己擁有的角色指定到空 slot，不必先建立 pending application
 - 當 `filled_by` 有值時，後端會將該席位視為已填入成員，不接受 `filled_by != null` 且 `is_filled = false` 的半完成狀態
