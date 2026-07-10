@@ -41,6 +41,12 @@
 4. 採方案 D-2：`QuickParticipant` 不新增欄位。
 5. **一致性補強（非新決策，屬同一批修正的正確性延伸）**：所有既有的「清空 slot」路徑（`LeaveQuickParty`、`KickQuickSlotMember`、`repository_slot.go` 的 Redis-only `KickSlotMember` 清空段落）新增 `FilledByIsGuest = false` 重置；`preserveQuickSlotRuntimeState`（`ReplaceQuickParty` 用來保留佔用中 slot 的既有 runtime 狀態）新增保留 `FilledByIsGuest`；`fillQuickSlotMember` 的角色分支新增 `FilledByIsGuest = false` 重置。這些是「新引入的 `true` 值狀態」必然要求的清空/保留對稱性，不是獨立功能，但同樣影響正確性，故一併記錄於此決策範圍內。
 
+### 後續修正（2026-07-10，PR #70 code review 第二輪）
+
+第 5 點列舉的「清空 slot」路徑遺漏了第 4 條：`repository_slot.go` 的 `UpdateSlot` Redis-only 分支（一般/排程隊伍透過 `PATCH` slot 直接指定 `FilledBy`/`IsFilled` 的路徑，與快速隊伍的 `LeaveQuickParty`/`KickQuickSlotMember`/`KickSlotMember` 三條路徑不同模組但同一類正確性問題）在 fill 與 unfill 兩個分支都沒有重設 `FilledByIsGuest`，導致真實角色填入「曾是訪客佔用」的空位後，`FilledByIsGuest` 殘留 `true`，使 `syncPartySlotCharacterInfo()` 永久跳過該 slot 的名稱/職業/等級同步。已修正：fill 分支填入真實角色資料時、unfill 分支清空時皆補上 `FilledByIsGuest = false`（新增回歸測試 `TestRepository_UpdateSlot_RedisOnlyBranch_FillResetsGuestSnapshotFlag`／`TestRepository_UpdateSlot_RedisOnlyBranch_UnfillResetsGuestSnapshotFlag`，仿照既有 `TestRepository_KickSlotMember_RedisOnlyBranch_ResetsGuestSnapshotFlag`）。
+
+同批 code review 並延伸抽出三個共用 helper，消除本決策範圍內程式碼的重複：`stampGuestSlotSnapshot`（`repository_slot.go`，被 `applyGuestLeaderToParty` 與 `applyQuickGuestSlotSnapshot` 共用，取代兩處重複的 `FilledByName/Job/Level/IsGuest` 賦值邏輯）、`clearSlotOccupant`（`repository_slot.go`，被 `LeaveQuickParty`／`KickQuickSlotMember`／`KickSlotMember` Redis-only 分支共用，取代三處重複的 7 欄位清空邏輯）、`guestSlotProfile` struct（`usecase_quick.go`，取代 `addQuickMemberToParty`/`fillQuickSlot`/`fillQuickSlotMember` 三層簽章中單純配對傳遞的 `guestJob *jobclass.JobClass`/`guestLevel *int16` 兩個獨立指標參數）。三者皆為對已定案架構的重構完成，不改變本 ADR 已決定的行為，故不另立新 ADR，僅在此補記完整範圍。
+
 ## 理由 (Rationale)
 
 依 core.md §3.1 三大前提（安全性 > 維護性 > 效能）：
