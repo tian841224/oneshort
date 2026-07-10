@@ -69,3 +69,7 @@
 ## Supersedes / Superseded by
 
 不推翻任何既有 ADR；補齊 ADR-0015 訪客身分機制遺留的跨元件同步與 Navbar 呈現缺口。
+
+## 後續更新（2026-07-10，PR #90 code review）
+
+「影響」一節原描述的「`persistQuickGuestProfile` 一次呼叫觸發 3 次事件」已修正，不再是現況：三個底層 setter（`persistQuickGuestDisplayName`/`persistQuickGuestJobClassId`/`persistQuickGuestLevel`）新增 `{ silent?: boolean }` 選項，`persistQuickGuestProfile` 呼叫三者時傳入 `{ silent: true }` 並在最後自行 emit 一次，使批次寫入只觸發 1 次事件；決策第 1 點「刻意在最底層 setter 觸發」的核心理由（讓 `FindPartyScreen.tsx`/`claimGuestParties.ts` 等獨立呼叫 `persistQuickGuestDisplayName` 的呼叫點也能同步）不變——這些呼叫點不傳 `silent` 選項，維持各自呼叫即 emit 的行為。同批亦將 `quickPartySession.ts` 與 `quickGuestIdentity.ts` 重複的「自訂事件 + storage 監聽」樣板抽成共用 `frontend/src/lib/localStorageSync.ts`（`createLocalStorageSyncChannel`），兩份 pattern 本身不變，只是消除重複實作，不影響本 ADR 的架構決策。
