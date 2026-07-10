@@ -46,3 +46,7 @@
 ## Supersedes / Superseded by
 
 不推翻任何既有 ADR；是 ADR-0018／ADR-0020／ADR-0022／ADR-0023 既有決策在一次分支合併中的自然延伸與正式記錄。
+
+## 已知後續（2026-07-10，PR #90 code review 第三輪）
+
+第 24 行記錄了 `tests/e2e/guest-party-interop.e2e.ts` 的 e2e 測試已在合併當下清理，但**遺漏了同一次合併留下的另一份孤兒測試**：`src/app/parties/create/_components/GuestCreatePartyScreen.test.tsx`（unit test）當時沒有同步更新，繼續斷言 `fix/guest-mobile-create-submit` 分支已被本決策否決的「獨立 4 步驟手機 wizard」（`StepDots`、`.os-mobile-wizard-footer` 等），而非合併後實際採用的「桌機 3 步驟 wizard + 手機單一連續捲動」（ADR-0018／ADR-0020）版面。這份孤兒測試因為斷言的 DOM 結構不存在而持續失敗，在 GitHub Actions CI 被發現並擋下 PR #90 的合併。已重寫 `GuestCreatePartyScreen.test.tsx` 4 個情境對齊目前實際行為（桌機 3 步驟走完送出、手機單一捲動送出、資料不完整時的欄位驗證），並抽出共用的 `flushGuestProfileHydration()` helper（`src/test/guestProfileHydration.ts`）消除該測試檔與 `FindPartyScreen.test.tsx`／`PartyDetailScreen.test.tsx`／`AppShell.test.tsx` 四處重複的 hydration 等待邏輯。不影響本 ADR 的架構決策，僅補記測試孤兒的完整清理範圍。
