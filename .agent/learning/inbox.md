@@ -25,3 +25,8 @@
 - 情境：`docs/decisions/index.md` 已有 Accepted 的 [ADR-0028](0028-toast-severity-classification.md)（toast 新增 warning 樣式、統一型別系統、`FindPartyScreen.tsx`/`PartyDetailScreen.tsx` 等多處 toast 呼叫點與 state 型別的重構），但 frontend repo 目前程式碼（`lib/toast.ts` 的 `ToastType` 仍含 `party-boss`/`party-training`/`party-group`、`PartyDetailScreen.tsx` 的 `toast` state 仍是裸 `string | null`）尚未套用該 ADR 的任何程式碼變更——ADR 文件本身已在 root repo 記錄完成，但對應的 frontend 程式碼改動顯然是獨立、尚未落地的工作。
 - 教訓：「ADR 狀態為 Accepted」不代表對應程式碼已經合併進當前分支——修改任何模組前除了讀 ADR 全文，還要實際去看程式碼現況是否已反映該決策；若尚未反映，除非任務範圍明確涵蓋該 ADR 的實作，否則不要在不相關的任務裡順手把它做掉（範圍蔓延），只需確認自己的改動與該 ADR 未來落地不衝突（本例：新增 `showTransientToast` 的 `id` 參數是可相容的擴充，不影響日後把 `type` 從 `"info"` 改成 `"warning"`），並在回報中提醒使用者這個落差。
 - 建議去向：project-MEMORY（ADR「已決策」與「已落地」需分開驗證）
+
+## 2026-07-11｜類型: 錯誤｜專案: oneshort｜來源: fix/find-party-guest-ux reviewer 阻斷性問題修正（issue 1）
+- 情境：`PartyStatusPills` 的 `hideOpenStatus` 新增預設值 `true`（find-party 公開清單這樣才對，因為後端該清單只回傳 RECRUITING/ACTIVE），但公會頁面（`PartiesSection.tsx`/`OverviewSection.tsx`/`GuildDetailClient.tsx`）呼叫 `PartyListCard`/`PartyPreview` 時沒有跟著補上 `hideOpenStatus={false}`，於是連帶吃到新預設值。實際查 `backend/internal/guild/repository_parties.go` 的 `ListGuildParties`，沒帶 status filter 時只排除 `CLOSED`/`EXPIRED`，`HIDDEN` 隊伍仍會出現在公會隊伍清單——因此公會清單其實跟「我的隊伍」一樣需要保留「開放」標籤才能分辨招募中 vs 隱藏，這個預設值翻轉讓公會清單靜默失去這個資訊。
+- 教訓：共用元件的 prop 拿到「新預設值」（default flip）時，必須逐一稽核每個既有呼叫端的**實際資料語意**（例如對應的後端查詢範圍會不會回傳這個新預設值假設之外的狀態），不能只憑資料夾/元件命名判斷「這裡應該也適用同一個預設」；純讀 code 或看命名容易漏掉隱藏在後端 query 條件裡的例外情況，務必實際去讀對應的 repository/query 程式碼確認回傳範圍。
+- 建議去向：project-MEMORY（共用元件 default flip 需稽核所有呼叫端資料語意）
