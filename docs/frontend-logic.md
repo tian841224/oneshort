@@ -863,10 +863,23 @@ showUniqueToast 防重複機制:
   - WebSocket 成員事件需帶事件型 id（eventType + partyId + payloadId + timestamp），避免不同成員的同文案通知互相吞掉
   - 避免 WebSocket 重連時大量重複 Toast
 
-Toast 類型:
-  success → 綠色（申請被接受）
-  info    → 藍色（收到新申請、被拒絕、被踢出）
-  error   → 紅色（操作失敗、密碼錯誤）
+Toast 類型（[ADR-0028](decisions/0028-toast-severity-classification.md)）:
+  success → 綠色（--os-success）。使用者發起的操作確定完成：建立/加入/儲存/刪除/複製等動作的正面結果。
+  warning → 琥珀色（--os-warning，驚嘆號 icon）。操作沒有壞掉，但目前狀態阻擋了它，或有衝突／需要使用者留意後再繼續：
+            already-in-a-state、資源已滿／已達上限、樂觀鎖衝突需重新整理、閒置即將關閉提醒。
+  error   → 紅色（--os-danger）。操作真正失敗：API/網路/伺服器錯誤、找不到資源、密碼驗證錯誤、必填欄位未填導致無法送出。
+  info    → 金色（--os-primary。這裡是金色不是藍色 — `style.md §2` 明確禁止藍/青/紫當主色）。被動收到、
+            不需要使用者立刻處理的系統通知：收到新申請、被踢出/被拒絕/隊伍解散的被動通知、需要補充資料的引導。
+
+判斷順序（分類 4 類時依此判斷，勿逕行套用「錯誤訊息 = error」的直覺）：
+  1. 操作真的失敗了嗎（API/系統層級錯誤）？ → 是則 error
+  2. 操作完成了嗎？ → 是則 success
+  3. 是使用者主動觸發、但被目前狀態擋下 / 有衝突需要處理嗎？ → 是則 warning（不是失敗，只是需要使用者先處理）
+  4. 否則（被動通知） → info
+
+後端錯誤碼的 severity 由 `frontend/src/lib/api/errorMessages.ts` 的 `API_ERROR_SEVERITY` 集中表決定
+（`getApiErrorSeverity(code)`，見 `frontend/src/lib/api/errors.ts`），未列在表中的 code 一律預設 `error`，
+不需要在每個呼叫點各自硬寫。
 ```
 
 ---
