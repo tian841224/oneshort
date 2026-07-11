@@ -3,7 +3,7 @@
 - 狀態: Accepted
 - 日期: 2026-07-05
 - 相關模組: frontend / guide-widgets / party
-- 相關文件: docs/frontend-logic.md §1.3、[ADR-0002](0002-party-widget-renderer-coverage.md)、frontend `src/features/guide/widgetMembers.ts`、`src/features/guide/memberColors.ts`、`src/app/parties/[id]/_components/MemberColorLegend.tsx`
+- 相關文件: frontend repo `docs/frontend-logic.md` §1.3、[ADR-0002](0002-party-widget-renderer-coverage.md)、frontend `src/features/guide/widgetMembers.ts`、`src/features/guide/memberColors.ts`、`src/app/parties/[id]/_components/MemberColorLegend.tsx`
 
 ## 背景 (Context)
 

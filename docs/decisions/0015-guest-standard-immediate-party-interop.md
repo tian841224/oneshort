@@ -3,7 +3,7 @@
 - 狀態: Accepted（部分推翻 [docs/features/guest-mode-plan.md](../features/guest-mode-plan.md) 的 Locked Decisions）
 - 日期: 2026-07-07
 - 相關模組: backend / party / auth；frontend / party / auth
-- 相關文件: docs/business-logic.md, docs/api-reference.md, docs/backend-data-flows.md, docs/frontend-logic.md, docs/features/party.md, docs/features/guest-mode-plan.md
+- 相關文件: docs/business-logic.md, docs/api-reference.md, docs/backend-data-flows.md, frontend repo `docs/frontend-logic.md`, docs/features/party.md, docs/features/guest-mode-plan.md
 
 ## 背景 (Context)
 

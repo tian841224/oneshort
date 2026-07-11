@@ -50,3 +50,13 @@
 - 情境：修正 `pkg/middleware/primary_read_stickiness.go`（read-your-write primary DB 黏性）與 `internal/stats/middleware.go`（HTTPRequestCounter 請求計數）這兩處真正的「production 行為被靜默失效」regression 後，`grep -rln "api/v1" --include="*.go" .` 仍命中 13 個檔案（`internal/{auth,guild,guide,party,stats}/*_test.go`、`pkg/middleware/{api_version,idempotency,security_headers}_test.go`）。逐一 spot-check 後發現：這些都是測試自建 `gin.New()` router、註冊路徑與請求路徑用同一組 `/api/v1` 字串（內部自洽），且不呼叫任何被本次修正影響的函式（`grep` 確認未引用 `shouldTrackRequest`/`isActorStickyWrite`/`resourceWriteStickyResource`/`resourceReadStickyResource`/`PrimaryReadStickiness`/`HTTPRequestCounter`）——這些只是「命名慣例過時」的美觀問題，不是「production 行為被靜默失效」的 regression。
 - 教訓：全域 grep `/api/v1` 命中的檔案不能一律視為同一類 bug 直接無腦取代。要先判斷該處字串是（a）**production 程式碼**用來比對真實請求路徑做行為判斷（如 middleware 的 `strings.HasPrefix(c.FullPath(), ...)`）——這種若前綴與 `cmd/server/main.go` 實際註冊的路由不符，就是真正的「dead code / 靜默失效」regression；還是（b）**測試自建路由**只要註冊路徑、請求路徑、斷言路徑三者互相一致，就算前綴字串過時也不影響測試正確性，只是命名不夠新。下一批全面修正任務處理剩下 13 個檔案時，仍應逐一確認同構、但可預期它們多半只是（b）類的命名一致性清理，不必當成 regression 等級處理。
 - 建議去向：project-MEMORY（api/v1→v2 全面清理任務的分類方法，供下一批處理時參考）
+
+## 2026-07-12｜類型: 發現｜專案: oneshort｜來源: docs 重整（ROOT backend-data-flows.md 合併進 backend/docs/data_flow.md）
+- 情境：把 ROOT `docs/backend-data-flows.md` 合併進 backend `docs/data_flow.md` 時，逐數值對照程式碼發現 ROOT 文件多處具體數值/機制早已過時：(1) Relay Worker 輪詢實為 100ms、重試上限 `DefaultMaxAttempts=12`+指數退避（文件寫 500ms、3 次）；(2) Primary Read Stickiness 視窗預設 5 秒 `READ_STICKY_WINDOW`（文件寫 5 分鐘）；(3) rate limit 實為 query=100/write=20/login=5/bug_report=3 per min 的 Redis Lua bucket（文件寫「一般 60、auth 10、admin 無限制、開發環境記憶體限流」，全不存在）；(4) 在線人數是連線註冊/註銷時事件驅動廣播到 `public:broadcast`（文件寫 30 秒 worker 發到 `parties:global`，且同一份文件另一節又寫 `public:broadcast`，自相矛盾）；(5) cache warmup 間隔 30 秒（文件寫 5 分鐘）。
+- 教訓：搬移/合併「描述程式行為的文件」時，不能把來源文件當事實照抄——凡是具體數值（間隔、TTL、上限、房間名）都要 grep 對應程式碼驗證後再寫入目的檔；同一份文件內兩節對同一機制描述矛盾，是「至少一節過時」的強訊號，優先用程式碼裁決。
+- 建議去向：project-MEMORY（文件合併/搬移的數值驗證紀律）
+
+## 2026-07-12｜類型: 發現｜專案: oneshort｜來源: docs 重整——business-logic.md 併入 backend specs
+- 情境：把 ROOT `docs/business-logic.md` 逐條併入 `backend/docs/specs/*.md` 時，逐條與程式碼查證發現多處 ROOT 文件已過時：(1) 公會 LEADER/OFFICER 管理公會隊伍的放寬，ROOT 寫「僅限 `generated_by_match=true` 的自動配對隊伍」，但 `internal/party/usecase_helpers.go` 的 `canGuildOfficerManageGuildParty` 完全不檢查 `GeneratedByMatch`（unit test 也以 `false` 通過 update/review/delete），guild.md 的「所有 GUILD 隊伍」才正確；(2) ROOT 寫 admin 隊伍列表用 `include_closed=true`，實際 `GET /admin/parties` 無此參數、直接列出全部，`include_closed` 是一般 `GET /parties`（我的隊伍 72h 內 CLOSED）的參數；(3) 舊 specs/party.md「guest 專用流程已移除」與 notify.md「guild 通知事件已移除」皆與現行 ADR-0015 訪客互通、guild.md 現行事件矛盾。
+- 教訓：搬移/合併舊規格文件前，對每一條「限制條件、參數名、已移除聲明」先 grep 程式碼查證再落地，不可假設較長較詳細的那份文件比較新；兩份文件互相矛盾時以程式碼為準，並在報告中列出被判定過時的條目與證據。
+- 建議去向：project-MEMORY（OneShort 文件維護注意事項）

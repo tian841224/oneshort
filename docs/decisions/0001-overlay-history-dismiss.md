@@ -3,7 +3,7 @@
 - 狀態: Accepted
 - 日期: 2026-07-04
 - 相關模組: frontend-rwd / chat / shell（`useMobileChatSheet`、`useMobileNavDrawer`）
-- 相關文件: docs/frontend-logic.md、.agent/rules/style.md §10
+- 相關文件: frontend repo `docs/frontend-logic.md`、.agent/rules/style.md §10
 
 ## 背景 (Context)
 

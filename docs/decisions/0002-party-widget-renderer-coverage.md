@@ -3,7 +3,7 @@
 - 狀態: Accepted
 - 日期: 2026-07-04
 - 相關模組: frontend / guide-widgets / party
-- 相關文件: docs/frontend-logic.md §1.3、backend/internal/guide/validator.go、admin/frontend/src/views/guides/guideAuthoring.ts
+- 相關文件: frontend repo `docs/frontend-logic.md` §1.3、backend/internal/guide/validator.go、admin/frontend/src/views/guides/guideAuthoring.ts
 
 ## 背景 (Context)
 

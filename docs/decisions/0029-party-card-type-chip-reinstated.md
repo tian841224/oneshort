@@ -3,13 +3,13 @@
 - 狀態: Accepted
 - 日期: 2026-07-11
 - 相關模組: frontend / party
-- 相關文件: [docs/frontend-logic.md §3.3](../frontend-logic.md)
+- 相關文件: frontend repo `docs/frontend-logic.md` §3.3
 
 ## 背景 (Context)
 
 使用者回報：尋找隊伍卡片／預覽面板的「目標」旁邊，希望能同時看到「隊伍類型」（打王/遠征/練功/團練/任務/活動）。
 
-`docs/frontend-logic.md:253` 目前記載一條既有產品決策：「卡片不再顯示類型標籤 (BOSS/TRAINING/GROUP) chip；類型資訊改由左側類型 Logo 傳達」。這條文字建立於 2026-05-03，早於本專案的 ADR 制度（約 2026-07 才開始），因此從未掛過正式 ADR 編號，只是純文件記載。
+frontend repo `docs/frontend-logic.md:253` 目前記載一條既有產品決策：「卡片不再顯示類型標籤 (BOSS/TRAINING/GROUP) chip；類型資訊改由左側類型 Logo 傳達」。這條文字建立於 2026-05-03，早於本專案的 ADR 制度（約 2026-07 才開始），因此從未掛過正式 ADR 編號，只是純文件記載。
 
 實際檢視程式碼發現：目前唯一的「類型 chip」只在 `isQuickParty && party.type` 時於卡片標題列渲染（`PartyListCard.tsx`、`PartyPreview.tsx`），因為快速隊伍沒有「目標」區塊可依附，才留了這個例外。一般隊伍（BOSS/TRAINING/GROUP）完全沒有類型文字標籤，只能透過左側縮圖間接暗示類型——這正是使用者這次回報「看不到類型」的根因。
 
@@ -41,7 +41,7 @@
 - `PartyPreview.tsx`：標題-meta 列既有的 quick-party chip 同樣改用共用元件；在 `!isQuickParty && objective.target` 的 objective 區塊旁，新增同一元件（`.os-party-preview__title-meta` 本身是 `flex` + `gap`，新增的 chip 同樣自然並排）。
 - 快速隊伍（quick party）維持原本標題列顯示一次，目標/objective 區塊本身對 quick party 不存在（`objectiveOf`/`objective.target` 對 quick 隊伍回傳空），因此不會重複顯示。
 - `party.type`（`PartyTypeLabel`，`frontend/src/lib/design/parties.ts`）已經是人類可讀中文標籤，直接顯示，不需額外映射。
-- 文件同步：`docs/frontend-logic.md` §3.3 該行文字更新為反映新行為（見「影響」段）。
+- 文件同步：frontend repo `docs/frontend-logic.md` §3.3 該行文字更新為反映新行為（見「影響」段）。
 
 ## 理由 (Rationale)
 
@@ -56,10 +56,10 @@
 
 ## 影響 (Consequences)
 
-- `docs/frontend-logic.md` §3.3「卡片不再顯示類型標籤 (BOSS/TRAINING/GROUP) chip；類型資訊改由左側類型 Logo 傳達」這行過期文字，改為：「一般隊伍（BOSS/TRAINING/GROUP）的目標旁會顯示類型標籤（`PartyTypeChip`）；快速隊伍維持在標題列顯示，不重複」。
+- frontend repo `docs/frontend-logic.md` §3.3「卡片不再顯示類型標籤 (BOSS/TRAINING/GROUP) chip；類型資訊改由左側類型 Logo 傳達」這行過期文字，改為：「一般隊伍（BOSS/TRAINING/GROUP）的目標旁會顯示類型標籤（`PartyTypeChip`）；快速隊伍維持在標題列顯示，不重複」。
 - 新增的 `PartyTypeChip` 元件是純展示層，對 API 契約、資料結構、後端均無影響。
 - 舊決策（左側 Logo 傳達類型）並未被完全推翻——左側縮圖仍然存在、仍傳達類型的視覺印象，本次只是額外恢復文字標籤作為補充，兩者並存。
 
 ## Supersedes / Superseded by
 
-無正式 ADR 可標記為 supersede（舊決策僅為 `docs/frontend-logic.md` 內的一般文字記載，未掛 ADR 編號），本 ADR 是該主題首次正式記錄。
+無正式 ADR 可標記為 supersede（舊決策僅為 frontend repo `docs/frontend-logic.md` 內的一般文字記載，未掛 ADR 編號），本 ADR 是該主題首次正式記錄。

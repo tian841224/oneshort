@@ -3,7 +3,7 @@
 - 狀態: Accepted
 - 日期: 2026-07-11
 - 相關模組: frontend / party / auth
-- 相關文件: [docs/frontend-logic.md §3.2](../frontend-logic.md)、[ADR-0014](0014-guest-party-interop-frontend-ui.md)、[ADR-0015](0015-guest-standard-immediate-party-interop.md)
+- 相關文件: frontend repo `docs/frontend-logic.md` §3.2、[ADR-0014](0014-guest-party-interop-frontend-ui.md)、[ADR-0015](0015-guest-standard-immediate-party-interop.md)
 
 ## 背景 (Context)
 
@@ -56,7 +56,7 @@
 
 ## 影響 (Consequences)
 
-- `docs/frontend-logic.md` §3.2 `MY_PARTY` tab 那一列的描述（原文：「未登入且本瀏覽器有 `quick_active_party` host/member session 時，只顯示該快速隊伍」）需要更新為不再限定快速隊伍。
+- frontend repo `docs/frontend-logic.md` §3.2 `MY_PARTY` tab 那一列的描述（原文：「未登入且本瀏覽器有 `quick_active_party` host/member session 時，只顯示該快速隊伍」）需要更新為不再限定快速隊伍。
 - `Sidebar.tsx`／`MobileBottomNav.tsx`（導覽徽章）／`ApplicationsScreen.tsx`（我的申請）會一致地同步看到訪客建立的一般隊伍，這是沿用同一套機制的自然結果，非需要額外處理的新行為。
 - **明確排除的範圍**：本次修正聚焦在訪客擔任隊長（host）**建立**的一般隊伍。訪客申請並被接受成為一般隊伍**成員**（非隊長）的情境，理論上沿用同一個 `rememberQuickPartySession(partyId, "member")` 機制也能受益，但目前的訪客申請流程（`PartyDetailScreen.tsx` 的 `submitGuestApply`）沒有明確的「已被接受」時機點可以掛上這個呼叫（需要額外判斷申請結果或訂閱 `party.application_accepted` 事件），複雜度不同，本次不展開，留作已知後續。
 - 已知限制（非本次修正引入的新限制，訪客身分模型本身既有）：此追蹤機制僅限同一瀏覽器/裝置的 localStorage，換裝置或清除瀏覽器資料會遺失記錄；`quickPartySessionTtlMs`（24 小時）到期後自動失效。

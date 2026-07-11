@@ -3,7 +3,7 @@
 - 狀態: Accepted
 - 日期: 2026-07-05
 - 相關模組: frontend / guide-widgets / party
-- 相關文件: [ADR-0004](0004-widget-member-identity-and-colour-legend.md)、backend/internal/guide/validator.go、docs/frontend-logic.md §1.3
+- 相關文件: [ADR-0004](0004-widget-member-identity-and-colour-legend.md)、backend/internal/guide/validator.go、frontend repo `docs/frontend-logic.md` §1.3
 
 ## 背景 (Context)
 
@@ -40,7 +40,7 @@
 - `ensureMemberColor`/`ensureMembersColors` 簽名新增 `now: string`（呼叫端傳入 `new Date().toISOString()`）以填入後端要求的 `assigned_at`，維持函式本體是純函式、可測試（時間來源留在呼叫端，不內嵌 side effect）。
 - `parseMemberColorsState` 嚴格只接受合法 `color_key`（比對 `GUIDE_MEMBER_COLOR_KEYS`），格式不符或欄位缺漏一律降級為空狀態（沿用既有 defensive-parse 慣例，見 ADR-0002）。
 - `useMemberColors`/`useEnsureMemberColors` 呼叫端同步改參數；`memberColor()` 回傳值仍是可直接套用的 hex 字串，所有既有小工具（`AssignmentSlotList`、`AnswerLookupWidget` 等）透過 `colorOf()` 消費，**不需要改動**（讀取介面契約不變，只有底層儲存格式修正）。
-- 同步更新 `docs/frontend-logic.md` §1.3 的 `party_member_colors` 說明，移除文件中對舊 `{v, colors}` 格式的隱性描述。
+- 同步更新 frontend repo `docs/frontend-logic.md` §1.3 的 `party_member_colors` 說明，移除文件中對舊 `{v, colors}` 格式的隱性描述。
 
 ## 理由 (Rationale)
 

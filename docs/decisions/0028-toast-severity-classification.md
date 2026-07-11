@@ -3,7 +3,7 @@
 - 狀態: Accepted
 - 日期: 2026-07-10
 - 相關模組: frontend / party / guild / auth
-- 相關文件: [docs/frontend-logic.md §16](../frontend-logic.md)
+- 相關文件: frontend repo `docs/frontend-logic.md` §16
 
 ## 背景 (Context)
 
@@ -58,7 +58,7 @@
 - 所有透過 `showToast`／`Toast` 元件顯示的訊息現在有 4 種明確樣式，`ToastContainer` 不再有「未知值＝綠色成功」的靜默錯誤路徑。
 - `DecoratedHTTPError` 新增 `code` 欄位是向後相容的擴充（原有消費者只讀 `displayMessage` 不受影響）。
 - 新增後端錯誤碼時，若該碼屬於「阻擋前提／狀態衝突」語意，前端需要記得在 `API_ERROR_SEVERITY` 補登記，否則預設仍是 `error`（安全預設，不會誤判成過度樂觀的 `warning`）。
-- `docs/frontend-logic.md` §16 同步更新為 4 類型表格，並修正「`info` 是藍色」的既有文件錯誤（`info` 實際使用 `--os-primary` 金色，符合 `style.md §2` 禁止藍/青/紫當主色的規範）。
+- frontend repo `docs/frontend-logic.md` §16 同步更新為 4 類型表格，並修正「`info` 是藍色」的既有文件錯誤（`info` 實際使用 `--os-primary` 金色，符合 `style.md §2` 禁止藍/青/紫當主色的規範）。
 
 ## Supersedes / Superseded by
 
