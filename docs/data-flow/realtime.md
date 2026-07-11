@@ -22,7 +22,7 @@ OneShort 針對「隊伍加入」、「成員變動」等高頻率變更，採�
 ### **資料流向圖**
 `Redis Streams` → `WS Gateway / API Server` → `WebSocket Client (Browser)`
 
-- **Gateway 職責**: 消費 `ws_events` stream，根據 `room_id` 將訊息轉發給對應連線；`chat` action 若是 `party:{id}` 會使用 cache Redis + DB 檢查 party membership，快速隊伍只允許隊長與隊員讀取/發言，若是 `lobby:chat` 則走公開大廳聊天並以未登入 guest 名稱「遊客」發送。
+- **Gateway 職責**: 消費 `ws_events` stream，根據 `room_id` 將訊息轉發給對應連線；`chat` action 若是 `party:{id}` 會使用 cache Redis + DB 檢查 party membership，快速隊伍只允許隊長與隊員讀取/發言，若是 `lobby:chat` 則走公開大廳聊天，未登入訪客若已透過 quick-guest session 設定角色資訊（暱稱＋職業＋等級，與一般隊伍訪客流程共用，見 ADR-0032）則比照登入玩家顯示職業與等級，否則以「遊客」發送。
 - **Consumer Group**: 預設使用 instance-scoped group（`ws_gateway_{hostname}`），每個 gateway instance 都會各自收到 outbox-backed event，並廣播給本機 in-memory hub；新 group 從 stream 的 `$` 建立，不回放既有 `ws_events` 歷史 backlog。
 - **Outbox Dedupe**: `notify:outbox:seen:{outbox_id}` 只用來避免 DB notification、chat cleanup、internal character processor 等全域副作用重複執行。即使 outbox ID 已被其他 instance 標記處理過，本 instance 仍會先完成本機 `hub.Deliver` 與 `parties:global` mirror，再 ack 該 stream message。`notify:outbox:delivered:{group}:{outbox_id}` 則用來避免同一 consumer group 因 XACK 失敗或 pending message reclaim 對本機 WebSocket 連線重送同一事件。
 - **認證 (Auth)**: WebSocket 握手時會驗證 JWT；建立連線後，server 會自動把連線加入 `public:broadcast` 與當前 identity 的 personal room（`actor:{id}`）。未登入 quick guest 若帶有效 `quick_guest_token`，當前 identity 會是 quick guest 對應的 personal room，因此可收到快速隊伍建立者專屬事件。
