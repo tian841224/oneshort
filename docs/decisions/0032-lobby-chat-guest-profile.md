@@ -27,7 +27,7 @@
 - `SendLobbyChatMessage` 的 actor 解析改為「先試 `middleware.GetIdentity(c)`；未登入時，若 `h.partyUC` 已注入，呼叫新介面方法 `PartyUseCase.EnsureQuickGuestChatSession`（`party.useCase.EnsureQuickGuestChatSession` 包一層 `EnsureQuickGuestProfile`，回傳 `identity.Identity` 而非 party 領域的 `QuickGuestIdentity`，避免 notify 套件依賴 party 專屬型別）」；`h.partyUC == nil`（僅測試情境）則優雅降級為原本的匿名遊客路徑。
 - 新增 `lobbyChatRequest`（獨立於既有 `partyChatRequest`，避免隊伍聊天的 Swagger 契約意外多出訪客欄位）承載可選的 `guest_display_name`/`guest_job_class_id`/`guest_level`，沿用 `EnsureQuickGuestProfile` 既有的 enum/範圍驗證。
 - 回應透過 notify 套件自有的 `setQuickGuestCookie` helper（與 `party.Handler.setQuickGuestCookie` 屬性一致：`Path=/`、`MaxAge=86400`、`HttpOnly`、`SameSite=Lax`、正式環境 `Secure`）設回 `quick_guest_token` cookie。
-- `lobbyChatSenderFromIdentity`（map，HTTP POST 用）與 `lobbyChatSenderStructFromIdentity`（struct，WebSocket 用）短路條件改為：`actor.IsZero()` 或（`Kind==KindGuest` 且 `JobClassID==0` 或 `Level==0`）才顯示通用「遊客」——半完成狀態（只有其中一項）視同未完成，皆用 OR 而非 AND，確保只有兩項都齊全才顯示完整職業/等級。
+- `lobbyChatSenderFromIdentity`（map，HTTP POST 用）與 `lobbyChatSenderStructFromIdentity`（struct，WebSocket 用）短路條件改為：`actor.IsZero()` 或（`Kind==KindGuest` 且 `Level==0`）才顯示通用「遊客」——完成判斷只看 `Level`（合法值域 `[1,200]`，`0` 是無歧義的未設定哨兵）；`JobClassID` 不論值為何（含 `0`＝`jobclass.Beginner`／初心者，一個合法的職業列舉值）皆不作為判斷依據，避免把訪客的合法職業選擇誤判成「未設定」。
 - WebSocket 的 `"chat"` action 已經走 `identityFromRequest`，無需改動。
 
 前端：
@@ -55,6 +55,7 @@
 - `POST /api/v1/lobby/chat` 新增 400 錯誤碼 `NOTIFY_CHAT_GUEST_PROFILE_INVALID`（訪客 profile 缺失或驗證失敗時回傳），為後端新增的行為，需同步更新 API 文件（`docs/api-reference.md`、backend `docs/specs/notify.md`、Swagger）。
 - 訪客在大廳聊天設定的角色資訊與 party guest 流程共用同一份 Redis session，此後任一端點觸發的 profile 更新都會反映到另一端，屬預期行為（沿用既有 `quick_guest_token` cookie 生命週期，1 天 TTL）。
 - 歷史訊息 sender snapshot 在送出當下寫死，訪客事後修改角色資訊不會回填舊訊息（沿用 ADR-0025 慣例，非 bug）。
+- 本決策的短路條件於 reviewer 審查後修正為僅依賴 `Level==0`（見上方「決策」段），修正前的原始版本曾誤用 `JobClassID==0 || Level==0` 判斷「未設定」，屬 P1 缺陷：`jobclass.Beginner==0` 是合法職業列舉值，會讓選擇「初心者」的訪客即使完成設定仍永久顯示為通用「遊客」（backend commit `e990a3a`）。教訓：具業務意義的 enum 欄位若合法值包含 `0`，不可用該欄位的零值判斷「未設定」，須改找定義域內真正無歧義的哨兵欄位。
 
 ## Supersedes / Superseded by
 

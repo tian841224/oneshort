@@ -1811,7 +1811,7 @@ PUT 補充說明：
 - 訊息寫入公開歷史並透過 WebSocket 推送給訂閱大廳頻道的用戶端。
 - 頻率限制：未登入者 10 秒 1 則，登入者 5 秒 1 則。
 - 登入者：`sender` snapshot 包含目前角色的 `character_id`、`job_class_id`、`level`。
-- 未登入訪客：尚未透過既有 quick-guest session（與一般隊伍訪客流程共用，見 ADR-0015/ADR-0025）設定過角色資訊（暱稱＋職業＋等級）時，需在 `guest_display_name`/`guest_job_class_id`/`guest_level` 帶上完整資料才能成功送出，回應會 `Set-Cookie: quick_guest_token`；之後的訊息可省略這 3 個欄位，改用 cookie 內已儲存的 session（`quick_guest_token` 有效期內免重填）。設定完成後訪客訊息與登入玩家一樣顯示 `job_class_id`/`level`，不再是通用「遊客」樣式。詳見 ADR-0032。
+- 未登入訪客：首次無 `quick_guest_token` cookie 時，`guest_display_name` 為唯一嚴格必填欄位（用以建立既有 quick-guest session，與一般隊伍訪客流程共用，見 ADR-0015/ADR-0025），回應會 `Set-Cookie: quick_guest_token`；`guest_job_class_id`/`guest_level` 皆為可選欄位，缺席時請求仍會成功送出（僅暫時顯示為通用遊客）。之後的訊息可省略全部 3 個欄位，改用 cookie 內已儲存的 session（`quick_guest_token` 有效期內免重填）。訊息是否顯示完整職業/等級 pill，只看 session 是否已設定 `level`（`level==0` 視為未設定，`level` 合法值域為 `[1,200]`）；`guest_job_class_id`（含 `0`＝初心者/Beginner）本身不作為「是否已設定」的判斷依據，因為 `0` 是合法職業列舉值而非未設定的哨兵值。`level` 未設定時顯示通用「遊客」，已設定時比照登入玩家顯示 `job_class_id`/`level`（`job_class_id` 未提供則以初心者 0 顯示）。詳見 ADR-0032。
 
 **Response 201:** 新建的聊天訊息物件
 
