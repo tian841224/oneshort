@@ -122,7 +122,7 @@ Discord 登入：
     - source actor 角色摘要
     - 將搬移的資料摘要與 warnings
     - `確認合併並綁定 Discord` / `取消並返回個人頁`
-11. 使用者確認後呼叫 `POST /api/v1/auth/discord/link/merge`
+11. 使用者確認後呼叫 `POST /api/v2/auth/discord/link/merge`
 12. merge confirm 成功後寫入 `{ actor, current_character }` 到 `authStore`，顯示 callback feedback modal「Discord 帳號已完成合併並綁定」（約 1200ms 後自動跳轉），不使用全域 toast；導回 `/me`
 13. 若 callback 或 confirm 回 `409 discord_merge_blocked`，callback 頁需顯示 blocker 清單與返回 `/me` 動作
 14. 若 confirm 回 `400 invalid_merge_token`，callback 頁需停留在 merge state，顯示「這次合併確認已失效，請重新發起 Discord 綁定後再試。」
@@ -130,18 +130,18 @@ Discord 登入：
 
 Quick Login：
 1. 先輸入 `character_code` 與 4-6 位數字 PIN
-2. 呼叫 `GET /api/v1/auth/quick-login/check`
+2. 呼叫 `GET /api/v2/auth/quick-login/check`
 3. 若 API 服務無法連線，快速登入表單維持開啟並在提交按鈕上方顯示錯誤，同步顯示錯誤 toast，不可只在 console 顯示 `ERR_CONNECTION_REFUSED`
-4. `available`：前端展開 `display_name`、`job_class_id`、`level` 欄位，再呼叫 `POST /api/v1/auth/quick-login`
+4. `available`：前端展開 `display_name`、`job_class_id`、`level` 欄位，再呼叫 `POST /api/v2/auth/quick-login`
    - `job_class_id=0` 是合法的「初心者」，前端驗證需以 `null/undefined` 判斷未選職業，不可用 truthy/falsy 判斷
-5. `requires_pin`：直接以 `character_code + pin` 呼叫 `POST /api/v1/auth/quick-login`
+5. `requires_pin`：直接以 `character_code + pin` 呼叫 `POST /api/v2/auth/quick-login`
 6. `discord_only`：阻止 quick login，提示改用 Discord
 7. 成功後寫入 `{ actor, current_character }`，優先導回開啟登入視窗前的站內畫面，無記錄時導回首頁
 
 ### 2.2A 登入後訪客隊伍認領（[ADR-0015](decisions/0015-guest-standard-immediate-party-interop.md)）
 
 1. Quick Login 成功（`LoginEntryPanel.handleQuickLogin`）與 Discord **登入**成功（`auth/discord/callback/page.tsx`，僅限一般登入，**不含**帳號綁定 `intent=link`，因為綁定不會有訪客身分需要遷移）之後，皆會呼叫 `claimGuestPartiesAfterLogin(queryClient)`（`src/lib/auth/claimGuestParties.ts`）。
-2. 該函式呼叫 `partyApi.claimGuest()`（`POST /api/v1/parties/guest-claim`）；沒有 `quick_guest_token` cookie 時後端回 204，前端直接略過。
+2. 該函式呼叫 `partyApi.claimGuest()`（`POST /api/v2/parties/guest-claim`）；沒有 `quick_guest_token` cookie 時後端回 204，前端直接略過。
 3. 有認領結果時：
    - 清除本機 `quickPartySession`（`clearQuickPartySession()`）與訪客暱稱（`persistQuickGuestDisplayName('')`）。
    - `claimed.length > 0` → 顯示成功 toast「已將 N 個訪客隊伍轉移到你的帳號。」
@@ -153,7 +153,7 @@ Quick Login：
 
 1. 點擊「登出」按鈕
 2. 前端同步清空 `authStore.actor`、`currentCharacter`、`isAuthenticated` 與帳號相關 modal / wizard 狀態；主動登出完成後導回首頁 `/`，不導向 `/login`
-3. 背景呼叫 `POST /api/v1/auth/logout`；即使 API 失敗，也維持本地登出狀態，避免舊帳號資訊繼續顯示
+3. 背景呼叫 `POST /api/v2/auth/logout`；即使 API 失敗，也維持本地登出狀態，避免舊帳號資訊繼續顯示
 4. 登出期間不得重新觸發 `/actors/me` bootstrap；任何登出前已送出的 `/actors/me` 回應都必須以 session/version guard 忽略，不可覆寫登出後狀態
 5. auth 從登入變未登入、或 actor id 切換時，需取消並清空 React Query cache，清除 party password cache、post-login redirect 等帳號相關 session storage
 6. 未登入仍可瀏覽公開隊伍與公開公會列表/詳情，也可建立快速隊伍；公開隊伍詳情 `/parties/[id]` 不可因未登入直接顯示「找不到此隊伍」，只有 detail API 明確回 404 才顯示不存在；除匿名 quick guest session 例外外，個人頁、我的申請、組隊紀錄、我的隊伍、建立一般隊伍、申請加入、一般隊伍/公會聊天室發言、角色切換、公會工具、BOSS 配對與設定需隱藏或顯示「登入後開始使用」類型提示；未登入一律不顯示「我的公會 / 我的工會」
@@ -208,10 +208,10 @@ PartyHome 載入策略:
 ```
 NoticeBar / AnnouncementModal:
   - 當 `useSystemNotice` 取得最新一則 notice 時，Navbar 下方顯示 NoticeBar
-  - NoticeBar 只顯示 `/api/v1/notice` 的獨立純文字 `content`，不可 fallback 顯示 announcement Markdown `content`
+  - NoticeBar 只顯示 `/api/v2/notice` 的獨立純文字 `content`，不可 fallback 顯示 announcement Markdown `content`
   - notice content 留空時 Navbar 不顯示 NoticeBar；Footer 與自動彈窗仍可顯示最新公告 modal
   - Footer「公告」與自動彈窗共用 `openModal('announcement')` 與同一個公告視窗；NoticeBar 不開啟公告 modal
-  - 公告視窗使用 `/api/v1/announcement` 的 DB 最新 active 公告，不可讀取 `public/docs/announcement.md`
+  - 公告視窗使用 `/api/v2/announcement` 的 DB 最新 active 公告，不可讀取 `public/docs/announcement.md`
   - `useSystemAnnouncement` 需定期刷新，讓長時間停留的使用者能看到新公告並重新評估 seen token；`useSystemNotice` 需獨立刷新跑馬燈內容
   - 公告視窗使用 shared `Modal` shell，內容必須以 Markdown + GFM 渲染，不可直接輸出原始字串
   - 後台送出公告時只能用 trim 判斷 content 是否為空，寫入 API/DB 的 content 必須保留原始空白與縮排
@@ -238,7 +238,7 @@ URL 參數 `?tab=` 控制顯示模式：
 
 **空狀態規則**：非 `MY_PARTY` 分頁（`FIND_QUICK`/`FIND_PARTY`/`FIND_BOSS`/`FIND_TRAINING`）在無搜尋字串、無啟用篩選、且清單為 0 筆時，顯示與有隊伍時同一個「建立隊伍」卡片（`CreatePartyCard`），取代空狀態插畫；一旦有搜尋字串或啟用篩選，即使清單清空為 0 筆，仍維持原本「找不到符合「...」的隊伍」／「沒有符合篩選條件的隊伍」空狀態文案。`MY_PARTY` 分頁的預設空清單不受影響，維持「目前還沒有隊伍」插畫。
 
-> **ADR-0015 現況**：後端已支援訪客建立/申請一般即時公開隊伍（`partyApi.createGuest`/`applyAsGuest` 等，見 [api-reference.md](../api-reference.md) 訪客一般即時隊伍互通章節），但**此頁與下方 §3.5/§3.6 描述的「需登入」UI 目前尚未改動**——訪客建立/申請一般隊伍的實際頁面（`CREATE_PARTY` tab 解鎖、`QuickGuestIdentityPrompt` 擴充職業/等級欄位、PartyCard 訪客渲染）為後續 UI 專案的範圍，本節其餘「需登入」相關描述在該專案完成前仍反映現況。已落地的部分只有登入後自動認領（§2.2A）與資料/API 層。
+> **ADR-0015 現況**：後端已支援訪客建立/申請一般即時公開隊伍（`partyApi.createGuest`/`applyAsGuest` 等，見 [api-reference/party.md](./api-reference/party.md) 訪客一般即時隊伍互通章節），但**此頁與下方 §3.5/§3.6 描述的「需登入」UI 目前尚未改動**——訪客建立/申請一般隊伍的實際頁面（`CREATE_PARTY` tab 解鎖、`QuickGuestIdentityPrompt` 擴充職業/等級欄位、PartyCard 訪客渲染）為後續 UI 專案的範圍，本節其餘「需登入」相關描述在該專案完成前仍反映現況。已落地的部分只有登入後自動認領（§2.2A）與資料/API 層。
 
 ### 3.3 PartyCard 顯示邏輯
 
@@ -466,7 +466,7 @@ handleApply(slotId, charId, joinPassword?):
   2. 依隊伍類型解析參照 ID：
      - BOSS / GROUP → 對應 `target_option_id`
      - TRAINING → 對應 `target_map_id`
-  3. POST /api/v1/parties
+  3. POST /api/v2/parties
      - 帶 `leader_character_id`
      - `max_members` 必須等於送出的 slots 數；建立頁維持 6 格容量
      - 一律同步 `allow_quick_login_players`
@@ -758,7 +758,7 @@ WebSocket 觸發通知更新:
   - 否則 → 403 頁面
 
 顯示內容:
-  - 統計數字（`GET /api/v1/admin/stats` 回傳的總用戶與目前進行中隊伍）
+  - 統計數字（`GET /api/v2/admin/stats` 回傳的總用戶與目前進行中隊伍）
   - 用戶管理（搜尋/封禁）
   - 隊伍管理（查看所有狀態包含 HIDDEN / CLOSED）
   - 會員管理入口（`/admin/members`）

@@ -22,7 +22,7 @@
 - 建議去向：project-MEMORY（規劃文件落地前的型別/機制核對提醒）
 
 ## 2026-07-10｜類型: 發現｜專案: oneshort｜來源: fix/party-list-guest-chat-fixes 實作前 ADR 核對
-- 情境：`docs/decisions/index.md` 已有 Accepted 的 [ADR-0028](0028-toast-severity-classification.md)（toast 新增 warning 樣式、統一型別系統、`FindPartyScreen.tsx`/`PartyDetailScreen.tsx` 等多處 toast 呼叫點與 state 型別的重構），但 frontend repo 目前程式碼（`lib/toast.ts` 的 `ToastType` 仍含 `party-boss`/`party-training`/`party-group`、`PartyDetailScreen.tsx` 的 `toast` state 仍是裸 `string | null`）尚未套用該 ADR 的任何程式碼變更——ADR 文件本身已在 root repo 記錄完成，但對應的 frontend 程式碼改動顯然是獨立、尚未落地的工作。
+- 情境：`docs/decisions/index.md` 已有 Accepted 的 [ADR-0028](../../docs/decisions/0028-toast-severity-classification.md)（toast 新增 warning 樣式、統一型別系統、`FindPartyScreen.tsx`/`PartyDetailScreen.tsx` 等多處 toast 呼叫點與 state 型別的重構），但 frontend repo 目前程式碼（`lib/toast.ts` 的 `ToastType` 仍含 `party-boss`/`party-training`/`party-group`、`PartyDetailScreen.tsx` 的 `toast` state 仍是裸 `string | null`）尚未套用該 ADR 的任何程式碼變更——ADR 文件本身已在 root repo 記錄完成，但對應的 frontend 程式碼改動顯然是獨立、尚未落地的工作。
 - 教訓：「ADR 狀態為 Accepted」不代表對應程式碼已經合併進當前分支——修改任何模組前除了讀 ADR 全文，還要實際去看程式碼現況是否已反映該決策；若尚未反映，除非任務範圍明確涵蓋該 ADR 的實作，否則不要在不相關的任務裡順手把它做掉（範圍蔓延），只需確認自己的改動與該 ADR 未來落地不衝突（本例：新增 `showTransientToast` 的 `id` 參數是可相容的擴充，不影響日後把 `type` 從 `"info"` 改成 `"warning"`），並在回報中提醒使用者這個落差。
 - 建議去向：project-MEMORY（ADR「已決策」與「已落地」需分開驗證）
 
@@ -40,3 +40,13 @@
 - 情境：`lobbyChatSenderFromIdentity`/`lobbyChatSenderStructFromIdentity` 的「訪客是否已完整設定角色」短路判斷原本同時看 `JobClassID==0` 與 `Level==0`，但 `jobclass.Beginner==0` 是合法且可被使用者主動選擇的職業列舉值，不是「未設定」的哨兵——訪客誠實選擇「初心者」並設定合法等級後，仍會被永久誤判成未完成設定、顯示為通用「遊客」，且訪客端無法自行修正（AC 違反）。reviewer 審查後改為只依賴 `Level==0`（`level` 合法值域 `[1,200]`，`0` 才是無歧義的未設定哨兵），backend commit `e990a3a`。
 - 教訓：具業務意義的 enum 欄位若合法值域包含 `0`（本例 `jobclass.Beginner==0`），不可用該欄位的零值判斷「是否未設定」，會讓使用者做出合法選擇卻被系統永久誤判成「未完成」；應改找該欄位定義域內真正無歧義的哨兵欄位（本例 `Level`，因為 level 合法值域是 `[1,200]`，`0` 從不是合法值）。設計任何「XX 欄位是否已設定」的短路/完成度判斷前，先確認該欄位的零值是否落在合法值域內；若落在合法值域內，一律改用其他欄位或額外的「已設定」旗標判斷，不能用零值當哨兵。
 - 建議去向：project-MEMORY（enum 零值語意重載陷阱）；ADR-0032「影響 (Consequences)」段已補記此修正
+
+## 2026-07-11｜類型: 發現｜專案: oneshort｜來源: 全專案文件整合任務（reviewer 交叉核對）
+- 情境：backend commit `a37d1dd`（2026-06-15，"feat(api): upgrade route prefix and version header from v1 to v2"）把 `cmd/server/main.go` 的三個路由 group（`public`/`protected`/`optional`）前綴從 `/api/v1` 全面改成 `/api/v2`，但只改了程式碼，未同步更新任何文件。導致 backend `docs/specs/*.md`（19 處）、`docs/features.md`（113 處），以及 root `docs/api-reference/*.md`（160 處）、`docs/business-logic.md`（13 處）、`docs/backend-data-flows.md`（95 處）共 400+ 處文件仍寫著已不存在的 `/api/v1/...` 端點路徑，且維持了近一個月都沒被發現。
+- 教訓：這類「純文字端點路徑描述」（非 markdown 連結）不會被一般的連結完整性檢查抓到——`docs/frontend-logic.md:241` 那種 `[text](path)` 斷鏈可以靠掃描連結語法抓，但 `/api/v1/parties` 這種寫死在 prose/程式碼範例裡的字串不行，需要另外對「已知的路徑前綴／版本號」做全文 grep 才抓得到。修改後端路由 group 前綴（或任何全域路徑常數、版本號）時，除了 core.md §4「API 結構變動時必須同步更新前端」，還必須額外 grep 全部 `docs/specs/*.md`、`docs/api-reference*`、`docs/features.md`、`docs/business-logic.md`、`docs/backend-data-flows.md` 做批次替換，不能只滿足於前端程式碼層面的同步。
+- 建議去向：project-MEMORY；已用 spawn_task 開一個獨立任務全面修正 `/api/v1` → `/api/v2`（範圍太大，不在本次文件整理任務內處理）
+
+## 2026-07-11｜類型: 發現｜專案: oneshort｜來源: fix/api-v1-dead-prefix-checks（上一條 spawn_task 的第一批修正）
+- 情境：修正 `pkg/middleware/primary_read_stickiness.go`（read-your-write primary DB 黏性）與 `internal/stats/middleware.go`（HTTPRequestCounter 請求計數）這兩處真正的「production 行為被靜默失效」regression 後，`grep -rln "api/v1" --include="*.go" .` 仍命中 13 個檔案（`internal/{auth,guild,guide,party,stats}/*_test.go`、`pkg/middleware/{api_version,idempotency,security_headers}_test.go`）。逐一 spot-check 後發現：這些都是測試自建 `gin.New()` router、註冊路徑與請求路徑用同一組 `/api/v1` 字串（內部自洽），且不呼叫任何被本次修正影響的函式（`grep` 確認未引用 `shouldTrackRequest`/`isActorStickyWrite`/`resourceWriteStickyResource`/`resourceReadStickyResource`/`PrimaryReadStickiness`/`HTTPRequestCounter`）——這些只是「命名慣例過時」的美觀問題，不是「production 行為被靜默失效」的 regression。
+- 教訓：全域 grep `/api/v1` 命中的檔案不能一律視為同一類 bug 直接無腦取代。要先判斷該處字串是（a）**production 程式碼**用來比對真實請求路徑做行為判斷（如 middleware 的 `strings.HasPrefix(c.FullPath(), ...)`）——這種若前綴與 `cmd/server/main.go` 實際註冊的路由不符，就是真正的「dead code / 靜默失效」regression；還是（b）**測試自建路由**只要註冊路徑、請求路徑、斷言路徑三者互相一致，就算前綴字串過時也不影響測試正確性，只是命名不夠新。下一批全面修正任務處理剩下 13 個檔案時，仍應逐一確認同構、但可預期它們多半只是（b）類的命名一致性清理，不必當成 regression 等級處理。
+- 建議去向：project-MEMORY（api/v1→v2 全面清理任務的分類方法，供下一批處理時參考）

@@ -7,7 +7,7 @@
 
 ## 背景 (Context)
 
-大廳聊天（`LiveChatRoom.tsx` + `POST /api/v1/lobby/chat`）對訪客（guest）訊息一律顯示成通用「遊客」樣式，不顯示職業/等級 pill，且訪客從未被要求設定角色資訊就能發言。需求：訪客首次送出大廳聊天訊息前，若尚未設定角色資訊（暱稱＋職業＋等級），應彈出「設定角色」畫面；設定完成後，大廳聊天訊息比照登入玩家顯示等級與職業。
+大廳聊天（`LiveChatRoom.tsx` + `POST /api/v2/lobby/chat`）對訪客（guest）訊息一律顯示成通用「遊客」樣式，不顯示職業/等級 pill，且訪客從未被要求設定角色資訊就能發言。需求：訪客首次送出大廳聊天訊息前，若尚未設定角色資訊（暱稱＋職業＋等級），應彈出「設定角色」畫面；設定完成後，大廳聊天訊息比照登入玩家顯示等級與職業。
 
 實查程式碼後確認，訪客身分解析基礎設施（quick-guest Redis profile session、`identity.Identity.JobClassID`/`Level`、`EnsureQuickGuestProfile`、`ResolveQuickGuestIdentity`、前端 `GuestProfilePrompt` dialog）**已存在且被 ADR-0015/ADR-0025 驗證過**，只是大廳聊天的 POST 送訊息路徑（`SendLobbyChatMessage` 用 `middleware.GetIdentity(c)`，未走 `identityFromRequest`）與訊息渲染短路條件（`lobbyChatSenderFromIdentity`/`Struct` 只要 `Kind==KindGuest` 就一律顯示遊客）從未接上這條既有管線；前端 `useLobbyChat.ts` 送訊息時訪客分支也刻意 `credentials:'omit'`（2026-05-26 commit `229825e` 為保護登入者 access-token cookie 而設，非針對 quick-guest cookie）。
 
@@ -52,7 +52,7 @@
 ## 影響 (Consequences)
 
 - `notify.PartyUseCase` 介面新增 `EnsureQuickGuestChatSession` 方法，`party.UseCase` 介面同步新增（`party.useCase` 實作）——任何未來新增的 `party.UseCase`/`notify.PartyUseCase` 手寫 mock（非透過 embedding 取巧）都需補上這個方法才能編譯。
-- `POST /api/v1/lobby/chat` 新增 400 錯誤碼 `NOTIFY_CHAT_GUEST_PROFILE_INVALID`（訪客 profile 缺失或驗證失敗時回傳），為後端新增的行為，需同步更新 API 文件（`docs/api-reference.md`、backend `docs/specs/notify.md`、Swagger）。
+- `POST /api/v2/lobby/chat` 新增 400 錯誤碼 `NOTIFY_CHAT_GUEST_PROFILE_INVALID`（訪客 profile 缺失或驗證失敗時回傳），為後端新增的行為，需同步更新 API 文件（`docs/api-reference.md`、backend `docs/specs/notify.md`、Swagger）。
 - 訪客在大廳聊天設定的角色資訊與 party guest 流程共用同一份 Redis session，此後任一端點觸發的 profile 更新都會反映到另一端，屬預期行為（沿用既有 `quick_guest_token` cookie 生命週期，1 天 TTL）。
 - 歷史訊息 sender snapshot 在送出當下寫死，訪客事後修改角色資訊不會回填舊訊息（沿用 ADR-0025 慣例，非 bug）。
 - 本決策的短路條件於 reviewer 審查後修正為僅依賴 `Level==0`（見上方「決策」段），修正前的原始版本曾誤用 `JobClassID==0 || Level==0` 判斷「未設定」，屬 P1 缺陷：`jobclass.Beginner==0` 是合法職業列舉值，會讓選擇「初心者」的訪客即使完成設定仍永久顯示為通用「遊客」（backend commit `e990a3a`）。教訓：具業務意義的 enum 欄位若合法值包含 `0`，不可用該欄位的零值判斷「未設定」，須改找定義域內真正無歧義的哨兵欄位。

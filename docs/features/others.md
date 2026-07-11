@@ -7,8 +7,8 @@
 ## 1. OCR 影像辨識 (OCR Module)
 
 - **業務功能**:
-    - `POST /api/v1/ocr/parse-screenshot` 接收 PNG/JPEG/WEBP 截圖並回傳解析結果。
-    - `POST /api/v1/ocr/presign` 在 storage 設定完成時提供上傳預簽 URL。
+    - `POST /api/v2/ocr/parse-screenshot` 接收 PNG/JPEG/WEBP 截圖並回傳解析結果。
+    - `POST /api/v2/ocr/presign` 在 storage 設定完成時提供上傳預簽 URL。
 - **後端 (Backend)**:
     - **Domain**: `backend/internal/ocr/domain.go`.
     - **Handler**: `backend/internal/ocr/handler.go`.
@@ -21,9 +21,9 @@
 ## 2. Bug 回報 (Bug Report)
 
 - **業務功能**:
-    - `POST /api/v1/bug-reports` 為公開端點，目前不要求登入。
-    - `GET /api/v1/bug-reports` 回傳最新 50 筆、所有狀態的公開摘要，依建立時間由新到舊排序；不得公開 `user_id`、`contact`、`description` 或 `developer_reply`。
-    - `PATCH /api/v1/admin/bug-reports/{id}` 為管理員端點，用於更新 `status` 與 `developer_reply`。
+    - `POST /api/v2/bug-reports` 為公開端點，目前不要求登入。
+    - `GET /api/v2/bug-reports` 回傳最新 50 筆、所有狀態的公開摘要，依建立時間由新到舊排序；不得公開 `user_id`、`contact`、`description` 或 `developer_reply`。
+    - `PATCH /api/v2/admin/bug-reports/{id}` 為管理員端點，用於更新 `status` 與 `developer_reply`。
     - Request 欄位為 `title`、`description`、選填 `contact`。
     - 建立回應以 `{ data: SubmittedBugReport }` 回傳新建資料，不包含 `user_id` 或 `developer_reply`。
     - `status` 可能值為 `open`、`in_progress`、`completed`。

@@ -42,3 +42,4 @@ pwsh -File .\scripts\test.ps1 -Suite all -NoCache # 整合驗證
 - 所有功能必須涵蓋單元測試 (`*_test.go`)。
 - 涉及資料庫時必須執行 integration test。
 - API 變更後同步更新 Swagger 文件。
+- **API 路由前綴、路徑或 schema 變更時，除了 Swagger，必須同步 grep 並更新 `docs/specs/*.md`、`docs/features.md`；若異動範圍涉及根目錄文件，一併更新 `docs/api-reference/*.md`、`docs/business-logic.md`、`docs/backend-data-flows.md`**（純文字端點路徑不是連結，一般連結檢查抓不到，見 [core.md §3](core.md#3-架構優先原則)）。

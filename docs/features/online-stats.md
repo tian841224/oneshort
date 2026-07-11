@@ -164,7 +164,7 @@ backend/
 
 - 前端沿用現有 `useWebSocket` / `wsStore`
 - 訂閱 `system.online_count` 事件後更新畫面
-- 若需要首屏同步，可保留 `GET /api/v1/stats/online` 作為初始值 fallback
+- 若需要首屏同步，可保留 `GET /api/v2/stats/online` 作為初始值 fallback
 
 ### 8.3 本次不做
 
@@ -177,7 +177,7 @@ backend/
 
 ### 9.1 公開端點
 
-#### `GET /api/v1/stats/online`
+#### `GET /api/v2/stats/online`
 
 用途：提供頁面初始化時的即時線上人數。
 
@@ -204,8 +204,8 @@ backend/
 
 ### 9.3 不提供的介面
 
-- 不提供 `GET /api/v1/admin/stats/daily`
-- 不提供 `GET /api/v1/admin/stats/today`
+- 不提供 `GET /api/v2/admin/stats/daily`
+- 不提供 `GET /api/v2/admin/stats/today`
 
 ---
 

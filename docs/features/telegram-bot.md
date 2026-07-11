@@ -9,14 +9,14 @@
 
 ## 1. Requirements Summary
 
-擴充現有的 Telegram webhook ([backend/internal/admin/telegram.go](backend/internal/admin/telegram.go))，讓管理員可以透過 Telegram Bot 完成以下動作，並在群組中收到操作結果：
+擴充現有的 Telegram webhook ([backend/internal/admin/telegram.go](../../backend/internal/admin/telegram.go))，讓管理員可以透過 Telegram Bot 完成以下動作，並在群組中收到操作結果：
 
 | 領域 | 目前狀態 | 本次新增 |
 |------|---------|---------|
 | 公告 (Announcement) | `/announce`、`/clear`、`/delete` 已可用 | 加上「回傳成功訊息」 |
-| 跑馬燈 (Notice) | 僅 HTTP API ([handler.go:225](backend/internal/admin/handler.go#L225)) | `/notice <text>`、`/notice-clear` |
-| Bug 列表 | 僅 HTTP API ([handler.go:81](backend/internal/bugreport/handler.go#L81)) | `/bugs`、`/bugs all`、`/bugs done`、`/bug <id>` |
-| Bug 狀態 | 僅 HTTP API ([handler.go:112](backend/internal/bugreport/handler.go#L112)) | `/bug-status <id> <status>` |
+| 跑馬燈 (Notice) | 僅 HTTP API ([handler.go:225](../../backend/internal/admin/handler.go#L225)) | `/notice <text>`、`/notice-clear` |
+| Bug 列表 | 僅 HTTP API ([handler.go:81](../../backend/internal/bugreport/handler.go#L81)) | `/bugs`、`/bugs all`、`/bugs done`、`/bug <id>` |
+| Bug 狀態 | 僅 HTTP API ([handler.go:112](../../backend/internal/bugreport/handler.go#L112)) | `/bug-status <id> <status>` |
 | Bug 回覆 | 僅 HTTP API | `/bug-reply <id> <text>` |
 | 說明 | 無 | `/help` |
 
@@ -39,7 +39,7 @@
 - [ ] HTTP timeout 5s；失敗時 `zap.L().Warn(...)` 不影響 webhook 200 回應
 
 ### B. 指令解析重構
-- [ ] 將 [telegram.go:71-92](backend/internal/admin/telegram.go#L71-L92) 的 `switch` 替換為 `commandTable map[string]commandHandler`
+- [ ] 將 [telegram.go:71-92](../../backend/internal/admin/telegram.go#L71-L92) 的 `switch` 替換為 `commandTable map[string]commandHandler`
 - [ ] 解析規則：第一個 token = 指令，剩餘字串原樣保留（含 newline）
 - [ ] `/bug-reply <uuid> <body>` 解析時：去掉指令後，第一個 space 前為 id，space 後（含 newline）整段為 reply 內容
 - [ ] 未知指令 + 白名單 chat → 回覆 `❓ Unknown command. Try /help`（避免增加噪音，未知指令不再 silently drop）
@@ -90,7 +90,7 @@
 
 ### J. 配線與設定
 - [ ] 新增 env：`TELEGRAM_BOT_TOKEN`（outbound 才需要；未設定時用 noopSender + warn log）
-- [ ] [main.go:435](backend/cmd/server/main.go#L435) `NewTelegramHandler` 簽章增加 `bugUC bugreport.UseCase` 與 `sender telegram.Sender`
+- [ ] [main.go:435](../../backend/cmd/server/main.go#L435) `NewTelegramHandler` 簽章增加 `bugUC bugreport.UseCase` 與 `sender telegram.Sender`
 - [ ] 在 main.go 內依 `cfg.TelegramEnabled && cfg.TelegramBotToken != ""` 建立 httpSender；否則建立 noopSender
 - [ ] `.env.example` 補上 `TELEGRAM_BOT_TOKEN=`
 - [ ] Swagger 標籤 (`@Tags Admin`) 在 webhook handler 上更新註解列出所有支援指令
@@ -108,19 +108,19 @@
 
 ### Step 1 — Telegram Sender 套件（30 min）
 1. 新增資料夾 `backend/internal/telegram/`
-2. 新增 [sender.go](backend/internal/telegram/sender.go)：`Sender` interface + `httpSender` + `noopSender`
-3. 新增 [sender_test.go](backend/internal/telegram/sender_test.go)：用 `httptest.NewServer` 驗證 POST body / header / escape / 截斷
+2. 新增 [sender.go](../../backend/internal/telegram/sender.go)：`Sender` interface + `httpSender` + `noopSender`
+3. 新增 [sender_test.go](../../backend/internal/telegram/sender_test.go)：用 `httptest.NewServer` 驗證 POST body / header / escape / 截斷
 4. 無 DB / 無 webhook 依賴，可獨立 commit
 
 ### Step 2 — 指令路由重構（45 min）
-1. 在 [telegram.go](backend/internal/admin/telegram.go) 新增 `commandHandler func(ctx, chatID, args string) string`，回傳的字串會被 sender 發出
+1. 在 [telegram.go](../../backend/internal/admin/telegram.go) 新增 `commandHandler func(ctx, chatID, args string) string`，回傳的字串會被 sender 發出
 2. 把 `/announce`、`/clear`、`/delete` 三條既有指令搬到 table
 3. 新增成功回覆訊息（A.C. §C）
 4. 跑既有 5 支單元測試確保不破壞
 
 ### Step 3 — 注入 BugUseCase 與 Sender（30 min）
 1. `NewTelegramHandler` 簽章擴充 `bugUC bugreport.UseCase, sender telegram.Sender`
-2. 修改 [main.go:435](backend/cmd/server/main.go#L435) 配線
+2. 修改 [main.go:435](../../backend/cmd/server/main.go#L435) 配線
 3. 更新 5 支既有 telegram_test.go：把 `nil` 傳入新參數 — **不能修改測試邏輯**，所以採用 noopSender + nil bugUC（既有指令不會碰到 bugUC）
 4. 確認 `go test -tags=unit ./internal/admin/...` 仍綠
 
@@ -129,8 +129,8 @@
 2. 新增 2 條單元測試（成功 / 內容空白）
 
 ### Step 5 — Bug 列表與詳情（90 min）
-1. **Repository 擴充**：[bugreport/domain.go](backend/internal/bugreport/domain.go) Repository 介面加 `ListByStatuses(ctx, statuses []string, limit int)` 與 `GetByIDPrefix(ctx, prefix string)`；現有 `List()` 維持公開 50 筆
-2. **Repository 實作**：在 [bugreport/repository.go](backend/internal/bugreport/repository.go) 加新 method（注意 `id::text LIKE $1 || '%'` 並驗證 prefix ≥ 4 字元防 collision）
+1. **Repository 擴充**：[bugreport/domain.go](../../backend/internal/bugreport/domain.go) Repository 介面加 `ListByStatuses(ctx, statuses []string, limit int)` 與 `GetByIDPrefix(ctx, prefix string)`；現有 `List()` 維持公開 50 筆
+2. **Repository 實作**：在 [bugreport/repository.go](../../backend/internal/bugreport/repository.go) 加新 method（注意 `id::text LIKE $1 || '%'` 並驗證 prefix ≥ 4 字元防 collision）
 3. **UseCase 擴充**：加 `ListByFilter(ctx, filter)` 與 `GetByIDPrefix(ctx, prefix)`；確保 prefix < 4 字元時回 error
 4. 在 commandTable 加 `/bugs`、`/bugs all`、`/bugs done`、`/bug <id>`（A.C. §E、§F）
 5. 新增 4 條單元測試（每組指令 success + empty/not-found）
@@ -146,9 +146,9 @@
 3. 1 條單元測試
 
 ### Step 8 — 文件與 env（15 min）
-1. 更新 [.env.example](backend/.env.example) 加 `TELEGRAM_BOT_TOKEN`
-2. 更新 [docs/specs/admin.md](backend/docs/specs/admin.md) 補上完整指令列表
-3. 更新 [docs/features.md](backend/docs/features.md) 補上 Telegram 章節
+1. 更新 [.env.example](../../backend/.env.example) 加 `TELEGRAM_BOT_TOKEN`
+2. 更新 [docs/specs/admin.md](../../backend/docs/specs/admin.md) 補上完整指令列表
+3. 更新 [docs/features.md](../../backend/docs/features.md) 補上 Telegram 章節
 
 ---
 
@@ -173,7 +173,7 @@
 3. 手動 E2E（dev 環境）：
    - 啟動後端，設定 `TELEGRAM_ENABLED=true`、`TELEGRAM_BOT_TOKEN=<dev-token>`、`TELEGRAM_ALLOWED_CHAT_IDS=<my-chat>`、`TELEGRAM_SYSTEM_ADMIN_ID=<seed-uuid>`
    - 在群組依序測試：`/help` → `/announce 測試` → `/notice 跑馬燈` → `/bugs`（先用 HTTP API POST 一筆 bug）→ `/bug-status <id> in_progress` → `/bug-reply <id> 多行\n回覆` → 回到前端確認跑馬燈、bug 狀態與回覆都生效
-4. Swagger UI 確認 `/api/v1/webhook/telegram` 註解列出完整指令
+4. Swagger UI 確認 `/api/v2/webhook/telegram` 註解列出完整指令
 
 ---
 
@@ -194,15 +194,15 @@
 - `backend/internal/telegram/sender_test.go`
 
 **修改**
-- [backend/internal/admin/telegram.go](backend/internal/admin/telegram.go) — 指令路由重構、新指令、注入 bugUC + sender
-- [backend/internal/admin/telegram_test.go](backend/internal/admin/telegram_test.go) — 新建構式參數 + 新指令測試
-- [backend/internal/bugreport/domain.go](backend/internal/bugreport/domain.go) — Repository/UseCase 介面加 `ListByFilter`、`GetByIDPrefix`
-- [backend/internal/bugreport/repository.go](backend/internal/bugreport/repository.go) — 新 SQL 實作
-- [backend/internal/bugreport/usecase.go](backend/internal/bugreport/usecase.go) — 新 method 與 prefix 長度驗證
-- [backend/cmd/server/main.go](backend/cmd/server/main.go) — 注入 bugUC + sender，新 env 解析
-- [backend/.env.example](backend/.env.example) — `TELEGRAM_BOT_TOKEN=`
-- [backend/docs/specs/admin.md](backend/docs/specs/admin.md) — 指令文件
-- [backend/docs/features.md](backend/docs/features.md) — 補 Telegram 章節
+- [backend/internal/admin/telegram.go](../../backend/internal/admin/telegram.go) — 指令路由重構、新指令、注入 bugUC + sender
+- [backend/internal/admin/telegram_test.go](../../backend/internal/admin/telegram_test.go) — 新建構式參數 + 新指令測試
+- [backend/internal/bugreport/domain.go](../../backend/internal/bugreport/domain.go) — Repository/UseCase 介面加 `ListByFilter`、`GetByIDPrefix`
+- [backend/internal/bugreport/repository.go](../../backend/internal/bugreport/repository.go) — 新 SQL 實作
+- [backend/internal/bugreport/usecase.go](../../backend/internal/bugreport/usecase.go) — 新 method 與 prefix 長度驗證
+- [backend/cmd/server/main.go](../../backend/cmd/server/main.go) — 注入 bugUC + sender，新 env 解析
+- [backend/.env.example](../../backend/.env.example) — `TELEGRAM_BOT_TOKEN=`
+- [backend/docs/specs/admin.md](../../backend/docs/specs/admin.md) — 指令文件
+- [backend/docs/features.md](../../backend/docs/features.md) — 補 Telegram 章節
 
 **不變**
 - `migrations/`（無需新 schema）

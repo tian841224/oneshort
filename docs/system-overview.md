@@ -45,26 +45,16 @@
 
 | 服務 | 語言/框架 | 職責 |
 |------|----------|------|
-| **API Server** | Go 1.24 + Gin | 處理所有 REST 請求；驗證 JWT；調用 UseCase 層 |
-| **WS Gateway** | Go + gorilla/websocket | 管理 WebSocket 長連線；訂閱 Redis Stream 並轉發事件至對應 Room |
-| **Relay Worker** | Go | 從 Outbox 讀取待發佈事件，寫入 Redis Stream `ws_events` |
 | **Frontend** | Next.js 16 App Router | 提供使用者介面；透過 TanStack Query 管理 API 狀態；透過 Zustand 管理全域 UI 狀態 |
-| **PostgreSQL 16** | 主從架構 | 持久化所有業務資料（用戶、隊伍、申請、通知等） |
-| **Redis Cache** (:6379) | Redis 7 | 快取隊伍清單（版本化快取）、Redis ZSET expiry 追蹤 |
-| **Redis Realtime** (:6380) | Redis 7 Streams | 跨服務事件傳遞；`ws_events` Stream；Chat 記錄 |
+
+後端服務（API Server / WS Gateway / Relay Worker）與資料儲存（PostgreSQL / Redis Cache / Redis Realtime）的角色與職責，詳見 [backend/docs/architecture.md §2 服務拓樸](../backend/docs/architecture.md#2-服務拓樸)。
 
 ---
 
 ## 四、技術棧摘要
 
 ### 後端
-- **框架**: Go 1.24 + Gin
-- **ORM**: GORM + raw SQL (pgx/pq)
-- **驗證**: JWT (access token + refresh token，存 cookie)
-- **事件**: Transactional Outbox → Redis Streams
-- **日誌**: Zap (structured logging)
-- **指標**: Prometheus + Grafana
-- **文件**: Swagger/OpenAPI（swaggo 自動生成）
+詳見 [backend/docs/architecture.md §1 技術選型](../backend/docs/architecture.md#1-技術選型)。
 
 ### 前端
 - **框架**: Next.js 16 (App Router) + React 19
@@ -79,30 +69,21 @@
 
 ## 五、認證機制摘要
 
-1. Discord OAuth 與 Quick Login 都會登入同一種 `actor` session，成功後寫入 `access_token` 與 `refresh_token` HttpOnly Cookie。
-2. Quick Login 以 `character_code + pin` 建立或回訪 actor；首次建立時會同時建立 primary `characters` 資料列並設為 `current_character`。
-3. Discord OAuth 會建立或綁定 `actor_auth_links(provider='discord')`；若和既有 actor 衝突，走 Discord merge preflight / confirm 流程。
-4. 前端每次 API 請求攜帶 Cookie；middleware 驗證 JWT 後注入 `actor_id`、`character_id`、`linked_providers`、`login_method` 與 `is_admin`。
-5. Protected API 會在 access token 過期但 refresh token 仍有效時自動輪替 session；前端不呼叫顯式 refresh API。
-6. 舊 Guest token / guest personal room 已退場；只能 Quick Login 的玩家是 `linked_providers=["quick_login"]` 的 actor，可被隊伍的 `allow_quick_login_players=false` 阻擋申請。
+核心模型（所有登入方式最終解析成同一種 `actor + current_character` session、JWT claims 必要欄位、Cookie-based token）詳見 [backend/docs/architecture.md §5 認證模型](../backend/docs/architecture.md#5-認證模型)。
+
+補充流程重點（前端整合相關）：
+1. Quick Login 以 `character_code + pin` 建立或回訪 actor；首次建立時會同時建立 primary `characters` 資料列並設為 `current_character`。
+2. Discord OAuth 會建立或綁定 `actor_auth_links(provider='discord')`；若和既有 actor 衝突，走 Discord merge preflight / confirm 流程。
+3. 前端每次 API 請求攜帶 Cookie；Protected API 會在 access token 過期但 refresh token 仍有效時自動輪替 session，前端不呼叫顯式 refresh API。
+4. 舊 Guest token / guest personal room 已退場；只能 Quick Login 的玩家是 `linked_providers=["quick_login"]` 的 actor，可被隊伍的 `allow_quick_login_players=false` 阻擋申請。
 
 ---
 
 ## 六、資料庫主要表格
 
-| 表格 | 說明 |
-|------|------|
-| `actors` | 登入主體，包含 PIN hash、管理員與封禁狀態 |
-| `actor_auth_links` | 外部登入方式綁定，目前包含 Discord provider |
-| `characters` | 遊戲角色，關聯 `actors`，含職業/等級/角色代碼 |
-| `parties` | 隊伍，含狀態機、時間窗口、密碼設定；`target_name` 在 DB 內部儲存目標 reference ID，API 解析為顯示名稱 |
-| `party_slots` | 隊伍席位，含職業限制、填充狀態 |
-| `party_applications` | 加入申請，狀態：PENDING/ACCEPTED/REJECTED/CANCELLED |
-| `raid_boss_options` | Boss / 組隊任務選項；`party_type` 使用 `BOSS` / `GROUP` |
-| `maps` | 練功地圖主檔，供 `TRAINING` 隊伍解析地圖參照 |
-| `notifications` | 持久化通知，含 `link_url` |
-| `activity_presence_locks` | 角色的活動排他鎖（防止同一角色同時在多個進行中 party） |
-| `daily_stats` | 每日統計快照 |
+完整資料表清單詳見 [backend/docs/architecture.md §3 核心資料表](../backend/docs/architecture.md#3-核心資料表)。
+
+補充（前端整合相關）：`parties.target_name` 在 DB 內部儲存目標 reference ID，API 回應會解析為顯示名稱供前端使用。
 
 ---
 
@@ -150,9 +131,6 @@ key = "party_list:{version}:{hash(filter)}"
 ```
 
 ### WebSocket Room 模型
-```
-actor:{actorID}                 → 個人化事件（申請通知、被踢出等）
-party:{partyID}                 → 隊伍內事件（成員變動、聊天）
-parties:global                  → 全域廣播（清單狀態變化）
-public:broadcast                → 公開廣播（例如在線人數）
-```
+房間模型（`actor:{id}` / `party:{id}` / `parties:global`）詳見 [backend/docs/architecture.md §6 Room 模型](../backend/docs/architecture.md#6-room-模型)。
+
+補充：前端另訂閱 `public:broadcast`（公開廣播，例如在線人數）。

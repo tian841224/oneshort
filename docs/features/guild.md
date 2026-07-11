@@ -35,13 +35,7 @@
 - 成員在 `/guilds/:id/me/preferences` 維護 BOSS、30 分鐘時段格與可參戰角色。
 - 成員在公會首頁的行事曆由 `/guilds/:id/me/calendar` 提供；後端會以目前 actor 的所有 active 角色查詢未來 7 天內已指派 slot 的 BOSS 公會隊伍，回傳 `scheduled_at`、`target_name`、`character_name`、`character_code` 與 `party_id`。
 - `time_slots` 為 Monday-first：slot `0` 是週一 00:00，slot `13` 是週一 06:30；後端以台灣時間下個週一 00:00 作為 cycle start 後存 UTC `scheduled_at`。
-- 同一 actor 在同一時段只會被分到 1 個 BOSS 隊伍。
-- `dry_run=true` 只回傳一次性預覽，不寫入 DB。
-- `dry_run=false` 會建立 `DRAFT` match run 與 `draft_plan`，不建立 party，也不通知成員；重新整理後可透過 `GET /guilds/:id/match-runs/current-draft` 接續調整。
-- 草案包含每個成團隊伍的 BOSS、時段、隊長角色、隊員角色名稱/代碼/職業/等級，以及有該 BOSS 偏好但未配對成功的 `unmatched` 名單。
-- 幹部確認草案後呼叫 `POST /guilds/:id/match-runs/:runId/generate`，後端會重新驗證角色仍屬於 active 公會成員、職業與等級符合 slot、隊長在 assignments 中，然後於單一 transaction 建立隊伍、slot、更新 run 為 `GENERATED`，並送出既有 party 通知。
-- 每個 guild/cycle 僅允許一個 active `DRAFT`；重新產生草案會取消舊草案。已 `GENERATED` 的 cycle 不允許再次生成正式隊伍。
-- Cron 排程配對暫時維持直接生成；手動配對才使用 draft -> edit -> generate 流程。
+- dry-run／草案（`DRAFT`）／生成（`GENERATED`）的完整生命週期規則（單一 actor 同時段限額、每 guild/cycle 僅一個 active DRAFT、`generate` 重新驗證項目、Cron 排程與手動配對的流程差異）與配對演算法細節，詳見 [backend/docs/specs/guild.md § BOSS 自動配對（Auto-Match）](../../backend/docs/specs/guild.md)。
 
 ---
 

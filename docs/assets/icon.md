@@ -1,0 +1,41 @@
+pixel art guild emblem icon, 16x16 pixel perfect sprite,
+transparent background,
+centered composition,
+single object only,
+cute MMORPG fantasy style,
+MapleStory inspired but original design,
+warm beige and gold palette,
+low saturation colors,
+clean silhouette,
+high readability at tiny size,
+guild icon quality,
+retro RPG sprite,
+crisp pixel edges,
+minimal shading,
+no text,
+no frame,
+no border,
+no background,
+only one icon in image
+
+style:
+cute fantasy,
+chibi MMORPG,
+Artale inspired,
+guild emblem,
+icon asset,
+game UI sprite
+
+negative:
+multiple objects,
+icon sheet,
+grid,
+background scene,
+landscape,
+3D render,
+realistic,
+blurry,
+modern logo,
+neon cyberpunk,
+watermark,
+text

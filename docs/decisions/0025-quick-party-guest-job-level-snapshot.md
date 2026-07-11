@@ -64,7 +64,7 @@
 
 ## 影響 (Consequences)
 
-- **API 契約新增（向後相容，`omitempty`）**：`POST /api/v1/parties/quick`、`POST /api/v1/parties/{id}/quick-join` 的 request body 新增選填欄位 `guest_job_class_id`/`guest_level`；`POST /api/v1/parties/{id}/quick-enter` 刻意不加（enter 純進房看聊天不佔位）。回應 `Slot` 的既有 `filled_by_job`/`filled_by_level`/`filled_by_is_guest` 欄位現在也可能出現在快速隊伍的 payload 上（原本恆為 `null`/`false`）。
+- **API 契約新增（向後相容，`omitempty`）**：`POST /api/v2/parties/quick`、`POST /api/v2/parties/{id}/quick-join` 的 request body 新增選填欄位 `guest_job_class_id`/`guest_level`；`POST /api/v2/parties/{id}/quick-enter` 刻意不加（enter 純進房看聊天不佔位）。回應 `Slot` 的既有 `filled_by_job`/`filled_by_level`/`filled_by_is_guest` 欄位現在也可能出現在快速隊伍的 payload 上（原本恆為 `null`/`false`）。
 - **`QuickApplication` 新增 `JobClass`/`Level` 欄位**：純 Redis-only JSON 結構變動，不涉及 migration；`docs/api-reference.md`／`docs/business-logic.md` 已同步補充說明（見「相關文件」）。
 - **前端消費**：前端會比照一般隊伍訪客樣式渲染快速隊伍訪客成員卡片；後端不關心顯示邏輯，只保證資料正確落地。若前端尚未串接對應 UI，這批新增欄位在串接前只是被忽略的多餘欄位，不影響既有渲染（純新增、非破壞性）。
 - **`EnsureQuickGuestProfile` 的既有 doc comment 過期並已同步修正**：原註解稱「暱稱對快速隊伍已足夠」，現已不成立（快速隊伍佔位同樣需要職業/等級快照），comment 已改寫以反映現況（core.md §3「文件過期必須同步更新」）。

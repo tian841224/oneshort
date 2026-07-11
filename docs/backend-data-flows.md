@@ -12,84 +12,84 @@
 GET  /health                          → 健康檢查
 
 // 公開路由（無需 JWT）
-GET  /api/v1/maps                     → 取得地圖清單
-GET  /api/v1/parties                  → 取得隊伍清單（公開可見）
-GET  /api/v1/auth/config              → 取得 Discord OAuth2 設定
-POST /api/v1/auth/quick-login         → Quick Login 建立 / 回訪
-GET  /api/v1/auth/quick-login/check   → 檢查角色代碼狀態
-GET  /api/v1/auth/discord/callback    → Discord OAuth callback
-GET  /api/v1/job-classes              → 取得職業清單
-GET  /api/v1/raid-boss-options        → 取得 BOSS / GROUP 目標選項
-GET  /api/v1/stats/online             → 取得在線人數
-GET  /api/v1/announcement             → 取得主要系統公告
-GET  /api/v1/announcements            → 取得公告列表
-GET  /api/v1/notice                   → 取得 NoticeBar 跑馬燈內容
-POST /api/v1/bug-reports              → 提交 Bug 回報
-GET  /api/v1/docs/*                   → API 文件
+GET  /api/v2/maps                     → 取得地圖清單
+GET  /api/v2/parties                  → 取得隊伍清單（公開可見）
+GET  /api/v2/auth/config              → 取得 Discord OAuth2 設定
+POST /api/v2/auth/quick-login         → Quick Login 建立 / 回訪
+GET  /api/v2/auth/quick-login/check   → 檢查角色代碼狀態
+GET  /api/v2/auth/discord/callback    → Discord OAuth callback
+GET  /api/v2/job-classes              → 取得職業清單
+GET  /api/v2/raid-boss-options        → 取得 BOSS / GROUP 目標選項
+GET  /api/v2/stats/online             → 取得在線人數
+GET  /api/v2/announcement             → 取得主要系統公告
+GET  /api/v2/announcements            → 取得公告列表
+GET  /api/v2/notice                   → 取得 NoticeBar 跑馬燈內容
+POST /api/v2/bug-reports              → 提交 Bug 回報
+GET  /api/v2/docs/*                   → API 文件
 
 // 需認證路由（JWT 必須）
-POST /api/v1/auth/logout              → 登出
-GET  /api/v1/auth/me                  → 取得當前 session（相容路徑）
-GET  /api/v1/actors/me                → 取得當前 session
-POST /api/v1/auth/discord/link        → 綁定 Discord
-POST /api/v1/auth/discord/link/merge  → 確認 Discord actor 合併
-DELETE /api/v1/auth/discord/link      → 解除 Discord 綁定
-PUT  /api/v1/actors/me/pin            → 更新 quick-login PIN
-PUT  /api/v1/actors/me/current-character → 更新目前角色資料
-GET  /api/v1/characters               → 取得我的角色
-POST /api/v1/characters               → 建立角色
-PATCH /api/v1/characters/:id          → 更新角色
-DELETE /api/v1/characters/:id         → 刪除角色
+POST /api/v2/auth/logout              → 登出
+GET  /api/v2/auth/me                  → 取得當前 session（相容路徑）
+GET  /api/v2/actors/me                → 取得當前 session
+POST /api/v2/auth/discord/link        → 綁定 Discord
+POST /api/v2/auth/discord/link/merge  → 確認 Discord actor 合併
+DELETE /api/v2/auth/discord/link      → 解除 Discord 綁定
+PUT  /api/v2/actors/me/pin            → 更新 quick-login PIN
+PUT  /api/v2/actors/me/current-character → 更新目前角色資料
+GET  /api/v2/characters               → 取得我的角色
+POST /api/v2/characters               → 建立角色
+PATCH /api/v2/characters/:id          → 更新角色
+DELETE /api/v2/characters/:id         → 刪除角色
 
-POST /api/v1/parties                  → 建立隊伍
-GET  /api/v1/parties/:id             → 取得隊伍詳情
-PUT  /api/v1/parties/:id             → 以完整快照覆蓋編輯隊伍
-PATCH /api/v1/parties/:id            → 更新隊伍
-DELETE /api/v1/parties/:id           → 解散隊伍
-POST /api/v1/parties/:id/verify-password → 驗證隊伍密碼
-POST /api/v1/parties/:id/reopen       → 重新顯示 HIDDEN 隊伍
-DELETE /api/v1/parties/:id/my-membership → 離開自己的隊伍
-POST /api/v1/parties/:id/applications   → 申請加入
-GET  /api/v1/parties/:id/applications   → 取得隊伍申請列表（隊長）
-GET  /api/v1/parties/:id/my-applications → 取得我的申請
-GET  /api/v1/applications/me        → 取得我的全部待審申請（含隊伍摘要）
-PATCH /api/v1/parties/:id/applications/:appId → 審核申請
-DELETE /api/v1/parties/:id/applications/:appId → 取消申請
-POST /api/v1/parties/:id/slots        → 新增席位
-PATCH /api/v1/parties/:id/slots/:slotId → 更新席位
-DELETE /api/v1/parties/:id/slots/:slotId → 刪除席位
-POST /api/v1/parties/:id/slots/:slotId/kick → 踢出席位成員
-POST /api/v1/parties/:id/liveness    → 現有成員確認仍在並重置閒置計時
-POST /api/v1/ocr/parse-screenshot    → OCR 解析截圖
-POST /api/v1/ocr/presign             → 取得 OCR 圖片上傳預簽 URL
+POST /api/v2/parties                  → 建立隊伍
+GET  /api/v2/parties/:id             → 取得隊伍詳情
+PUT  /api/v2/parties/:id             → 以完整快照覆蓋編輯隊伍
+PATCH /api/v2/parties/:id            → 更新隊伍
+DELETE /api/v2/parties/:id           → 解散隊伍
+POST /api/v2/parties/:id/verify-password → 驗證隊伍密碼
+POST /api/v2/parties/:id/reopen       → 重新顯示 HIDDEN 隊伍
+DELETE /api/v2/parties/:id/my-membership → 離開自己的隊伍
+POST /api/v2/parties/:id/applications   → 申請加入
+GET  /api/v2/parties/:id/applications   → 取得隊伍申請列表（隊長）
+GET  /api/v2/parties/:id/my-applications → 取得我的申請
+GET  /api/v2/applications/me        → 取得我的全部待審申請（含隊伍摘要）
+PATCH /api/v2/parties/:id/applications/:appId → 審核申請
+DELETE /api/v2/parties/:id/applications/:appId → 取消申請
+POST /api/v2/parties/:id/slots        → 新增席位
+PATCH /api/v2/parties/:id/slots/:slotId → 更新席位
+DELETE /api/v2/parties/:id/slots/:slotId → 刪除席位
+POST /api/v2/parties/:id/slots/:slotId/kick → 踢出席位成員
+POST /api/v2/parties/:id/liveness    → 現有成員確認仍在並重置閒置計時
+POST /api/v2/ocr/parse-screenshot    → OCR 解析截圖
+POST /api/v2/ocr/presign             → 取得 OCR 圖片上傳預簽 URL
 
-GET  /api/v1/blocklist               → 取得封鎖清單
-POST /api/v1/blocklist               → 封鎖角色
-DELETE /api/v1/blocklist/:blocked_character_id → 解除封鎖
+GET  /api/v2/blocklist               → 取得封鎖清單
+POST /api/v2/blocklist               → 封鎖角色
+DELETE /api/v2/blocklist/:blocked_character_id → 解除封鎖
 
-GET  /api/v1/notifications           → 取得通知清單
-GET  /api/v1/notifications/unread-count → 未讀通知數量
-PATCH /api/v1/notifications/:id/read → 標記通知已讀
-PATCH /api/v1/notifications/read-all → 全部標記已讀
-DELETE /api/v1/notifications/:id    → 刪除通知
-DELETE /api/v1/notifications/read-all → 刪除所有已讀
+GET  /api/v2/notifications           → 取得通知清單
+GET  /api/v2/notifications/unread-count → 未讀通知數量
+PATCH /api/v2/notifications/:id/read → 標記通知已讀
+PATCH /api/v2/notifications/read-all → 全部標記已讀
+DELETE /api/v2/notifications/:id    → 刪除通知
+DELETE /api/v2/notifications/read-all → 刪除所有已讀
 
 // 管理員路由
-GET  /api/v1/admin/stats             → 統計資料
-GET  /api/v1/admin/banlist           → 封禁清單
-POST /api/v1/admin/banlist           → 新增封禁
-DELETE /api/v1/admin/banlist/:id     → 移除封禁
-GET  /api/v1/admin/parties           → 隊伍管理清單
-DELETE /api/v1/admin/parties/:id     → 強制關閉隊伍
-GET  /api/v1/admin/announcements     → 管理公告列表
-GET  /api/v1/admin/announcement      → 管理主要公告
-POST /api/v1/admin/announcement      → 新增公告
-PUT  /api/v1/admin/announcement      → 覆寫主要公告
-DELETE /api/v1/admin/announcement/:id → 刪除指定公告
-DELETE /api/v1/admin/announcement    → 清除公告
-GET  /api/v1/admin/notice            → 管理 NoticeBar 內容
-PUT  /api/v1/admin/notice            → 覆寫 NoticeBar 內容
-DELETE /api/v1/admin/notice          → 清除 NoticeBar 內容
+GET  /api/v2/admin/stats             → 統計資料
+GET  /api/v2/admin/banlist           → 封禁清單
+POST /api/v2/admin/banlist           → 新增封禁
+DELETE /api/v2/admin/banlist/:id     → 移除封禁
+GET  /api/v2/admin/parties           → 隊伍管理清單
+DELETE /api/v2/admin/parties/:id     → 強制關閉隊伍
+GET  /api/v2/admin/announcements     → 管理公告列表
+GET  /api/v2/admin/announcement      → 管理主要公告
+POST /api/v2/admin/announcement      → 新增公告
+PUT  /api/v2/admin/announcement      → 覆寫主要公告
+DELETE /api/v2/admin/announcement/:id → 刪除指定公告
+DELETE /api/v2/admin/announcement    → 清除公告
+GET  /api/v2/admin/notice            → 管理 NoticeBar 內容
+PUT  /api/v2/admin/notice            → 覆寫 NoticeBar 內容
+DELETE /api/v2/admin/notice          → 清除 NoticeBar 內容
 ```
 
 ### 1.2 中間件執行順序
@@ -112,20 +112,17 @@ Auth Middleware 補充：
 ### 1.3 Auth Phase 2 Flow
 
 ```
-POST /api/v1/auth/quick-login
-  1. 驗證 character_code / pin；首次建立額外驗證 display_name / job_class_id / level
-  2. `characters.character_code -> actor_id`
-   3. 不存在則建立 actors + characters
-  4. 驗證 actors.pin_hash
-  5. 寫 access_token / refresh_token cookies
-  6. 回傳 { actor, current_character }
+POST /api/v2/auth/quick-login
+  業務規則（character_code/pin 驗證、actor 建立或回訪判斷、pin_hash 驗證）詳見 [backend/docs/data_flow.md §2 Auth Phase 2 資料流 - Quick Login](../backend/docs/data_flow.md#2-auth-phase-2-資料流)
+  補充：首次建立角色時，額外驗證 display_name / job_class_id / level
+  → 驗證通過後寫 access_token / refresh_token cookies，回傳 { actor, current_character }
 
-GET /api/v1/auth/quick-login/check
+GET /api/v2/auth/quick-login/check
   1. 將 code 正規化成大寫
   2. 查 character_code
   3. 回傳 `available` / `requires_pin` / `discord_only`
 
-GET /api/v1/auth/discord/callback
+GET /api/v2/auth/discord/callback
   1. 驗 state cookie
   2. 向 Discord 換 token + 查 `/users/@me`
   3. 依序處理：
@@ -135,37 +132,32 @@ GET /api/v1/auth/discord/callback
   4. 依 current-character 規則選擇角色
   5. 寫 access_token / refresh_token cookies，回傳 { actor, current_character }
 
-POST /api/v1/auth/logout
+POST /api/v2/auth/logout
   1. 將 access / refresh token jti 寫入撤銷清單
   2. 清除 access / refresh cookies
 
-POST /api/v1/auth/discord/link
+POST /api/v2/auth/discord/link
   1. 以目前 JWT claims.ActorID 為 target actor
   2. 驗證 request body `state` 與 `oauth_state` cookie，驗證後清除 cookie
   3. Discord OAuth code exchange + `/users/@me`
   4. 若 Discord 未綁定 / 已綁目前 actor → 沿用原本成功流程
-  5. 若 Discord 已綁別的 actor：
-     - `repo.BuildDiscordMergePreview(target, source)`
-     - 檢查 banned / active party leader / active party member / pending application / activity lock
-  6. 有 blocker → `409 discord_merge_blocked`
-  7. 無 blocker → 建立 Redis 一次性 `merge_token`（TTL 5 分鐘），回 `409 discord_merge_required`
+  5. 若 Discord 已綁別的 actor → merge preflight（blocker 判斷規則詳見 [backend/docs/data_flow.md §2 Auth Phase 2 資料流 - Discord Callback / Link](../backend/docs/data_flow.md#2-auth-phase-2-資料流)）
+  6. 有 blocker → `409 discord_merge_blocked`；無 blocker → 建立 Redis 一次性 merge_token，回 `409 discord_merge_required`
 
-POST /api/v1/auth/discord/link/merge
-  1. 驗證 `merge_token` 存在且 target actor 必須等於目前 claims.ActorID
-  2. `GetDel` 消費 merge token，避免重放
-  3. 再跑一次 `BuildDiscordMergePreview`，避免 TOCTOU
-  4. blocker 出現 → `409 discord_merge_blocked`
-  5. `repo.MergeDiscordActors(...)`
+POST /api/v2/auth/discord/link/merge
+  merge_token TTL/GetDel 消費/TOCTOU-safe 重跑 preflight 的機制詳見同上章節
+  1. blocker 出現 → `409 discord_merge_blocked`
+  2. `repo.MergeDiscordActors(...)`
      - 搬移 source characters / notifications / bug_reports / discord link
      - 清空 source.pin_hash
      - 保留 target primary/current character
-  6. 重新載入 `GetMe`
-7. 以目前 login_method 重簽 access_token / refresh_token cookie，回 `{ actor, current_character }`
+  3. 重新載入 `GetMe`
+  4. 以目前 login_method 重簽 access_token / refresh_token cookie，回 `{ actor, current_character }`
 ```
 
 前端不呼叫顯式 `/auth/refresh`；protected API middleware 會在 access token 過期且 refresh token 仍有效時自動重簽 cookie。重簽前會先消費舊 refresh token，確保同一 refresh token JTI 只能成功輪替一次；若最終仍為 `401` 再由前端進入登入導向。
 
-### 1.4 PATCH /api/v1/characters/:id（更新角色）
+### 1.4 PATCH /api/v2/characters/:id（更新角色）
 
 ```
 1. 驗證操作者擁有該 character
@@ -188,7 +180,7 @@ POST /api/v1/auth/discord/link/merge
 
 ## 二、隊伍 API 資料流程
 
-### 2.1 GET /api/v1/parties（取得清單）
+### 2.1 GET /api/v2/parties（取得清單）
 
 ```
 1. 解析 Query Params → ListPartiesFilter
@@ -239,7 +231,7 @@ POST /api/v1/auth/discord/link/merge
 6. 返回 JSON 陣列
 ```
 
-### 2.2 GET /api/v1/parties/:id（取得單一隊伍）
+### 2.2 GET /api/v2/parties/:id（取得單一隊伍）
 
 ```
 1. 解析 party_id UUID
@@ -266,7 +258,7 @@ POST /api/v1/auth/discord/link/merge
 5. 返回 Party（含 slots 及 enriched 欄位）
 ```
 
-### 2.3 POST /api/v1/parties（建立隊伍）
+### 2.3 POST /api/v2/parties（建立隊伍）
 
 ```
 1. ShouldBindJSON → CreatePartyInput 驗證
@@ -279,7 +271,7 @@ POST /api/v1/auth/discord/link/merge
       - `max_members` 必須等於 `len(slots)`；slot 本身就是容量
       - `filled_by` 有值的席位會直接視為已填入成員，即使 payload 同時帶 `is_filled=false` 也會正規化為已填滿
    d. 密碼邏輯驗證
-   e. `allow_quick_login_players` 若缺省，補成 `true`
+   e. `allow_quick_login_players` 預設值規則詳見 [backend/docs/data_flow.md §3 Party 相關資料流 - 建立隊伍](../backend/docs/data_flow.md#3-party-相關資料流)
    f. 時序驗證 (recruit_until <= active_until)
    g. 解析目標參照
       - BOSS / GROUP：解析 `target_option_id`（或 fallback 以 `target_name` 回查）到 `raid_boss_options`
@@ -299,7 +291,7 @@ POST /api/v1/auth/discord/link/merge
 3. 返回 { party, slots }
 ```
 
-### 2.3.1 PATCH /api/v1/parties/:id（更新 / 隱藏 / 重新顯示）
+### 2.3.1 PATCH /api/v2/parties/:id（更新 / 隱藏 / 重新顯示）
 
 ```
 1. ShouldBindJSON → UpdatePartyInput
@@ -328,7 +320,7 @@ POST /api/v1/auth/discord/link/merge
    h. bumpListCacheVersion + 開啟短暫 primary-read 視窗，避免全域清單 refetch 命中 replica 舊資料
 ```
 
-### 2.3.2 PUT /api/v1/parties/:id（完整覆蓋編輯隊伍）
+### 2.3.2 PUT /api/v2/parties/:id（完整覆蓋編輯隊伍）
 
 ```
 1. ShouldBindJSON → ReplacePartyInput
@@ -380,7 +372,7 @@ POST /api/v1/auth/discord/link/merge
 5. 前端拿到 `PARTY_SLOT_CONFLICT` 後，應先同步最新 `party`，再要求隊長依衝突格重新確認
 ```
 
-### 2.4 POST /api/v1/parties/:id/applications（申請加入）
+### 2.4 POST /api/v2/parties/:id/applications（申請加入）
 
 ```
 1. 解析 ApplyInput { character_id, target_slot_id, join_password? }
@@ -388,7 +380,7 @@ POST /api/v1/auth/discord/link/merge
    a. actor 驗證
       - `character_id` 必填，需通過角色所有權驗證
    b. GetParty → 確認隊伍存在
-      - 若 `allow_quick_login_players=false` 且 actor `linked_providers` 只有 `quick_login`、未綁 `discord` → 409
+      - `allow_quick_login_players` 阻擋規則詳見 [backend/docs/data_flow.md §3 Party 相關資料流 - 申請加入](../backend/docs/data_flow.md#3-party-相關資料流)
    c. 密碼驗證（隊長帳號免密碼）
    d. CreateApplication 前先驗證 slot：
       - `target_slot_id` 若存在，必須屬於該隊伍
@@ -420,7 +412,7 @@ POST /api/v1/auth/discord/link/merge
 4. 返回 Application
 ```
 
-### 2.5 PATCH /api/v1/parties/:id/applications/:appId（審核申請）
+### 2.5 PATCH /api/v2/parties/:id/applications/:appId（審核申請）
 
 ```
 1. 解析 ReviewApplicationInput { action: "accept" | "reject" }
@@ -444,7 +436,7 @@ POST /api/v1/auth/discord/link/merge
       - 其他原本指向該實際 slot 的 PENDING 申請，會依 `created_at ASC` 重新分配：
         * 有其他相容空位 → 保留 `PENDING`，並改寫 `target_slot_id`
         * 沒有其他相容空位 → 改成 `CANCELLED` 並通知受影響申請者
-      - refreshRecruitUntil
+      - refreshRecruitUntil（accept/reject 的 recruit_until 刷新規則詳見 [backend/docs/data_flow.md §3 Party 相關資料流 - 審核 / 取消申請](../backend/docs/data_flow.md#3-party-相關資料流)）
       - bumpListCacheVersion
       - 發布事件：
         * party.application_accepted → applicant personal room
@@ -452,7 +444,7 @@ POST /api/v1/auth/discord/link/merge
 
    e. action=reject:
       - RejectApplication → status=REJECTED
-      - 不呼叫 refreshRecruitUntil；拒絕不代表隊伍有新活動
+      - 不呼叫 refreshRecruitUntil（規則同上）
       - bumpListCacheVersion
       - 發布事件：
         * party.application_rejected → applicant personal room
@@ -549,7 +541,7 @@ POST /parties/:id/guest-applications（訪客申請）:
    - 刪除後同步重算可見狀態與 `revision`
 ```
 
-### 2.6 POST /api/v1/parties/:id/slots/:slotId/kick（踢出成員）
+### 2.6 POST /api/v2/parties/:id/slots/:slotId/kick（踢出成員）
 
 ```
 1. 確認操作者為隊長（或為該席位的角色擁有者 → 自願離開）
@@ -569,7 +561,7 @@ POST /parties/:id/guest-applications（訪客申請）:
    - 否則踢人流程雖然知道 `character_id`，仍無法正確找出被踢者的 `actor:{id}` 房間送出 `party.member_kicked`
 ```
 
-### 2.7 POST /api/v1/parties/:id/liveness（重置閒置）
+### 2.7 POST /api/v2/parties/:id/liveness（重置閒置）
 
 ```
 1. 驗證呼叫者是否仍為隊伍現有成員（不限隊長）
@@ -589,7 +581,7 @@ stale/no-op 契約：
   - 前端 idle warning action 應將這些情境視為 silent no-op，而非真正錯誤
 ```
 
-### 2.7A POST /api/v1/parties/:id/quick-liveness（快速隊伍重置閒置）
+### 2.7A POST /api/v2/parties/:id/quick-liveness（快速隊伍重置閒置）
 
 ```
 1. 透過 quick_guest_token 解析目前 quick viewer
@@ -606,24 +598,7 @@ stale/no-op 契約：
 
 ### 3.1 Transactional Outbox 模式
 
-```
-UseCase 層呼叫 outboxStore.Enqueue(event):
-
-1. 在同一個 DB Transaction 內：
-   INSERT INTO outbox_events (
-     event_type, payload_json, room_id, status='PENDING', created_at
-   )
-
-2. Relay Worker（獨立 goroutine，每 500ms 輪詢）：
-   SELECT * FROM outbox_events WHERE status='PENDING' ORDER BY created_at LIMIT 100
-   FOR EACH event:
-     XADD ws_events * event_type=... room_id=... payload=... emitted_at=...
-     UPDATE outbox_events SET status='PROCESSED' WHERE id=...
-
-3. 原子性保證：
-   - DB 寫入 + outbox 寫入在同一 Transaction
-   - 若 API server crash → Relay Worker 重啟後繼續處理未發布事件
-```
+Outbox → Realtime 整體流程（DB Transaction 寫入 outbox_events → Relay Worker XADD 到 Redis Stream → 原子性保證）詳見 [backend/docs/data_flow.md §4 Outbox -> Realtime](../backend/docs/data_flow.md#4-outbox---realtime)。Relay Worker 實際輪詢頻率、批次大小與 SQL 查詢見本文件 [§4.1 Relay Worker](#41-relay-worker)。
 
 ### 3.2 WS Gateway Stream Consumer 流程
 
@@ -941,7 +916,7 @@ WebSocket Chat（非持久化，Redis 快取）:
   7. 若為快速隊伍，另外 XADD 同一 chat payload 到可讀聊天的 quick participant personal room；這一步不追加聊天歷史，避免重複訊息
 
 讀取歷史:
-  1. 前端呼叫 GET /api/v1/parties/{id}/chat，可用 `limit` 指定最近 1-100 筆（預設 100），後端不回傳 24 小時以前的訊息
+  1. 前端呼叫 GET /api/v2/parties/{id}/chat，可用 `limit` 指定最近 1-100 筆（預設 100），後端不回傳 24 小時以前的訊息
   2. 後端再次依 identity 驗證呼叫者仍為隊伍成員
   3. LRange "chat:party:{id}" -limit -1，回傳 { sender, content, timestamp } 陣列
   4. 後續新訊息透過 WS 推送
@@ -956,7 +931,7 @@ WebSocket Chat（非持久化，Redis 快取）:
 ## 十一、OCR 處理流程
 
 ``` 
-POST /api/v1/ocr/parse-screenshot:
+POST /api/v2/ocr/parse-screenshot:
 
 1. 接收 multipart/form-data `file` 欄位（PNG/JPEG/WEBP，上限 5 MB）
 2. 驗證 content-type、檔案大小與 magic bytes
@@ -964,7 +939,7 @@ POST /api/v1/ocr/parse-screenshot:
 4. 回傳 `{ success, data }`，其中 `data.members[]` 包含 `game_name`、`job_class_id`、`job_class_name`、`level`、`is_leader`
 5. 前端將 `members` 正規化成建立隊伍表單的已填席位資料
 
-POST /api/v1/ocr/presign:
+POST /api/v2/ocr/presign:
 1. 接收 `{ content_type, extension }`
 2. 驗證允許的圖片格式
 3. 若 storage 未設定回 `503`
@@ -978,7 +953,7 @@ POST /api/v1/ocr/presign:
 ### 12.1 即時統計
 
 ```
-GET /api/v1/stats/online:
+GET /api/v2/stats/online:
   1. 嘗試從 Redis "stats:online_count" 取得快取值
   2. 若無快取 → 從 WS Hub 計算活躍連線數
   3. 返回 { count: N }
@@ -987,7 +962,7 @@ GET /api/v1/stats/online:
 ### 12.2 管理後台統計
 
 ```
-GET /api/v1/admin/stats:
+GET /api/v2/admin/stats:
   1. AdminOnly middleware 驗證 `is_admin`
   2. Repository 查詢：
      - `actors` 總數 → `total_users`
@@ -1002,7 +977,7 @@ GET /api/v1/admin/stats:
 ### 13.1 公開讀取
 
 ```
-GET /api/v1/notice:
+GET /api/v2/notice:
   1. Repository 查詢 admin_notices 取得最新一筆 active notice
      SELECT * FROM admin_notices WHERE is_active=true ORDER BY created_at DESC, id DESC LIMIT 1
   2. 回傳 { data: AdminNotice | null }
@@ -1025,7 +1000,7 @@ useSystemNotice hook（useAdminDashboard.ts）:
 ### 13.3 管理員寫入後的前端失效
 
 ```
-PUT /api/v1/admin/notice / DELETE /api/v1/admin/notice:
+PUT /api/v2/admin/notice / DELETE /api/v2/admin/notice:
   1. Handler 完成寫入後，發布 system.notice.updated 到 public:broadcast room
      payload: { notice: AdminNotice | null }
 

@@ -39,6 +39,7 @@ npm run build            # 構建驗證（大型改動建議）
 - 合併回 `develop` 後必須執行 `npm run test:e2e`。
 - 新增或修改功能必須同步更新 E2E 測試。
 - 確保無型別報錯且與後端契約同步。
+- **UI 流程、頁面邏輯或通知規則變更時，同步更新 [docs/frontend-logic.md](../../docs/frontend-logic.md) 對應段落與相關 `docs/features/*.md`**（見 [core.md §3](core.md#3-架構優先原則)）。
 
 ## 6. 響應式不變式（RWD）
 

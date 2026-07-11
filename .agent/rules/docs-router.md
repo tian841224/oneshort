@@ -20,7 +20,7 @@ trigger: always_on
 |---|---|---|
 | 修改核心邏輯 / 狀態轉換 | [docs/business-logic.md](../../docs/business-logic.md) | 理解派對狀態機、演員權限與全域限制 |
 | 涉及整體架構變更 | [docs/system-overview.md](../../docs/system-overview.md) | 確保符合 Actor Model 與 Outbox 等架構模式 |
-| 修改 API / 資料結構 | [docs/api-reference.md](../../docs/api-reference.md) | 遵循 API 契約、錯誤碼與 WS 訊息格式 |
+| 修改 API / 資料結構 | [docs/api-reference.md](../../docs/api-reference.md)（總覽，依模組拆分至 `docs/api-reference/*.md`） | 遵循 API 契約、錯誤碼與 WS 訊息格式 |
 | 任何涉及方案取捨的設計決策 | [docs/decisions/index.md](../../docs/decisions/index.md) | 修改前必查既有 ADR 並遵守；做出新決策後必須新增 ADR，不得只寫在 PR/commit |
 
 ## 資料流與技術細節

@@ -11,7 +11,7 @@
 ```
 Quick Login Flow:
   1. 前端送出 character_code + pin；首次建立時額外帶 display_name / job_class_id / level
-  2. POST /api/v1/auth/quick-login
+  2. POST /api/v2/auth/quick-login
   3. 後端先以 character_code 查 actor + current character
   4. 若不存在：
      - 建立 actors
@@ -22,8 +22,8 @@ Quick Login Flow:
   8. 回傳 { actor, current_character }
 
 Discord OAuth Callback Flow:
-  1. 前端先呼叫 GET /api/v1/auth/config 取得 client_id / redirect_uri / state
-  2. Discord callback 命中 GET /api/v1/auth/discord/callback?code=...&state=...
+  1. 前端先呼叫 GET /api/v2/auth/config 取得 client_id / redirect_uri / state
+  2. Discord callback 命中 GET /api/v2/auth/discord/callback?code=...&state=...
   3. 後端向 Discord 交換 access token，取得 discord_user_id
   4. 若 actor_auth_links 已存在 discord 綁定：
      - 載入 actor
@@ -36,11 +36,11 @@ Discord OAuth Callback Flow:
 8. 成功後簽發 access_token / refresh_token HttpOnly Cookie，回傳 { actor, current_character }
 
 Quick Login Check:
-  1. GET /api/v1/auth/quick-login/check?code=ABC1234
+  1. GET /api/v2/auth/quick-login/check?code=ABC1234
   2. 正規化 character_code 為大寫後查詢
   3. 回傳 `available` / `requires_pin` / `discord_only`
 
-Discord Link Merge Flow (`POST /api/v1/auth/discord/link` -> `POST /api/v1/auth/discord/link/merge`):
+Discord Link Merge Flow (`POST /api/v2/auth/discord/link` -> `POST /api/v2/auth/discord/link/merge`):
   1. 使用者必須先登入 quick-login / 既有 actor，再從 `/me` 發起 Discord 綁定
   2. `/auth/discord/link` 的 `state` 必須與 `/auth/config` 設定的 `oauth_state` cookie 匹配
   3. 後端先完成 Discord OAuth code exchange，取得 discord_user_id
@@ -75,7 +75,7 @@ Discord Link Merge Flow (`POST /api/v1/auth/discord/link` -> `POST /api/v1/auth/
 
 - **Access Token**: JWT 攜帶 `actor_id`、`character_id`、`character_code`、`display_name`、`job_class_id`、`level`、`linked_providers`、`login_method`、`is_admin`
 - **Refresh Token**: 不對外提供 refresh API；protected API middleware 會在 access token 過期且 refresh token 仍有效時自動輪替 session。每個 refresh token JTI 僅能成功輪替一次；重新載入 session 後，後端會先消費舊 refresh token，再簽發新的 access / refresh token。
-- **登出**: `POST /api/v1/auth/logout` 將 access token 的 `jti` 加入 Redis 黑名單並清除 cookie
+- **登出**: `POST /api/v2/auth/logout` 將 access token 的 `jti` 加入 Redis 黑名單並清除 cookie
 - **PIN 防爆破**: Redis `auth:pin_fail:{actor_id}`，15 分鐘窗內連續 5 次失敗後回 `429 too_many_attempts`
 - **linked_providers**:
   - `quick_login` 代表 `actors.pin_hash IS NOT NULL`
@@ -464,10 +464,10 @@ ReplaceParty (`PUT /parties/:id`):
 ### 4.2 通知生命週期
 
 - 初始狀態：`is_read=false`
-- 使用者標記已讀：`PATCH /api/v1/notifications/{id}/read`
-- 全部標記已讀：`PATCH /api/v1/notifications/read-all`
-- 刪除已讀通知：`DELETE /api/v1/notifications/{id}` 或 `/delete-all-read`
-- 未讀數量：`GET /api/v1/notifications/unread-count`
+- 使用者標記已讀：`PATCH /api/v2/notifications/{id}/read`
+- 全部標記已讀：`PATCH /api/v2/notifications/read-all`
+- 刪除已讀通知：`DELETE /api/v2/notifications/{id}` 或 `/delete-all-read`
+- 未讀數量：`GET /api/v2/notifications/unread-count`
 
 ---
 
@@ -522,7 +522,7 @@ CancelPendingRequests:
 ### 7.2 管理員操作
 
 - **查看統計**: 用戶數、角色數、隊伍數、每日活躍等
-- **封禁 actor**: `POST /api/v1/admin/banlist`
+- **封禁 actor**: `POST /api/v2/admin/banlist`
 - **查看隊伍列表**: 包含 HIDDEN 狀態（`include_closed=true`）
 - **強制關閉隊伍**: 直接設定 status
 
@@ -539,7 +539,7 @@ CancelPendingRequests:
 ## 九、Bug 回報功能
 
 - 使用者可提交 Bug 報告
-- `POST /api/v1/bug-reports`
+- `POST /api/v2/bug-reports`
 - 儲存至 `bug_reports` 表
 - 欄位包含 `title`、`description`、選填 `contact`；目前正式路由註冊在 public group，通常不要求登入
 
@@ -568,5 +568,5 @@ Artale 遊戲角色等級上限為 **200**，因此所有「等級」相關欄�
 ### 10.2 隊伍搜尋：房間名稱全域篩選
 
 - `/find` 頁面的房間名稱搜尋為**全域搜尋**：只要搜尋框有輸入文字，結果一律涵蓋所有房間類型（快速組隊／組隊任務／BOSS／團練），不受目前選中的房間類型 tab 限制。
-- 實作方式：前端在有搜尋文字時改用不帶 `type`/`quick` 參數呼叫 `GET /api/v1/parties`；後端 `ListParties` 在 `type`/`quick` 皆未帶入時本就回傳所有房間類型（見 `backend/internal/party/repository_party_read.go`），對應前端內部虛擬 tab `FIND_ALL`（`frontend/src/features/party/types.ts`，僅供前端內部使用，不會透過 `?tab=` URL 參數對外暴露）。
+- 實作方式：前端在有搜尋文字時改用不帶 `type`/`quick` 參數呼叫 `GET /api/v2/parties`；後端 `ListParties` 在 `type`/`quick` 皆未帶入時本就回傳所有房間類型（見 `backend/internal/party/repository_party_read.go`），對應前端內部虛擬 tab `FIND_ALL`（`frontend/src/features/party/types.ts`，僅供前端內部使用，不會透過 `?tab=` URL 參數對外暴露）。
 - 房間類型 tab 於搜尋期間仍可點擊、視覺狀態保留，但不會即時篩選列表，需清空搜尋框才恢復依 tab 篩選。搜尋期間僅特定房間類型才有意義的次要篩選（目標下拉選單）會隱藏；等級區間／職業／僅顯示可加入等篩選為全域篩選，不受房間類型 tab 或搜尋狀態影響，一律位於搜尋列旁的「更多篩選」面板中。
