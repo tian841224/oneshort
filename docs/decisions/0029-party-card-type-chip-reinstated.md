@@ -37,7 +37,7 @@
 採用方案 2。具體作法：
 
 - 新增 `frontend/src/app/find/_components/PartyTypeChip.tsx`，接受 `type: PartyTypeLabel`，沿用 `.os-list-card__type-chip` 既有 class 與內聯樣式（不新增 CSS）。
-- `PartyListCard.tsx`：標題列既有的 `isQuickParty && party.type` chip 改用 `<PartyTypeChip type={party.type} />`；在 `target` 存在的 `.os-list-card__target` 區塊內，新增 `!isQuickParty && party.type && <PartyTypeChip type={party.type} />`，緊接在既有目標 chip 之後（`.os-list-card__target` 本身是 `inline-flex` + `gap`，新增的 chip 會自然並排）。
+- `PartyListCard.tsx`：標題列既有的 `isQuickParty && party.type` chip 改用 `<PartyTypeChip type={party.type} />`；在 `target` 存在的 `.os-list-card__target` 區塊內，新增 `!isQuickParty && party.type && <PartyTypeChip type={party.type} />`，緊接在既有目標 chip 之前（`.os-list-card__target` 本身是 `inline-flex` + `gap`，新增的 chip 會自然並排；2026-07-11 依使用者回饋由「之後」調整為「之前」）。
 - `PartyPreview.tsx`：標題-meta 列既有的 quick-party chip 同樣改用共用元件；在 `!isQuickParty && objective.target` 的 objective 區塊旁，新增同一元件（`.os-party-preview__title-meta` 本身是 `flex` + `gap`，新增的 chip 同樣自然並排）。
 - 快速隊伍（quick party）維持原本標題列顯示一次，目標/objective 區塊本身對 quick party 不存在（`objectiveOf`/`objective.target` 對 quick 隊伍回傳空），因此不會重複顯示。
 - `party.type`（`PartyTypeLabel`，`frontend/src/lib/design/parties.ts`）已經是人類可讀中文標籤，直接顯示，不需額外映射。
