@@ -230,7 +230,7 @@ URL 參數 `?tab=` 控制顯示模式：
 | `FIND_PARTY` | 公開組隊活動清單 |
 | `FIND_BOSS` | BOSS 討伐清單 |
 | `FIND_TRAINING` | 練功地圖清單 |
-| `MY_PARTY` | 我的隊伍；未登入且本瀏覽器有 `quick_active_party` host/member session 時，只顯示該快速隊伍，pending 不顯示 |
+| `MY_PARTY` | 我的隊伍；未登入且本瀏覽器有 `quick_active_party` host/member session 時顯示該隊伍（ADR-0030 起不再限定快速隊伍，訪客建立的一般隊伍同樣適用），pending 不顯示 |
 | `MY_APPLICATIONS` | 我的申請；未登入且本瀏覽器有 pending quick session 時，顯示一筆 synthetic 待審申請 |
 | `CREATE_PARTY` | 建立一般隊伍；目前 UI 仍需要登入（見下方 ADR-0015 現況說明） |
 
@@ -250,7 +250,7 @@ PartyCard 顯示規則:
   - 卡片上的目標顯示會移除 `兼具` 字樣
   - 若卡片標題已直接使用 target_name，則不重複再顯示一次目標
   - `我的隊伍` 卡片右上角會在成員數 badge 上方顯示房間狀態 badge（招募中 / 隱藏 / 關閉）；其中 `招募中` 僅顯示文字，`隱藏 / 關閉` 保留 icon
-  - 卡片不再顯示類型標籤 (BOSS/TRAINING/GROUP) chip；類型資訊改由左側類型 Logo 傳達
+  - 一般隊伍（BOSS/TRAINING/GROUP）的目標旁會顯示隊伍類型標籤（`PartyTypeChip`，ADR-0029 推翻先前「不再顯示類型 chip」的決策）；快速隊伍維持在標題列顯示類型 chip，不重複顯示
   - 當前/最大成員數 (current_members/max_members)
   - 職業席位預覽（前 N 個）
   - 密碼鎖圖示（join_requires_password=true）
