@@ -19,7 +19,7 @@
 - **後端規格書**：[backend/docs/specs/guild.md](../../backend/docs/specs/guild.md) — 領域實體、角色權限矩陣、加入模式、公會限定隊伍規則、成員偏好、自動配對演算法與週期、行事曆、即時事件與錯誤碼
 - **API 參考**：[backend/docs/api-reference/guild.md](../../backend/docs/api-reference/guild.md)
 - **後端功能索引**：[backend/docs/features.md](../../backend/docs/features.md)
-- **前端文件索引**：[frontend/docs/README.md](../../frontend/docs/README.md)
+- **前端文件索引**：[frontend/docs/AGENTS.md](../../frontend/docs/AGENTS.md)
 
 ### 相關 ADR
 

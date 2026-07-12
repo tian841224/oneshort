@@ -17,10 +17,10 @@ trigger: always_on
 
 修改 `frontend/` 或 `backend/` 前，**必須先詢問使用者採 `BRANCH` 或 `WORKTREE`**。未確認前，不得建立 branch / worktree 或修改子專案。根目錄協調性文件變更不受此限，見 [§6.1](#61-根目錄協調性文件-worktree)。
 
-## 3. 架構優先原則（通用原則已實體化至各 repo，本節為 ROOT 適用範圍）
+## 3. 架構優先原則
 
 > [!NOTE]
-> 架構優先、修正方案評估準則（禁止最小範圍修正、方案評估三前提、驗證義務）等通用開發原則，**完整實體化**於 [backend/AGENTS.md](../../backend/AGENTS.md) 與 [frontend/AGENTS.md](../../frontend/AGENTS.md)（各自 §4-5）——這是使用者已知並接受的取捨：三處內容各自獨立維護，修改通用原則時三處都要同步更新，不集中管理。修改 `backend/` 或 `frontend/` 程式碼與文件的任務，直接讀對應 repo 的 `AGENTS.md`，不需要回頭讀本節。
+> 本節通用原則已實體化至各 repo；本節內容為 ROOT 適用範圍。架構優先、修正方案評估準則（禁止最小範圍修正、方案評估三前提、驗證義務）等通用開發原則，**完整實體化**於 [backend/AGENTS.md](../../backend/AGENTS.md) 與 [frontend/AGENTS.md](../../frontend/AGENTS.md)（各自 §4-5）——這是使用者已知並接受的取捨：三處內容各自獨立維護，修改通用原則時三處都要同步更新，不集中管理。修改 `backend/` 或 `frontend/` 程式碼與文件的任務，直接讀對應 repo 的 `AGENTS.md`，不需要回頭讀本節。
 
 本節只列 ROOT repo 本身（`.agent/`、`docs/`、`AGENTS.md`）適用的部分：
 
@@ -28,7 +28,10 @@ trigger: always_on
 - **ROOT 文件過期必須同步更新或移除**：`docs/features/*.md`、`docs/system-overview.md`、ADR 的「已知後續」段落等一旦被新內容取代，必須同步更新或移除過期段落，不得留下與現況矛盾的內容誤導後續讀者。範例見 [docs/features/guest-mode-plan.md](../../docs/features/guest-mode-plan.md)（ADR-0015 推翻部分內容後明確標註並更新現況表）與 [ADR-0014](../../docs/decisions/0014-guest-party-interop-frontend-ui.md)（由 ADR-0016 補註「後續更新」段落）。
 - **跨 repo 路徑/版本號變更的文件同步陷阱**：純文字端點路徑或版本號（如 `/api/v2/xxx`）不是 markdown 連結，一般連結完整性檢查抓不到，必須額外對「已知路徑前綴／版本號」做全文 grep 才抓得到，backend/frontend 各自 repo 內同理（見各自 AGENTS.md §4）。反例：backend commit `a37d1dd`（2026-06-15）把路由前綴從 `/api/v1` 改成 `/api/v2`，只改了 `cmd/server/main.go`，未同步任何文件，導致 backend 與 root 兩個 repo 共 400+ 處文件錯誤沿用 `/api/v1` 長達一個月才被發現（見 [.agent/learning/inbox.md](../learning/inbox.md) 2026-07-11 條目）。
 
-### 3.1 修正方案評估準則（ROOT 文件變更適用；程式碼變更見各 repo AGENTS.md §5）
+### 3.1 修正方案評估準則
+
+> [!NOTE]
+> 本節為 ROOT 文件變更適用；程式碼變更見各 repo AGENTS.md §5。
 
 ROOT 本身只放文件，多數變更屬局部修正即可（更新總覽段落、修正連結）。仍涉及方案取捨的決策（例如文件架構本身的重新設計）時：
 

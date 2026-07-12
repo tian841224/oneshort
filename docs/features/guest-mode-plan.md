@@ -21,7 +21,7 @@ OneShort 的訪客（未登入使用者）可在**不建立 Postgres 帳號**的
 | 快速隊伍（Quick Party，`is_quick=true`） | 原生訪客導向的輕量隊伍系統，自始支援訪客建立/加入/管理 | `POST /parties/quick`、`/parties/:id/quick-*` |
 | 一般即時公開隊伍（Standard Immediate Party，`scheduled_at=null && guild_id=null && is_quick=false`） | 原本僅限登入 actor 使用；[ADR-0015](../decisions/0015-guest-standard-immediate-party-interop.md) 起訪客可建立、擔任隊長、申請、雙向互通 | `POST /parties/guest`、`/parties/:id/guest-*` |
 
-兩者共用**同一個** `quick_guest_token` cookie 與訪客顯示資料快照機制（`guest_display_name`/`guest_job_class_id`/`guest_level`），只是端點與 Redis 資料結構分屬兩個系統；已登入使用者呼叫 `guest-*` 端點時會直接委派給對應的一般 actor 端點，行為等價。完整端點清單見 [api-reference/party.md](../api-reference/party.md) 訪客一般即時隊伍互通章節。
+兩者共用**同一個** `quick_guest_token` cookie 與訪客顯示資料快照機制（`guest_display_name`/`guest_job_class_id`/`guest_level`），只是端點與 Redis 資料結構分屬兩個系統；已登入使用者呼叫 `guest-*` 端點時會直接委派給對應的一般 actor 端點，行為等價。完整端點清單見 backend repo `docs/api-reference/party.md` 訪客一般即時隊伍互通章節。
 
 ---
 
