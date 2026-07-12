@@ -17,45 +17,32 @@ trigger: always_on
 
 修改 `frontend/` 或 `backend/` 前，**必須先詢問使用者採 `BRANCH` 或 `WORKTREE`**。未確認前，不得建立 branch / worktree 或修改子專案。根目錄協調性文件變更不受此限，見 [§6.1](#61-根目錄協調性文件-worktree)。
 
-## 3. 架構優先原則
+## 3. 架構優先原則（通用原則已實體化至各 repo，本節為 ROOT 適用範圍）
 
-- 先理解模組責任與資料流再修改。禁止圖快的低維護方案。
-- 除非正式規格，否則不為單一功能撰寫硬編碼特例。
-- **商業邏輯或 API 行為異動時，程式碼與文件必須在同一任務內同步更新，不得只改程式碼**：異動路由前綴、端點路徑、schema、商業規則等，必須額外用 grep 確認以下已知文件位置是否也寫死了舊值並同步修正——backend：`docs/specs/*.md`、`docs/features.md`；root：`docs/api-reference/*.md`、`docs/business-logic.md`、`docs/backend-data-flows.md`；frontend：`docs/frontend-logic.md`、`docs/features/*.md`。純文字端點路徑（如 `/api/v1/xxx`）不是 markdown 連結，一般連結完整性檢查抓不到，必須額外對「已知路徑前綴／版本號」做全文 grep 才抓得到。反例：backend commit `a37d1dd`（2026-06-15）把路由前綴從 `/api/v1` 改成 `/api/v2`，只改了 `cmd/server/main.go`，未同步任何文件，導致 backend 與 root 兩個 repo 共 400+ 處文件錯誤沿用 `/api/v1` 長達一個月才被發現（見 [.agent/learning/inbox.md](../learning/inbox.md) 2026-07-11 條目）。
-- 若現有架構不適合新需求，應先提出重構方案，不持續堆疊例外。
-- **文件過期必須同步更新或移除**：任何文件（規格文件、ADR 的「已知後續」段落、README 等）內容一旦被新內容取代或修改，必須同步更新該文件或移除過期段落，不得留下與現況矛盾的內容誤導後續讀者。這比 [docs/decisions/index.md](../../docs/decisions/index.md) 「強制規則」第 3 點（ADR 推翻 ADR 的流程）更廣義，涵蓋「ADR 的已知後續被完成後要回頭補註」「ADR 相關規格文件因新決策過期時要同步修正」等情境。範例見 [docs/features/guest-mode-plan.md](../../docs/features/guest-mode-plan.md)（ADR-0015 推翻部分內容後，該文件明確標註「已由 ADR-0015 推翻」並更新現況表）與 [ADR-0014](../../docs/decisions/0014-guest-party-interop-frontend-ui.md)（由 ADR-0016 補註「後續更新」段落）。
+> [!NOTE]
+> 架構優先、修正方案評估準則（禁止最小範圍修正、方案評估三前提、驗證義務）等通用開發原則，**完整實體化**於 [backend/AGENTS.md](../../backend/AGENTS.md) 與 [frontend/AGENTS.md](../../frontend/AGENTS.md)（各自 §4-5）——這是使用者已知並接受的取捨：三處內容各自獨立維護，修改通用原則時三處都要同步更新，不集中管理。修改 `backend/` 或 `frontend/` 程式碼與文件的任務，直接讀對應 repo 的 `AGENTS.md`，不需要回頭讀本節。
 
-### 3.1 修正方案評估準則
+本節只列 ROOT repo 本身（`.agent/`、`docs/`、`AGENTS.md`）適用的部分：
 
-> [!IMPORTANT]
-> **禁止以「最小範圍修正」作為預設策略**。任何修正（bugfix、refactor、新功能、規格調整）前，必須先列舉並比較可行方案，採取最佳解。
+- 先理解 ROOT 文件的協調角色再修改：ROOT 只放導覽、系統簡介、功能總覽，不放前端或後端的實作細節（見 [docs/index.md](../../docs/index.md) 開頭說明）。
+- **ROOT 文件過期必須同步更新或移除**：`docs/features/*.md`、`docs/system-overview.md`、ADR 的「已知後續」段落等一旦被新內容取代，必須同步更新或移除過期段落，不得留下與現況矛盾的內容誤導後續讀者。範例見 [docs/features/guest-mode-plan.md](../../docs/features/guest-mode-plan.md)（ADR-0015 推翻部分內容後明確標註並更新現況表）與 [ADR-0014](../../docs/decisions/0014-guest-party-interop-frontend-ui.md)（由 ADR-0016 補註「後續更新」段落）。
+- **跨 repo 路徑/版本號變更的文件同步陷阱**：純文字端點路徑或版本號（如 `/api/v2/xxx`）不是 markdown 連結，一般連結完整性檢查抓不到，必須額外對「已知路徑前綴／版本號」做全文 grep 才抓得到，backend/frontend 各自 repo 內同理（見各自 AGENTS.md §4）。反例：backend commit `a37d1dd`（2026-06-15）把路由前綴從 `/api/v1` 改成 `/api/v2`，只改了 `cmd/server/main.go`，未同步任何文件，導致 backend 與 root 兩個 repo 共 400+ 處文件錯誤沿用 `/api/v1` 長達一個月才被發現（見 [.agent/learning/inbox.md](../learning/inbox.md) 2026-07-11 條目）。
 
-**評估流程**
+### 3.1 修正方案評估準則（ROOT 文件變更適用；程式碼變更見各 repo AGENTS.md §5）
 
-1. **列舉至少兩個方案**：包含「就地修補」與「抽出共用 / 重構邊界」兩個極端；必要時加入第三方案（如「換掉錯誤抽象」、「下推/上移責任」）。
-2. **以三大前提逐項評估**（同時權衡；衝突時優先順序為 **安全性 > 維護性 > 效能**）：
-   - **維護性**：單一責任、邊界清晰、命名與型別一致；是否增加重複碼、例外堆疊或隱性耦合。
-   - **效能**：熱路徑、DB 查詢、I/O、前端渲染與 Bundle 大小影響；避免 N+1 與冗餘運算。
-   - **安全性**：輸入信任邊界、權限與授權、注入 / XSS / CSRF / SSRF、敏感資料外洩風險。
-3. **決策落地（強制記錄為 ADR）**：選定方案的「理由與被拒方案」必須依 [docs/decisions/index.md](../../docs/decisions/index.md) 的規則新增一份 ADR 文件並更新索引表，這是可被下一個 session 讀到的**唯一權威記錄**；PR 描述、commit body 或 `~/.claude/plans/` 計畫文件可以補充細節，但不能取代 ADR。
-4. **修改前必查 ADR**：修改任何模組前，先依 [docs-router.md](docs-router.md) 的規則檢查 `docs/decisions/index.md` 是否已有該模組的決策；若有，必須先讀取並遵守，不得在不知情下重複調整或推翻先前決策。需要正式推翻時，依該索引文件的「推翻舊決策」流程（標記 Superseded、新增新 ADR 並註明理由），不得直接覆蓋。
+ROOT 本身只放文件，多數變更屬局部修正即可（更新總覽段落、修正連結）。仍涉及方案取捨的決策（例如文件架構本身的重新設計）時：
 
-**例外條款**
+1. 列舉至少兩個方案並評估維護性/安全性；決策落地強制記錄為 ADR（[docs/decisions/index.md](../../docs/decisions/index.md)）。
+2. **修改前必查 ADR**：先檢查 `docs/decisions/index.md` 是否已有相關決策，若有必須先讀取並遵守，不得不知情下重複調整或推翻。需要正式推翻時依該索引文件的「推翻舊決策」流程處理，不得直接覆蓋。
 
-- 僅限「生產緊急事故 hotfix」或「使用者明確指示 minimal patch」時，可暫採局部修正。
-- 須同步建立 follow-up 任務（PR 描述、commit body、`~/.claude/plans/` 計畫文件或 issue tracker），於下一個迭代完成完整重構，不得無限期延後；即便是暫時性局部修正，只要涉及方案取捨仍須依上述規則建立 ADR。
+完整版（含三前提評估細節、例外條款、驗證義務）見 [backend/AGENTS.md §5](../../backend/AGENTS.md#5-修正方案評估準則) 或 [frontend/AGENTS.md §5](../../frontend/AGENTS.md#5-修正方案評估準則)，兩者內容一致，ROOT 文件變更可直接套用。
 
-**驗證義務**
+## 4. 前後端同步（跨 repo 協調視角）
 
-- 缺乏對應層級驗證（單元 / 整合 / E2E / 安全掃描）的「最佳方案」視同無效。
-- Schema、API、安全邊界變動，必須附自動化測試並同步更新型別契約。
+本節是**真正跨 repo**的協調規則：只有同時涉及 backend 與 frontend 兩端變更的任務才適用；單一 repo 內的 API 契約責任（後端優先、禁止假契約、類型一致）已分別materialize 到 [backend/AGENTS.md §7](../../backend/AGENTS.md#7-api-契約與前端同步backend-視角) 與 [frontend/AGENTS.md §7](../../frontend/AGENTS.md#7-api-契約與後端同步frontend-視角)。
 
-## 4. 前後端同步
-
-- **後端優先**：API 結構變動時，必須同步更新前端 `lib/api`、types 與錯誤處理。
-- **類型一致**：前端 TypeScript interface 應與後端傳輸結構保持高度一致。
-- **禁止假契約**：前端不得使用假資料或後端不存在的格式；缺少後端能力時先補後端。
 - **雙向同步檢查**：無論是前端或後端單方調整功能（新增、修改或移除 API、事件、UI 流程），都必須同步確認另一端是否需要對應更新。若確定另一端暫時不會串接／實作，該功能在完成的那一端必須明確停用（如註解路由註冊）並在程式碼與 commit/PR 說明中註明「等待前後端另一端補齊」，不得讓功能長期處於「一端已完成、另一端完全沒有消費」的孤立狀態。
+- 協調層（人類或編排多 repo 工作的 agent）在收尾前應檢查兩端 repo 的 commit 是否對齊，避免其中一端遺漏。
 
 ## 5. Base Branch 規範
 
