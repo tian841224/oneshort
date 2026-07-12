@@ -54,24 +54,12 @@ OneShort 的訪客（未登入使用者）可在**不建立 Postgres 帳號**的
 
 ---
 
-## 5. 前後端程式碼對應 (Code Mapping)
+## 5. 程式碼對應 (Code Mapping)
 
-### 後端 (Backend)
+程式碼位置已隨文件重整移至各 repo 自己的文件維護：
 
-- **一般隊伍訪客建立/管理**：`backend/internal/party/usecase_guest_party.go`、`usecase_guest_party_management.go`、`handler_guest_party.go`、`handler_guest_party_management.go`
-- **登入後認領**：`backend/internal/party/usecase_guest_claim.go`、`handler_guest_claim.go`
-- **快速隊伍（既有系統，行為不受 ADR-0015 影響）**：`backend/internal/party/usecase_quick.go`
-- **訪客身分識別**：`quick_guest_token` cookie 簽章/驗證與 Redis session，落在 `backend/internal/party` 既有 quick-guest 基礎設施（非獨立 `internal/guest` package）
-
-### 前端 (Frontend)
-
-- **訪客身分狀態**：`frontend/src/lib/quickGuestIdentity.ts`（身分資料）、`frontend/src/lib/quickPartySession.ts`（host/member/pending session 記錄，含 `rememberQuickPartySession`）
-- **Hook**：`frontend/src/hooks/useQuickGuestPartySession.ts`、`useQuickGuestProfile.ts`、`useQuickGuestDisplayName.ts`
-- **一般隊伍訪客建隊畫面**：`frontend/src/app/parties/create/_components/GuestCreatePartyScreen.tsx`
-- **身分收集元件**：`frontend/src/components/party/QuickGuestIdentityPrompt.tsx`
-- **登入後認領**：`frontend/src/lib/auth/claimGuestParties.ts`
-- **申請資格共用判斷**：`canApplyAsGuest`（`frontend/src/lib/partyDisplay.ts`），供 Sidebar、MobileBottomNav、`/find`、隊伍詳情頁共用
-- **隊伍卡片/詳情訪客渲染**：`frontend/src/app/find/_components/PartyPreview.tsx`、`frontend/src/app/parties/[id]/_components/PartyDetailScreen.tsx`
+- **後端**：backend repo `docs/specs/party.md` 檔頭「路徑」段（訪客互通/快速隊伍相關檔案）與「訪客（未登入）互通」章節
+- **前端**：frontend repo `docs/frontend-logic.md` §2.2A「訪客（quick-guest）相關程式碼對應」段
 
 ---
 

@@ -1,46 +1,20 @@
 # 通知與通訊模組 (Notification Module)
 
-Notify 模組是 OneShort 的中心化事件處裡站，負責將所有 Domain 的狀態變更推送給使用者。
+> **狀態**：現行功能。本檔僅為高層功能總覽；實作規格一律以下方「深入文件」為準。
 
 ---
 
-## 1. 業務功能 (Business Features)
+## 功能總覽
 
-- **系統級通知 (System Notify)**:
-    - 隊員申請入隊、批准、拒絕。
-    - 成員加入、離開、被踢出、隊伍解散、閒置提醒與自動關閉。
-- **通知分類與狀態**:
-    - `READ` / `UNREAD` (已讀、未讀)。
-    - 通知類型以事件名稱儲存，例如 `party.application_accepted`、`party.idle_warning`。
-- **通知中心互動規則**:
-    - 僅提供「標記已讀」操作，不提供手動刪除按鈕。
-    - `party.idle_warning` 在使用者完成「還在 / 解散 / 離開」任一操作後，會自動刪除該則通知以避免重複點選。
-    - `party.idle_warning` 的彈跳提示在使用者點選任一動作後不再顯示成功/失敗回應；若隊伍已在稍早解散或關閉，前端僅靜默刷新狀態。
-    - `party.idle_warning` 發送時，隊伍已先被系統暫時隱藏；點「還在」會重新顯示，僅手動隱藏的隊伍不受影響。
-- **即時串流 (Real-time Stream)**:
-    - WebSocket 事件進入 `useWebSocketEventHandler`，再失效 TanStack Query 的通知與隊伍相關快取。
+Notify 模組是中心化事件處理站：各業務 Domain 只需發送事件，由本模組負責持久化通知（寫入 `notifications` 表）與 WebSocket 即時分發。涵蓋隊伍申請/審核、成員進出、解散、閒置提醒與自動關閉等事件；通知有已讀/未讀狀態，通知中心僅提供「標記已讀」，不提供手動刪除。`party.idle_warning` 有特殊互動規則（點選動作後自動移除該通知、stale 狀態靜默處理），細節見前端行為文件。
+
+已知限制：通知列表目前無分頁載入，若使用者長期未讀可能累積過多；未來可針對 unread 增加快取與分頁機制。
 
 ---
 
-## 2. 前後端組件對應 (Code Mapping)
+## 深入文件
 
-### **後端 (Backend)**
-- **Domain**: `backend/internal/notify/domain.go` (Entity: `Notification`, WebSocket payload).
-- **Handler**: `backend/internal/notify/handler.go` (`/ws`、notifications API、party chat history).
-- **Stream Consumer**: `backend/internal/notify/stream_consumer.go`（Redis Stream → WS room + notification persistence）。
-
-### **前端 (Frontend)**
-- **Components**: `frontend/src/components/auth/NotificationBell.tsx`、`NotificationAttentionManager.tsx`。
-- **Hooks**: `frontend/src/hooks/useNotifications.ts`。
-- **Cache**: `['notifications', actorId]` 與 `['notifications', 'unread-count', actorId]`。
-
----
-
-## 3. 分析與維護性分析 (Analysis)
-
-### 🟢 結構優點 (Pros)
-- **非同步非阻塞**: 業務 Domain 只需要發送一個 Event，由 Notify 模組負責後續分發（DB 寫入 + WS 通道）。
-
-### 🔴 當前分析 (Current State)
-- **通知積壓問題**: 若前端太久沒讀取，通知可能過多，目前缺乏分頁加載機制。
-- **建議**: 針對 `unreads` 增加緩存與分頁加載機制，提升長度。
+- **後端規格書**：backend repo `docs/specs/notify.md` — 通知儲存、WebSocket 模型、持久化事件表、聊天室規則（大廳/隊伍/公會）、節流
+- **API 參考**：backend repo `docs/api-reference/notify.md`
+- **事件契約**：backend repo `docs/event_contract.md`
+- **前端行為**：frontend repo `docs/frontend-logic.md` §六（WS 事件處理矩陣）、§七（通知鈴鐺）、§八（NotificationAttentionManager 彈跳提示與 idle_warning 互動規則）
