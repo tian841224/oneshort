@@ -1,92 +1,55 @@
-# OneShort 系統總覽
+# 使用情境與系統總覽
 
-OneShort 是一個為 MMORPG 玩家打造的即時組隊協作平台，目標是讓玩家更快找到隊伍、更順暢地管理成員，並在關鍵狀態變化時獲得即時通知。
+OneShort 把招募資訊、角色條件、加入申請與團內溝通集中在一起，支援 Artale 玩家臨時找團，也支援公會安排固定活動。
 
-## 1. 產品核心目標
+## 今天想找一團
 
-- 降低建立隊伍、搜尋隊伍與加入隊伍的操作成本
-- 提供即時狀態同步，減少等待與重複確認
-- 串接公開組隊、公會協作、通知與管理功能
-- 以訪客（快速登入）流程降低首次使用門檻
+1. 在找隊伍頁選擇組隊任務、BOSS、練功或快速隊伍。
+2. 依目標、職業、等級等條件縮小範圍，查看職缺與房間設定。
+3. 選擇角色加入；需要審核的隊伍先送出申請，核准後才成為隊員。
+4. 到隊伍聊天室確認頻道與安排。有攻略的組隊任務可使用合作小工具。
 
-## 2. 核心概念
+未登入可以先瀏覽，部分隊伍也提供訪客建立與加入流程。系統會依房型與資格提示是否需要登入。
 
-| 概念 | 說明 |
-|------|------|
-| Actor | 帳號層身份。所有登入方式（Discord OAuth、快速登入）最終都解析成同一種 actor，不區分使用者型別 |
-| Character | actor 底下的遊戲角色，帶有職業與等級；一個 actor 可擁有多個角色，並指定目前使用的角色 |
-| Party | 隊伍。依目標分為練功、BOSS、任務等類型；依生命週期分為立即（快速）隊伍與排程隊伍；依可見性分為公開、密碼房與公會隊伍 |
-| Guild | 公會。提供成員管理、公告、聊天與 BOSS 隊伍自動配對等長期協作能力 |
-| Room | 即時事件的推播單位，例如個人房間（`actor:{id}`）、隊伍房間（`party:{id}`）、全域列表與公開大廳 |
+## 我來開團，還缺幾個人
 
-## 3. 整體架構
+1. 臨時招募可使用快速建立；需要指定任務、BOSS、地圖與職缺時，使用一般開團流程。
+2. 設定頻道、說明、職業／等級條件，以及是否需要密碼或房主審核。
+3. 將隊伍連結分享給朋友，在隊伍頁查看申請、調整職缺與管理成員。
+4. BOSS 團可預先指定時間；不再招募時，可依隊伍狀態調整公開設定或結束隊伍。
 
-```mermaid
-flowchart LR
-    subgraph Client["瀏覽器"]
-        FE["Next.js 前端"]
-    end
+## 公會要安排下一輪 BOSS 團
 
-    subgraph Backend["後端（Go）"]
-        API["API Server（Gin, REST /api/v2）"]
-        WS["WebSocket Gateway（/ws）"]
-        RELAY["Relay Worker"]
-        SYS["System Worker（排程與背景工作）"]
-    end
+1. 成員以角色為單位填寫 BOSS 優先順序與可參加時段。
+2. 選擇自動參與，或手動確認畫面所示的本輪日期。
+3. 幹部設定成團人數、等級與職業需求，查看配對試算結果。
+4. 視需要調整草案成員，確認後產生公會隊伍，再由公會列表與個人行事曆查看安排。
 
-    subgraph Data["資料與事件層"]
-        PG[("PostgreSQL 16")]
-        RC[("Redis cache")]
-        RR[("Redis realtime<br/>Streams")]
-    end
+配對會綜合時段、偏好與職缺限制；人數或條件不足時可能無法成團。預覽結果仍需以實際產生的隊伍為準。
 
-    FE -- REST --> API
-    FE -- WebSocket --> WS
-    API --> PG
-    API --> RC
-    API -- Outbox 事件 --> PG
-    RELAY -- 讀取 outbox --> PG
-    RELAY -- XADD --> RR
-    WS -- 消費 Streams --> RR
-    SYS --> PG
-    SYS --> RC
+## 幾個重要概念
+
+| 概念 | 在產品中的意思 |
+| --- | --- |
+| 帳號與角色 | 一個帳號可管理多個遊戲角色；登入方式可用 Discord 或角色代碼＋PIN |
+| 訪客 | 尚未登入，依可用流程填寫名稱、職業與等級後參與部分功能 |
+| 隊伍 | 招募目標、時間、職缺、成員與聊天的集合；快速建立是其中一種操作方式 |
+| 公會 | 較長期的協作空間，包含成員、公告、聊天、公會隊伍與 BOSS 配對 |
+| 攻略與小工具 | 在支援的組隊任務中，協助隊員閱讀攻略、分工與同步進度 |
+
+## 整體設計
+
+```text
+玩家的瀏覽器
+  ├─ Next.js / React：頁面、表單、角色選擇與聊天介面
+  ├─ HTTP API → Go / Gin：查詢資料與執行操作
+  └─ WebSocket ← 即時事件：更新隊伍、聊天與通知
+
+後端資料層
+  ├─ PostgreSQL：帳號、公會、預約隊伍與參與紀錄等持久資料
+  └─ Redis：即時隊伍狀態、聊天與事件傳遞等即時資料
 ```
 
-- **API Server**：處理所有 REST 請求，業務寫入與事件（outbox）在同一個資料庫交易內完成
-- **Relay Worker**：把 outbox 事件轉發到 Redis Streams
-- **WebSocket Gateway**：消費事件流，依房間把訊息推送給對應的前端連線
-- **System Worker**：負責閒置隊伍關閉、每日統計、公會每週自動配對、快取預熱等背景工作
+前端處理操作體驗，後端判斷成員資格、職缺及配對規則。不同資料依用途採用不同儲存方式；即時更新搭配資料查詢，讓畫面持續反映隊伍的最新狀態。
 
-## 4. 技術棧總表
-
-| 層次 | 技術 |
-|------|------|
-| 前端框架 | Next.js 16（App Router）、React 19、TypeScript 5 |
-| 前端狀態 | TanStack Query 5（伺服器狀態）、Zustand（本地狀態） |
-| 樣式 | Tailwind CSS 4、Radix UI / shadcn |
-| 後端語言與框架 | Go 1.24、Gin |
-| 資料庫 | PostgreSQL 16（GORM / sqlx、SQL migration） |
-| 快取與即時 | Redis 7 ×2（cache / realtime，Redis Streams） |
-| 即時通訊 | gorilla/websocket |
-| 認證 | JWT（Cookie session）、Discord OAuth、快速登入（角色代碼 + PIN） |
-| 可觀測性 | zap 結構化日誌、Prometheus metrics |
-| API 文件 | Swagger（swaggo） |
-| 測試 | Vitest / Playwright（前端）、testify / sqlmock / miniredis（後端） |
-
-## 5. 功能模組地圖
-
-| 模組 | 說明 | 詳細文件 |
-|------|------|----------|
-| Auth | Discord OAuth、快速登入、帳號綁定與合併 | [功能總覽 §1](./features.md#1-身份與登入) |
-| Party | 隊伍建立、搜尋、申請、席位管理、聊天、生命週期 | [功能總覽 §2](./features.md#2-隊伍系統) |
-| Guild | 公會成員、公告、聊天、公會隊伍與 BOSS 自動配對 | [功能總覽 §3](./features.md#3-公會系統) |
-| Notify | 通知中心、即時推播、WebSocket | [功能總覽 §4](./features.md#4-通知系統) |
-| Announcement | 平台公告與 NoticeBar 跑馬燈 | [功能總覽 §5](./features.md#5-公告與跑馬燈) |
-| Stats | 在線人數與每日統計 | [功能總覽 §7](./features.md#7-在線統計) |
-| Admin / Telegram | 管理後台與 Telegram Bot 營運入口 | [功能總覽 §8](./features.md#8-管理端) |
-
-## 6. 使用者體驗重點
-
-- 快速進入組隊流程：訪客也能以低門檻建立或加入快速隊伍
-- 清楚看見申請、加入與狀態更新結果：關鍵變更即時推播，不依賴手動刷新
-- 桌機與行動裝置皆可操作，行動版有獨立的互動設計
+接著閱讀：[功能介紹](features.md) · [前端架構](architecture/frontend.md) · [後端架構](architecture/backend.md)

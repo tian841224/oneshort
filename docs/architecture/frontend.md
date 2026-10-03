@@ -1,84 +1,40 @@
-# OneShort 前端架構
+# 前端架構
 
-本文件描述 OneShort 前端的技術框架、專案結構、狀態管理與即時通訊設計。
+OneShort 的前端將找團、開團、角色、公會與聊天放在同一個網站，兼顧桌面與手機的操作方式。本頁只介紹支撐這些體驗的主要設計。
 
-## 1. 前端定位
+## 技術組合
 
-前端負責網站畫面、互動流程與使用者操作體驗，承接隊伍、公會、通知與登入相關的所有使用者介面，並透過 WebSocket 讓畫面與後端狀態保持同步。
+| 用途 | 技術 |
+| --- | --- |
+| 頁面與型別 | Next.js 16 App Router、React 19、TypeScript |
+| 介面 | Tailwind CSS、shadcn/ui |
+| 伺服器資料 | TanStack Query |
+| 本地互動狀態 | Zustand |
+| 表單 | React Hook Form、Zod |
+| 通訊 | HTTP API、WebSocket |
 
-## 2. 技術框架
+## 以玩家流程組織頁面
 
-| 分類 | 技術 |
-|------|------|
-| 核心框架 | Next.js 16（App Router）、React 19、TypeScript 5 |
-| 樣式 | Tailwind CSS 4、Radix UI / shadcn、lucide-react 圖示 |
-| 伺服器資料狀態 | TanStack Query（React Query 5） |
-| 本地 UI 狀態 | Zustand |
-| 表單與驗證 | React Hook Form + Zod |
-| HTTP 客戶端 | ky（統一 Cookie session 與錯誤處理） |
-| 即時通訊 | 原生 WebSocket（單一共享連線） |
-| 富文字 | Tiptap（公告等編輯場景） |
-| 測試 | Vitest + Testing Library（單元）、Playwright（E2E） |
+- **找隊伍**：搜尋、篩選、預覽、我的隊伍與大廳聊天。
+- **隊伍詳情**：角色選擇、申請、成員管理、聊天室與攻略工具。
+- **個人功能**：帳號、角色、申請及參與紀錄。
+- **公會**：公告、成員、隊伍、行事曆與 BOSS 配對。
 
-## 3. 專案結構
+共用介面與功能邏輯分開整理，讓列表、詳情及公會中的相同操作能沿用一致的行為。管理後台是獨立應用。
 
-```text
-frontend/src/
-├── app/         # Next.js App Router 路由
-│   ├── (auth)/      # OAuth 登入流程
-│   ├── find/        # 搜尋隊伍
-│   ├── parties/     # 隊伍建立、詳情與管理
-│   ├── applications/ # 我的申請
-│   ├── guilds/      # 公會
-│   ├── history/     # 歷史紀錄
-│   ├── me/          # 帳號設定（角色、PIN、Discord 綁定）
-│   └── login/       # 登入頁
-├── features/    # 依領域切分的功能模組（auth、party、guild、notifications、realtime、admin…）
-├── components/  # 共用 UI 元件
-├── hooks/       # 共用 hooks（useAuth、useParties、useWebSocket…）
-├── store/       # Zustand 全域 store（auth、ws、聊天未讀數…）
-├── contexts/    # React Context
-└── lib/         # API 客戶端與型別定義
-```
+## 資料與即時更新
 
-### 分層原則
+TanStack Query 管理隊伍、公會、申請與通知等伺服器資料；Zustand 管理面板、連線與其他本地互動狀態。操作經 HTTP API 送至後端，WebSocket 事件讓畫面更新相關區塊，資料查詢則補足重新進站或連線恢復時需要的狀態。
 
-- **路由層（app/）**：頁面進入點與區段 layout
-- **Hook 層**：封裝查詢、mutation 與頁面行為，是頁面與資料層之間的介面
-- **API 層（lib/api）**：唯一的 HTTP 入口，統一 session 與錯誤處理
-- **Feature 層**：依領域組織元件與邏輯，避免跨領域耦合
+登入、登出與角色操作會重新同步對應資料。職缺及加入資格仍由後端判斷，介面會分別呈現等待審核、成功、部分成功或失敗。
 
-## 4. 狀態管理
+## 互動設計
 
-- **伺服器資料狀態（TanStack Query）**：隊伍列表、隊伍詳情、通知、公會資料等，以 query key 管理快取與失效
-- **本地 UI 狀態（Zustand）**：登入狀態、WebSocket 連線狀態、聊天未讀數、面板開關等
-- 收到即時事件時優先做「針對性 invalidate + 局部更新」，避免整頁重新載入
+- 桌面使用列表、預覽與聊天面板；手機使用單欄、底部導覽及可收合面板。
+- 表單提供欄位驗證，重要成員管理操作有確認步驟。
+- 載入中、空列表、錯誤、重試與連線狀態各有對應呈現。
+- 攻略工具的共享進度與個人視窗位置分開處理，方便隊友共同操作。
 
-## 5. 即時通訊
+測試採用 Vitest、Testing Library、Playwright 與 API 冒煙測試，涵蓋元件邏輯及跨前後端操作情境。
 
-前端維持**單一共享 WebSocket 連線**，所有需要即時性的功能共用：
-
-```text
-useWebSocket
-  ├─ 建立連線，斷線採指數退避重連
-  ├─ 認證成功後自動訂閱個人房間（actor:{id}）與全域列表（parties:global）
-  ├─ 隊伍房間（party:{id}）採引用計數訂閱——多個元件共用同一訂閱
-  └─ 事件處理層負責 TanStack Query invalidate 與 toast 提示
-```
-
-- 開啟隊伍詳情即訂閱該隊伍房間，非成員的唯讀頁也能收到席位與狀態更新
-- 通知鈴鐺以帳號 id 隔離個人通知快取
-- 快速登入與 Discord 登入共用同一套個人房間機制
-- 連線錯誤只做診斷紀錄，斷線與重連統一由關閉事件處理，避免誤報
-
-## 6. 響應式與 UI 原則
-
-- 桌機與行動裝置採響應式設計，行動版有獨立的互動考量（面板、抽屜、觸控目標）
-- 表單以 React Hook Form + Zod 做即時驗證
-- 使用者輸入的富文字內容經過 sanitize 後才渲染
-
-## 7. 測試策略
-
-- **單元測試**：Vitest + Testing Library，覆蓋 hooks 與元件邏輯
-- **E2E 測試**：Playwright，涵蓋桌機（chromium）與行動裝置視口的關鍵使用者流程
-- **API smoke 測試**：以腳本直接驗證前後端契約
+延伸閱讀：[功能介紹](../features.md) · [後端架構](backend.md) · [互動與資料流](../data-flow/overview.md)

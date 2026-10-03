@@ -1,17 +1,63 @@
-# OneShort
+# 缺一 OneShort
 
-OneShort is a real-time party finding platform for MMORPG players. It helps players create parties, browse open groups, coordinate membership, and stay updated through live notifications.
+**給 Artale 玩家的組隊與公會協作平台**
 
-## Public Documentation
+找人練功、揪 BOSS、解組隊任務，把「還缺誰、幾點出發、誰已經加入」放在同一個地方。
 
-- [Documentation Index](docs/index.md)
-- [System Overview](docs/system-overview.md)
-- [Feature Overview](docs/features.md)
-- [Frontend Architecture](docs/architecture/frontend.md)
-- [Backend Architecture](docs/architecture/backend.md)
-- [Data Flow](docs/data-flow/overview.md)
-- [API Overview](docs/api/overview.md)
+OneShort 從公開招募延伸到隊伍聊天、任務協作與公會排團，讓臨時找隊友的玩家和固定帶團的幹部，都有清楚的操作流程。
 
-## Scope Of This Repository
+[功能介紹](docs/features.md) · [使用情境](docs/system-overview.md) · [文件目錄](docs/index.md)
 
-This root repository is intentionally limited to public-facing documentation. Internal development workflows, AI agent files, decision logs, and private implementation notes are excluded from version control here.
+專案網站：[oneshort.tian1224.uk](https://oneshort.tian1224.uk/)。展示環境可能暫停服務，開放情況以實際部署狀態為準。
+
+## 可以做什麼？
+
+### 找到適合自己的隊伍
+
+依組隊任務、BOSS、練功或快速隊伍瀏覽，也能用名稱、目標、職業、等級與可加入狀態篩選。看清楚招募條件與剩餘職缺，再選擇要參加的角色。
+
+### 開團、補位、管理成員
+
+快速開一間房找人，或建立有目標與職缺條件的一般隊伍；BOSS 隊伍也支援預約時間。房主可設定密碼或加入審核、調整招募名額、處理申請與管理成員，並把隊伍連結分享給朋友。
+
+### 邊組隊，邊溝通
+
+大廳、隊伍與公會各有聊天空間。申請結果、成員變動與通知會隨即時事件更新，減少來回確認。桌面與手機都有對應的列表、面板與聊天操作。
+
+### 一個帳號，管理多個角色
+
+支援 Discord 與角色代碼＋PIN 登入，管理各角色的名稱、職業、等級及目前使用角色。未登入也能瀏覽，並在支援的隊伍中使用訪客流程；訪客可操作範圍依房型與條件而定。
+
+### 把公會排團整理起來
+
+管理成員、入會申請、公告與公會限定隊伍。成員依角色填寫 BOSS 順位、可參加時段及本輪參與設定；幹部可試算配對、調整草案，再確認產生隊伍。
+
+### 在隊伍裡一起完成任務
+
+支援攻略的組隊任務提供隊伍內攻略與共享小工具，例如進度、分工、勾選清單與順序紀錄。登入玩家也能查看自己的申請及最近 30 天參與紀錄。
+
+## 第一次使用
+
+1. 到找隊伍頁，選擇想玩的活動並查看招募條件。
+2. 登入並選擇角色，或依畫面提示使用可用的訪客流程。
+3. 直接加入或送出申請，確認已入隊後在隊伍聊天室溝通。
+4. 找不到適合的團，就自己開團；固定一起玩的夥伴可透過公會安排活動。
+
+更多操作差異與常見問題見 [功能介紹](docs/features.md)。
+
+## 技術簡介
+
+| 層次 | 主要技術與用途 |
+| --- | --- |
+| 前端 | Next.js 16、React 19、TypeScript；Tailwind CSS 與 shadcn/ui 建立介面 |
+| 狀態管理 | TanStack Query 管理伺服器資料，Zustand 管理本地互動狀態 |
+| 後端 | Go、Gin，處理組隊、公會與角色等業務規則 |
+| 資料與即時互動 | PostgreSQL、Redis、HTTP API 與 WebSocket |
+
+前後端分離，透過 HTTP 完成查詢與操作，再以 WebSocket 更新相關畫面。想了解設計取捨，可接著看 [系統總覽](docs/system-overview.md) 與 [精簡架構文件](docs/index.md#技術補充)。
+
+## 關於這個儲存庫
+
+這裡提供 OneShort 的公開產品介紹與架構摘要，方便玩家、開發者及有興趣合作的人了解專案。前後端程式碼另行管理，本儲存庫不含完整應用程式或部署套件。
+
+功能說明依 2026-10-03 的實作整理；實際可操作項目會隨帳號身分、隊伍設定、權限與網站開放狀態而不同。
