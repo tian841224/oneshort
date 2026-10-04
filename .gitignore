@@ -16,3 +16,16 @@ docs/data-flow/*
 !docs/api/
 docs/api/*
 !docs/api/overview.md
+
+# Public demo guide and selected, original screenshots
+!docs/demo.md
+!images/
+images/*
+!images/screenshots/
+images/screenshots/*
+!images/screenshots/home-adventure.jpg
+!images/screenshots/party-discovery.jpg
+!images/screenshots/boss-party-detail.jpg
+!images/screenshots/guild-overview.jpg
+!images/screenshots/quick-party-chat.jpg
+!images/screenshots/guild-chat.jpg
